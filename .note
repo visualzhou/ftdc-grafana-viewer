@@ -1,0 +1,92 @@
+# FTDC Importer Development Notes
+
+## Current Implementation (Phase 1)
+
+### Core Components
+
+1. FTDC Parser (`src/lib.rs`)
+   - Handles BSON document parsing
+   - Extracts timestamps and metrics
+   - Supports basic error handling
+   - Currently only handles double-type metrics
+
+2. Compression Module (`src/compression.rs`)
+   - Implements ZSTD decompression
+   - Includes basic error handling
+   - Tested with valid and invalid data
+
+### Test Coverage
+- Basic parser creation and initialization
+- Valid document parsing with metrics
+- ZSTD compression/decompression
+- Error handling for invalid data
+
+## Next Steps
+
+### High Priority
+1. Support for Different Metric Types
+   - Add support for Int32, Int64, and other numeric types
+   - Implement proper type conversion
+   - Add tests for each metric type
+
+2. File Reading and Streaming
+   - Implement async file reading
+   - Add support for large files
+   - Implement proper buffering
+
+3. Real FTDC File Testing
+   - Create test fixtures with real FTDC files
+   - Add integration tests
+   - Verify against MongoDB's output
+
+### Medium Priority
+1. Performance Optimization
+   - Add benchmarking
+   - Optimize memory usage
+   - Profile and improve parsing speed
+
+2. Error Handling Improvements
+   - Add more specific error types
+   - Improve error messages
+   - Add error recovery mechanisms
+
+3. Documentation
+   - Add API documentation
+   - Create usage examples
+   - Document the FTDC format
+
+### Low Priority
+1. Additional Features
+   - Add support for metric filtering
+   - Implement metric aggregation
+   - Add support for custom metric names
+
+2. CLI Improvements
+   - Add progress reporting
+   - Implement verbose logging
+   - Add configuration options
+
+## Technical Debt
+1. Clean up unused imports
+   - Remove `UNIX_EPOCH` from lib.rs
+   - Remove `Write` from compression.rs
+   - Remove `NamedTempFile` from lib.rs
+
+2. Code Organization
+   - Consider splitting parser into smaller modules
+   - Add proper module documentation
+   - Improve code reusability
+
+## Dependencies
+Current key dependencies:
+- zstd: For compression
+- bson: For document parsing
+- tokio: For async support
+- serde: For serialization
+- thiserror: For error handling
+
+## Notes
+- The current implementation focuses on correctness over performance
+- All tests are passing
+- Basic error handling is in place
+- The code is ready for real-world testing with actual FTDC files 
