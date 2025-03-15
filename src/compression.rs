@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::Read;
 use crate::{Result, FtdcError};
 use zstd::Decoder;
 
@@ -21,6 +21,7 @@ impl Compression {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
     use zstd::Encoder;
 
     #[test]
