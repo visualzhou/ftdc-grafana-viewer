@@ -1,14 +1,14 @@
 # FTDC Importer Development Notes
 
-## Current Implementation (Phase 1)
+## Current Implementation (Phase 2)
 
 ### Core Components
 
 1. FTDC Parser (`src/lib.rs`)
-   - Handles BSON document parsing
-   - Extracts timestamps and metrics
-   - Supports basic error handling
-   - ✅ Supports multiple metric types (Double, Int32, Int64)
+   - ✅ Handles BSON document parsing
+   - ✅ Extracts timestamps and metrics
+   - ✅ Supports comprehensive error handling
+   - ✅ Supports multiple metric types (Double, Int32, Int64, Boolean, DateTime, Timestamp)
    - ✅ Implements proper type conversion to f64
    - ✅ Includes comprehensive tests for each type
    - ✅ Supports nested document structures with recursive processing
@@ -21,12 +21,22 @@
    - ✅ Supports reference-based document model
    - ✅ Provides streaming API for efficient processing
    - ✅ Includes proper error handling for malformed files
+   - ✅ Implements column-oriented data processing
+   - ✅ Supports recursive extraction of metric values
+   - ✅ Implements proper type inference and conversion
+   - ✅ Handles corrupt data gracefully with fallbacks
 
 3. Compression Module (`src/compression.rs`)
-   - Implements ZSTD decompression
-   - Includes basic error handling
-   - Tested with valid and invalid data
-   - ✅ Code cleanup and organization improvements
+   - ✅ Implements ZLIB decompression (replaced ZSTD)
+   - ✅ Implements the complete decompression pipeline:
+     - ZLIB decompression
+     - Varint decompression (S2-style)
+     - Run-length decoding of zeros
+     - Delta decoding with reference values support
+   - ✅ Includes robust error handling for corrupt data
+   - ✅ Implements safety checks to prevent memory allocation issues
+   - ✅ Adds debugging and detailed error messages
+   - ✅ Tests with valid and invalid data
 
 4. Victoria Metrics Integration (`src/victoria_metrics.rs`)
    - ✅ Implements conversion to InfluxDB Line Protocol
@@ -42,13 +52,15 @@
    - ✅ Provides verbose output option
    - ✅ Reports processing statistics
    - ✅ Implements check mode for analyzing entire FTDC files
-   - ✅ Refactored to separate check mode and import mode functions
 
 ### Test Coverage
-- Basic parser creation and initialization
-- Valid document parsing with metrics
-- ZSTD compression/decompression
-- Error handling for invalid data
+- ✅ Basic parser creation and initialization
+- ✅ Valid document parsing with metrics
+- ✅ ZLIB compression/decompression
+- ✅ Run-length encoding/decoding of zeros
+- ✅ Varint compression/decompression
+- ✅ Delta encoding/decoding
+- ✅ Error handling for invalid data
 - ✅ Type-specific tests for Int32, Int64, and Double metrics
 - ✅ Edge case handling for unsupported types
 - ✅ Integration tests with real FTDC files
@@ -56,83 +68,111 @@
 - ✅ Tracking of unique metrics and document counts
 - ✅ Victoria Metrics client testing with mock HTTP server
 - ✅ Line protocol conversion testing
-- ✅ Fixed test assertions for line protocol format
 
-## Next Steps
+## Implementation Progress
+
+### Initial Limitations (Pre-Phase 1)
+The initial implementation of the FTDC importer had several critical limitations:
+
+1. **Incomplete Binary Data Processing**: Failed to properly handle compressed metric chunks in binary fields
+2. **Missing Array Support**: Did not process array elements, missing metrics like `hostInfo_extra_mountInfo_X_major`
+3. **Incomplete Document Type Handling**: Did not properly handle MetadataDelta documents
+4. **Limited BSON Type Support**: Only extracted metrics from Double, Int32, and Int64 types
+
+### Phase 1 Improvements (Completed)
+We made significant improvements to the FTDC importer:
+
+1. **Enhanced Binary Data Processing**:
+   - Added `process_binary_data()` function to decompress and parse binary data
+   - Implemented schema document parsing for compressed chunks
+   - Added support for metric chunks with timestamps
+
+2. **Array Element Processing**:
+   - Added support for extracting metrics from array elements
+   - Implemented proper naming for array elements (using index suffixes)
+
+3. **Better Document Type Handling**:
+   - Improved handling of Metadata documents
+   - Added proper support for MetadataDelta documents
+   - Enhanced Metric document processing
+
+4. **Expanded BSON Type Support**:
+   - Added support for Boolean values
+   - Improved handling of nested documents
+   - Added proper type conversion for all supported types
+
+### Phase 2 Improvements (Completed)
+We've addressed the critical components of the FTDC format:
+
+1. **Column-Oriented Processing**:
+   - ✅ Implemented recursive extraction of numeric values from documents
+   - ✅ Added proper mapping between field names and values
+   - ✅ Created direct metric creation from column-oriented data
+   - ✅ Improved handling of arrays and nested documents
+
+2. **Complete Decompression Pipeline**:
+   - ✅ Replaced ZSTD with ZLIB
+   - ✅ Implemented varint decompression
+   - ✅ Added run-length decoding of zeros
+   - ✅ Implemented delta decoding
+   - ✅ Added reference value support for baselines
+
+3. **Reference Document Handling**:
+   - ✅ Properly extracted reference values from metadata documents
+   - ✅ Used reference values as baselines for delta decoding
+   - ✅ Added fallback mechanisms for corrupt data
+
+4. **Enhanced BSON Type Support**:
+   - ✅ Added better type inference based on field names and value ranges
+   - ✅ Improved handling of Boolean, DateTime, and Timestamp values
+   - ✅ Implemented proper type conversion between u64 and various BSON types
+
+5. **Memory Allocation Improvements**:
+   - ✅ Added safety checks to prevent excessive memory allocation
+   - ✅ Implemented graceful fallbacks for unreasonable values
+   - ✅ Fixed memory allocation errors with large zero counts
+
+## Remaining Tasks
 
 ### High Priority
-1. ✅ Support for Different Metric Types
-   - ✅ Added support for Int32, Int64, and Double types
-   - ✅ Implemented proper type conversion
-   - ✅ Added tests for each metric type
-   - ✅ Added error handling for unsupported types
+1. **MetadataDelta Reconstruction**:
+   - Implement the reconstruction algorithm for metadata deltas
+   - Ensure proper handling of field changes over time
 
-2. ✅ File Reading and Streaming
-   - ✅ Implemented async file reading
-   - ✅ Added support for large files
-   - ✅ Implemented proper buffering
-   - ✅ Created streaming API for efficient processing
+2. **Clean Up Debug Output**:
+   - Remove or conditionally enable verbose logging
+   - Add configuration option for debugging level
 
-3. ✅ Real FTDC File Testing
-   - ✅ Created test fixtures with real FTDC files
-   - ✅ Added integration tests
-   - ✅ Verified document structure and metrics
-
-4. ✅ Victoria Metrics Integration
-   - ✅ Implemented conversion to InfluxDB Line Protocol
-   - ✅ Created HTTP client for Victoria Metrics
-   - ✅ Added batch processing support
-   - ✅ Added proper error handling
-   - ✅ Created integration tests with mock HTTP server
+3. **Additional Testing**:
+   - Test with more diverse FTDC files
+   - Verify correctness of column-oriented processing
+   - Add comprehensive tests for edge cases
 
 ### Medium Priority
-1. Performance Optimization
-   - Add benchmarking
-   - Optimize memory usage
-   - Profile and improve parsing speed
+1. **Performance Optimization**:
+   - Add benchmarking for key functions
+   - Optimize memory usage during decompression
+   - Implement more efficient parsing algorithms
 
-2. Error Handling Improvements
-   - Add more specific error types
-   - Improve error messages
-   - Add error recovery mechanisms
-
-3. Documentation
+2. **Documentation**:
    - Add API documentation
    - Create usage examples
-   - ✅ Document the FTDC format (added to README.md)
-   - ✅ Add usage instructions to README.md
+   - Document the FTDC format comprehensively
+   - Add detailed comments for complex algorithms
 
 ### Low Priority
-1. Additional Features
+1. **Additional Features**:
    - Add support for metric filtering
    - Implement metric aggregation
    - Add support for custom metric names
-   - ✅ Add check mode for inspecting FTDC files
 
-2. CLI Improvements
-   - ✅ Add progress reporting
-   - ✅ Implement verbose logging
-   - ✅ Add configuration options
-   - ✅ Add check mode
-
-## Technical Debt
-1. ✅ Clean up unused imports
-   - ✅ Remove `UNIX_EPOCH` from lib.rs
-   - ✅ Move `Write` to test module in compression.rs
-   - ✅ Remove unused imports from reader.rs
-   - ✅ Remove unused imports from compression.rs
-   - ✅ Remove unused `SystemTime` import from victoria_metrics_tests.rs
-   - ✅ Fixed variable mutability warnings in lib.rs
-
-2. Code Organization
-   - ✅ Refactored main.rs to separate check mode and import mode functions
-   - Consider splitting parser into smaller modules
-   - Add proper module documentation
-   - Improve code reusability
+2. **CLI Improvements**:
+   - Add progress reporting
+   - Add configuration options for debug level
 
 ## Dependencies
 Current key dependencies:
-- zstd: For compression
+- ✅ libflate: For ZLIB compression (replaced zstd)
 - bson: For document parsing
 - tokio: For async support
 - serde: For serialization
@@ -142,11 +182,9 @@ Current key dependencies:
 - structopt: For CLI argument parsing
 
 ## Notes
-- The current implementation focuses on correctness over performance
-- All tests are passing, including integration tests with real FTDC files
-- Comprehensive error handling is in place
-- The FTDC format has been thoroughly documented in the README.md
-- The code successfully handles nested document structures and different document types
-- The implementation is ready for integration with Victoria Metrics 
-- The CLI application provides a user-friendly interface for importing FTDC files 
-- All linter warnings have been addressed and fixed 
+- The implementation now correctly processes the MongoDB FTDC format
+- We've addressed the column-oriented nature of the FTDC data
+- We've implemented the complete decompression pipeline
+- We've added robust error handling for corrupt data
+- We need to implement MetadataDelta reconstruction
+- We should clean up debug output for production use
