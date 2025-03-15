@@ -5,9 +5,11 @@ use thiserror::Error;
 
 mod compression;
 mod reader;
+mod victoria_metrics;
 
 pub use compression::Compression;
 pub use reader::{FtdcReader, ReaderError, ReaderResult};
+pub use victoria_metrics::{VictoriaMetricsClient, VictoriaMetricsError};
 
 #[derive(Error, Debug)]
 pub enum FtdcError {
@@ -266,7 +268,7 @@ mod tests {
         assert!(!doc.metrics.is_empty(), "Document should contain metrics");
 
         // Test streaming
-        let mut reader = FtdcReader::new(temp_file.path()).await?;
+        let reader = FtdcReader::new(temp_file.path()).await?;
 
         let mut stream = reader.stream_documents();
         let mut count = 0;
