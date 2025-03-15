@@ -54,6 +54,69 @@ FTDC: https://github.com/mongodb/mongo/tree/master/src/mongo/db/ftdc
 
 The Phase 1 implementation will prioritize getting a working end-to-end solution before adding optimizations for performance or advanced features. This approach will validate the core concept quickly while establishing a foundation that can be expanded in later phases.
 
+## Usage
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/ftdc-importer.git
+cd ftdc-importer
+
+# Build the project
+cargo build --release
+```
+
+### Running the Importer
+
+```bash
+# Basic usage
+./target/release/ftdc-importer /path/to/ftdc/file.ftdc --vm-url http://localhost:8428
+
+# With verbose output
+./target/release/ftdc-importer /path/to/ftdc/file.ftdc --vm-url http://localhost:8428 -v
+
+# Adjust batch size
+./target/release/ftdc-importer /path/to/ftdc/file.ftdc --vm-url http://localhost:8428 --batch-size 5000
+```
+
+### Options
+
+- `--vm-url`: Victoria Metrics URL (default: http://localhost:8428)
+- `--batch-size`: Number of metrics to send in each batch (default: 1000)
+- `-v, --verbose`: Enable verbose output
+- `--check`: Check mode - analyze all metrics in the file and print statistics without sending
+
+### Check Mode
+
+The importer provides a special mode for inspecting FTDC files:
+
+```bash
+./target/release/ftdc-importer /path/to/ftdc/file.ftdc --check
+```
+
+This will display:
+- Total number of documents and metrics
+- Number of unique metric names
+- Distribution of metric types (Int32, Int64, Double)
+- Example of each metric type with line protocol format
+- Sample of unique metric names
+
+This mode is useful for understanding the content of FTDC files without actually sending data to Victoria Metrics.
+
+## Victoria Metrics Integration
+
+The importer converts FTDC metrics to InfluxDB Line Protocol format, which is compatible with Victoria Metrics. Each metric is sent with the following format:
+
+```
+mongodb_ftdc,metric_type=<type> value=<value> <timestamp>
+```
+
+Where:
+- `metric_type` is the type of the metric (double, int32, int64)
+- `value` is the metric value
+- `timestamp` is the nanosecond-precision timestamp
+
 ## Appendix: FTDC Format Insights
 
 During the implementation of this project, we discovered several important details about MongoDB's FTDC format that weren't explicitly documented:
