@@ -1,4 +1,4 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 use thiserror::Error;
 use serde::{Serialize, Deserialize};
 use bson::{doc, Document, Bson};
@@ -22,6 +22,9 @@ pub enum FtdcError {
     
     #[error("Missing required field: {0}")]
     MissingField(String),
+    
+    #[error("Unsupported metric type: {0}")]
+    UnsupportedType(String),
 }
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
@@ -32,6 +35,15 @@ pub struct MetricValue {
     pub name: String,
     pub value: f64,
     pub timestamp: SystemTime,
+    pub metric_type: MetricType,
+}
+
+/// Represents the type of metric value
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MetricType {
+    Double,
+    Int32,
+    Int64,
 }
 
 /// Represents a single FTDC document containing multiple metrics
@@ -87,16 +99,28 @@ impl FtdcParser {
         
         // Iterate over all fields in the metrics document
         for (name, value) in metrics_doc.iter() {
-            if let Bson::Double(value) = value {
-                metrics.push(MetricValue {
-                    name: name.clone(),
-                    value: *value,
-                    timestamp: SystemTime::now(), // This will be updated with the document timestamp
-                });
-            }
+            let (value, metric_type) = match value {
+                Bson::Double(v) => (*v, MetricType::Double),
+                Bson::Int32(v) => (*v as f64, MetricType::Int32),
+                Bson::Int64(v) => (*v as f64, MetricType::Int64),
+                _ => return Err(FtdcError::UnsupportedType(format!("{:?}", value))),
+            };
+            
+            metrics.push(MetricValue {
+                name: name.clone(),
+                value,
+                timestamp: SystemTime::now(), // This will be updated with the document timestamp
+                metric_type,
+            });
         }
         
         Ok(metrics)
+    }
+}
+
+impl Default for FtdcParser {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -117,12 +141,13 @@ mod tests {
     async fn test_parse_valid_document() {
         let parser = FtdcParser::new();
         
-        // Create a test BSON document
+        // Create a test BSON document with different metric types
         let doc = doc! {
             "ts": DateTime::now(),
             "metrics": {
                 "cpu": 42.5,
-                "memory": 1024.0
+                "memory": 1024,
+                "connections": 123456789012345i64
             }
         };
         
@@ -140,13 +165,19 @@ mod tests {
         assert!(result.is_ok());
         
         let doc = result.unwrap();
-        assert_eq!(doc.metrics.len(), 2);
+        assert_eq!(doc.metrics.len(), 3);
         
         // Verify metrics
         let cpu_metric = doc.metrics.iter().find(|m| m.name == "cpu").unwrap();
         assert_eq!(cpu_metric.value, 42.5);
+        assert!(matches!(cpu_metric.metric_type, MetricType::Double));
         
         let memory_metric = doc.metrics.iter().find(|m| m.name == "memory").unwrap();
         assert_eq!(memory_metric.value, 1024.0);
+        assert!(matches!(memory_metric.metric_type, MetricType::Int32));
+        
+        let connections_metric = doc.metrics.iter().find(|m| m.name == "connections").unwrap();
+        assert_eq!(connections_metric.value, 123456789012345.0);
+        assert!(matches!(connections_metric.metric_type, MetricType::Int64));
     }
 }
