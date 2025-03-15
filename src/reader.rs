@@ -6,7 +6,7 @@ use std::pin::Pin;
 use bson::{ser, Document, Bson};
 use std::time::SystemTime;
 
-use crate::{FtdcDocument, FtdcError, MetricValue, MetricType};
+use crate::{FtdcDocument, FtdcError, MetricValue, MetricType, Compression};
 
 const BUFFER_SIZE: usize = 64 * 1024; // 64KB buffer
 
@@ -108,7 +108,7 @@ impl FtdcReader {
         let mut metrics = Vec::new();
         
         for (key, value) in doc.iter() {
-            if key == "_id" || key == "type" || key == "doc" || key == "start" || key == "end" {
+            if key == "_id" || key == "type" || key == "doc" || key == "start" || key == "end" || key == "data" {
                 continue;
             }
             
@@ -143,8 +143,49 @@ impl FtdcReader {
                         metric_type: MetricType::Int64,
                     });
                 }
+                Bson::Boolean(v) => {
+                    metrics.push(MetricValue {
+                        name: metric_name,
+                        value: *v as i32 as f64,
+                        timestamp,
+                        metric_type: MetricType::Boolean,
+                    });
+                }
+                Bson::DateTime(dt) => {
+                    metrics.push(MetricValue {
+                        name: metric_name,
+                        value: dt.timestamp_millis() as f64,
+                        timestamp,
+                        metric_type: MetricType::DateTime,
+                    });
+                }
+                Bson::Timestamp(ts) => {
+                    metrics.push(MetricValue {
+                        name: format!("{}_time", metric_name),
+                        value: ts.time as f64,
+                        timestamp,
+                        metric_type: MetricType::Timestamp,
+                    });
+                    metrics.push(MetricValue {
+                        name: format!("{}_increment", metric_name),
+                        value: ts.increment as f64,
+                        timestamp,
+                        metric_type: MetricType::Timestamp,
+                    });
+                }
+                Bson::Array(arr) => {
+                    for (i, item) in arr.iter().enumerate() {
+                        let array_metric_name = format!("{}_{}", metric_name, i);
+                        match item {
+                            Bson::Document(subdoc) => {
+                                let nested_metrics = self.extract_metrics(subdoc, timestamp, &array_metric_name)?;
+                                metrics.extend(nested_metrics);
+                            }
+                            _ => self.extract_metric_value(item, timestamp, &array_metric_name, &mut metrics)?,
+                        }
+                    }
+                }
                 Bson::Document(subdoc) => {
-                    // Recursively process nested documents
                     let nested_metrics = self.extract_metrics(subdoc, timestamp, &metric_name)?;
                     metrics.extend(nested_metrics);
                 }
@@ -153,6 +194,70 @@ impl FtdcReader {
         }
         
         Ok(metrics)
+    }
+
+    /// Helper function to extract a single metric value from a BSON value
+    fn extract_metric_value(&self, value: &Bson, timestamp: SystemTime, name: &str, metrics: &mut Vec<MetricValue>) -> ReaderResult<()> {
+        match value {
+            Bson::Double(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v,
+                    timestamp,
+                    metric_type: MetricType::Double,
+                });
+            }
+            Bson::Int32(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v as f64,
+                    timestamp,
+                    metric_type: MetricType::Int32,
+                });
+            }
+            Bson::Int64(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v as f64,
+                    timestamp,
+                    metric_type: MetricType::Int64,
+                });
+            }
+            Bson::Boolean(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v as i32 as f64,
+                    timestamp,
+                    metric_type: MetricType::Boolean,
+                });
+            }
+            Bson::DateTime(dt) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: dt.timestamp_millis() as f64,
+                    timestamp,
+                    metric_type: MetricType::DateTime,
+                });
+            }
+            Bson::Timestamp(ts) => {
+                metrics.push(MetricValue {
+                    name: format!("{}_time", name),
+                    value: ts.time as f64,
+                    timestamp,
+                    metric_type: MetricType::Timestamp,
+                });
+                metrics.push(MetricValue {
+                    name: format!("{}_increment", name),
+                    value: ts.increment as f64,
+                    timestamp,
+                    metric_type: MetricType::Timestamp,
+                });
+            }
+            // Skip string values - they don't represent numeric metrics
+            Bson::String(_) => {}
+            _ => return Err(ReaderError::InvalidFile(format!("Unsupported BSON type: {:?}", value))),
+        }
+        Ok(())
     }
 
     /// Reads and processes the next FTDC document
@@ -176,17 +281,156 @@ impl FtdcReader {
             FtdcDocType::Metadata => {
                 // Store reference document for future metric parsing
                 if let Some(Bson::Document(ref_doc)) = doc.get("doc") {
+                    println!("Found reference document with {} fields", ref_doc.len());
                     self.reference_doc = Some(ref_doc.clone());
                     let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
                     Ok(Some(FtdcDocument { timestamp, metrics }))
                 } else {
+                    println!("WARNING: Metadata document missing 'doc' field");
                     Box::pin(self.read_next()).await
                 }
             }
             FtdcDocType::Metric => {
                 if let Some(ref_doc) = &self.reference_doc {
-                    let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                    Ok(Some(FtdcDocument { timestamp, metrics }))
+                    // Extract and decompress metric data
+                    if let Some(Bson::Binary(bin)) = doc.get("data") {
+                        println!("Processing metric document with binary data: {} bytes", bin.bytes.len());
+                        
+                        // Extract numeric values from reference document to use for delta decoding
+                        let mut reference_values = Vec::new();
+                        let mut ref_keys = Vec::new();
+                        
+                        fn extract_numeric_values_recursive(doc: &Document, prefix: &str, keys: &mut Vec<String>, values: &mut Vec<u64>) {
+                            for (key, value) in doc.iter() {
+                                let field_name = if prefix.is_empty() {
+                                    key.clone()
+                                } else {
+                                    format!("{}_{}", prefix, key)
+                                };
+                                
+                                match value {
+                                    Bson::Double(v) => {
+                                        keys.push(field_name);
+                                        values.push(v.to_bits());
+                                    },
+                                    Bson::Int32(v) => {
+                                        keys.push(field_name);
+                                        values.push(*v as u64);
+                                    },
+                                    Bson::Int64(v) => {
+                                        keys.push(field_name);
+                                        values.push(*v as u64);
+                                    },
+                                    Bson::Boolean(v) => {
+                                        keys.push(field_name);
+                                        values.push(*v as u64);
+                                    },
+                                    Bson::Document(subdoc) => {
+                                        extract_numeric_values_recursive(subdoc, &field_name, keys, values);
+                                    },
+                                    Bson::Array(arr) => {
+                                        for (i, item) in arr.iter().enumerate() {
+                                            let array_name = format!("{}_{}", field_name, i);
+                                            match item {
+                                                Bson::Document(subdoc) => {
+                                                    extract_numeric_values_recursive(subdoc, &array_name, keys, values);
+                                                },
+                                                Bson::Double(v) => {
+                                                    keys.push(array_name);
+                                                    values.push(v.to_bits());
+                                                },
+                                                Bson::Int32(v) => {
+                                                    keys.push(array_name);
+                                                    values.push(*v as u64);
+                                                },
+                                                Bson::Int64(v) => {
+                                                    keys.push(array_name);
+                                                    values.push(*v as u64);
+                                                },
+                                                Bson::Boolean(v) => {
+                                                    keys.push(array_name);
+                                                    values.push(*v as u64);
+                                                },
+                                                _ => {}
+                                            }
+                                        }
+                                    },
+                                    _ => {}
+                                }
+                            }
+                        }
+                        
+                        extract_numeric_values_recursive(ref_doc, "", &mut ref_keys, &mut reference_values);
+                        
+                        println!("Reference document has {} numeric values", reference_values.len());
+                        
+                        // Decompress using reference values
+                        let decompressed = match Compression::decompress_ftdc(&bin.bytes, Some(&reference_values)) {
+                            Ok(values) => values,
+                            Err(e) => {
+                                println!("Decompression error: {:?}", e);
+                                // Fallback to using reference document if decompression fails
+                                let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
+                                return Ok(Some(FtdcDocument { timestamp, metrics }));
+                            }
+                        };
+                        
+                        println!("Successfully decompressed {} values", decompressed.len());
+                        
+                        // Create metrics directly from the column-oriented data
+                        let mut metrics = Vec::new();
+                        
+                        // Skip the first value which is the timestamp in seconds
+                        let metric_count = ref_keys.len();
+                        if decompressed.len() >= metric_count && !ref_keys.is_empty() {
+                            for (i, key) in ref_keys.iter().enumerate() {
+                                if i < decompressed.len() {
+                                    let value = decompressed[i];
+                                    
+                                    // Determine metric type from key naming convention
+                                    // (This would be better done with a proper schema)
+                                    let metric_type = if key.contains("_timestamp_") || key.contains("Time") {
+                                        MetricType::DateTime
+                                    } else if key.contains("_ismaster_") || key.contains("Enabled") || key.contains("_ok") {
+                                        MetricType::Boolean
+                                    } else if value > 0x7FFFFFFF {
+                                        MetricType::Int64
+                                    } else {
+                                        MetricType::Int32
+                                    };
+                                    
+                                    // Convert value based on type
+                                    let f64_value = match metric_type {
+                                        MetricType::Double => f64::from_bits(value),
+                                        MetricType::Int32 => value as i32 as f64,
+                                        MetricType::Int64 => value as i64 as f64,
+                                        MetricType::Boolean => (value != 0) as i32 as f64,
+                                        MetricType::DateTime => value as f64,
+                                        _ => value as f64
+                                    };
+                                    
+                                    metrics.push(MetricValue {
+                                        name: key.clone(),
+                                        value: f64_value,
+                                        timestamp,
+                                        metric_type,
+                                    });
+                                }
+                            }
+                        } else {
+                            println!("WARNING: Decompressed data size ({}) doesn't match reference keys count ({})", 
+                                decompressed.len(), metric_count);
+                            // Fallback to using reference document
+                            let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
+                            return Ok(Some(FtdcDocument { timestamp, metrics }));
+                        }
+                        
+                        Ok(Some(FtdcDocument { timestamp, metrics }))
+                    } else {
+                        // Fallback to using reference document if no compressed data
+                        let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
+                        Ok(Some(FtdcDocument { timestamp, metrics }))
+                    }
                 } else {
                     Err(ReaderError::InvalidFile("No reference document available".to_string()))
                 }
