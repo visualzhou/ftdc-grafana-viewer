@@ -30,6 +30,9 @@ pub enum FtdcError {
 
     #[error("Unsupported metric type: {0}")]
     UnsupportedType(String),
+
+    #[error("Compression error: {0}")]
+    Compression(String),
 }
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
@@ -49,6 +52,10 @@ pub enum MetricType {
     Double,
     Int32,
     Int64,
+    Boolean,
+    DateTime,
+    Timestamp,
+    Decimal128,
 }
 
 /// Represents a single FTDC document containing multiple metrics
@@ -141,14 +148,116 @@ impl FtdcParser {
                         metric_type: MetricType::Int64,
                     });
                 }
+                Bson::Boolean(v) => {
+                    metrics.push(MetricValue {
+                        name: metric_name,
+                        value: *v as i32 as f64,
+                        timestamp,
+                        metric_type: MetricType::Boolean,
+                    });
+                }
+                Bson::DateTime(dt) => {
+                    metrics.push(MetricValue {
+                        name: metric_name,
+                        value: dt.timestamp_millis() as f64,
+                        timestamp,
+                        metric_type: MetricType::DateTime,
+                    });
+                }
+                Bson::Timestamp(ts) => {
+                    metrics.push(MetricValue {
+                        name: format!("{}_time", metric_name),
+                        value: ts.time as f64,
+                        timestamp,
+                        metric_type: MetricType::Timestamp,
+                    });
+                    metrics.push(MetricValue {
+                        name: format!("{}_increment", metric_name),
+                        value: ts.increment as f64,
+                        timestamp,
+                        metric_type: MetricType::Timestamp,
+                    });
+                }
+                Bson::Array(arr) => {
+                    for (i, item) in arr.iter().enumerate() {
+                        let array_metric_name = format!("{}_{}", metric_name, i);
+                        match item {
+                            Bson::Document(subdoc) => {
+                                self.extract_metrics_from_doc(subdoc, timestamp, &array_metric_name, metrics)?;
+                            }
+                            _ => self.extract_metric_value(item, timestamp, &array_metric_name, metrics)?,
+                        }
+                    }
+                }
                 Bson::Document(subdoc) => {
-                    // Recursively process nested documents
                     self.extract_metrics_from_doc(subdoc, timestamp, &metric_name, metrics)?;
                 }
                 _ => continue,
             }
         }
 
+        Ok(())
+    }
+
+    /// Helper function to extract a single metric value from a BSON value
+    fn extract_metric_value(&self, value: &Bson, timestamp: SystemTime, name: &str, metrics: &mut Vec<MetricValue>) -> Result<()> {
+        match value {
+            Bson::Double(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v,
+                    timestamp,
+                    metric_type: MetricType::Double,
+                });
+            }
+            Bson::Int32(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v as f64,
+                    timestamp,
+                    metric_type: MetricType::Int32,
+                });
+            }
+            Bson::Int64(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v as f64,
+                    timestamp,
+                    metric_type: MetricType::Int64,
+                });
+            }
+            Bson::Boolean(v) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: *v as i32 as f64,
+                    timestamp,
+                    metric_type: MetricType::Boolean,
+                });
+            }
+            Bson::DateTime(dt) => {
+                metrics.push(MetricValue {
+                    name: name.to_string(),
+                    value: dt.timestamp_millis() as f64,
+                    timestamp,
+                    metric_type: MetricType::DateTime,
+                });
+            }
+            Bson::Timestamp(ts) => {
+                metrics.push(MetricValue {
+                    name: format!("{}_time", name),
+                    value: ts.time as f64,
+                    timestamp,
+                    metric_type: MetricType::Timestamp,
+                });
+                metrics.push(MetricValue {
+                    name: format!("{}_increment", name),
+                    value: ts.increment as f64,
+                    timestamp,
+                    metric_type: MetricType::Timestamp,
+                });
+            }
+            _ => return Err(FtdcError::UnsupportedType(format!("Unsupported BSON type: {:?}", value))),
+        }
         Ok(())
     }
 }

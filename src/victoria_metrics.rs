@@ -112,6 +112,10 @@ impl ToString for crate::MetricType {
             crate::MetricType::Double => "Double".to_string(),
             crate::MetricType::Int32 => "Int32".to_string(),
             crate::MetricType::Int64 => "Int64".to_string(),
+            crate::MetricType::Boolean => "Boolean".to_string(),
+            crate::MetricType::DateTime => "DateTime".to_string(),
+            crate::MetricType::Timestamp => "Timestamp".to_string(),
+            crate::MetricType::Decimal128 => "Decimal128".to_string(),
         }
     }
 }
@@ -125,15 +129,29 @@ mod tests {
     #[test]
     fn test_metric_to_line_protocol() {
         let timestamp = SystemTime::UNIX_EPOCH + Duration::from_secs(1615000000);
-        let metric = MetricValue {
-            name: "test_metric".to_string(),
-            value: 42.5,
-            timestamp,
-            metric_type: MetricType::Double,
-        };
+        
+        // Test each metric type
+        let test_cases = vec![
+            (MetricType::Double, 42.5, "double"),
+            (MetricType::Int32, 42.0, "int32"),
+            (MetricType::Int64, 42.0, "int64"),
+            (MetricType::Boolean, 1.0, "boolean"),
+            (MetricType::DateTime, 1615000000000.0, "datetime"),
+            (MetricType::Timestamp, 1615000000.0, "timestamp"),
+            (MetricType::Decimal128, 42.5, "decimal128"),
+        ];
 
-        let line = VictoriaMetricsClient::metric_to_line_protocol(&metric).unwrap();
-        assert!(line.starts_with("mongodb_ftdc,metric_type=double,metric_name=test_metric value=42.5 "));
+        for (metric_type, value, expected_type) in test_cases {
+            let metric = MetricValue {
+                name: "test_metric".to_string(),
+                value,
+                timestamp,
+                metric_type,
+            };
+
+            let line = VictoriaMetricsClient::metric_to_line_protocol(&metric).unwrap();
+            assert!(line.starts_with(&format!("mongodb_ftdc,metric_type={},metric_name=test_metric value={} ", expected_type, value)));
+        }
     }
 
     #[test]
