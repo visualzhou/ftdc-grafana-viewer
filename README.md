@@ -53,3 +53,101 @@ FTDC: https://github.com/mongodb/mongo/tree/master/src/mongo/db/ftdc
 ## Implementation Notes
 
 The Phase 1 implementation will prioritize getting a working end-to-end solution before adding optimizations for performance or advanced features. This approach will validate the core concept quickly while establishing a foundation that can be expanded in later phases.
+
+## Appendix: FTDC Format Insights
+
+During the implementation of this project, we discovered several important details about MongoDB's FTDC format that weren't explicitly documented:
+
+### FTDC File Structure
+
+1. **No Magic Header**: Unlike many binary formats, FTDC files don't have a magic header or signature bytes. Each file is simply a sequence of BSON documents.
+
+2. **Document Format**: Each document in an FTDC file follows this structure:
+   - 4-byte size prefix (little-endian) indicating the total document size in bytes
+   - BSON document data (including the size bytes as part of the BSON format)
+
+3. **Document Types**: FTDC files contain three types of documents:
+   - **Metadata (type 0)**: Contains reference metrics structure and initial values
+   - **Metric (type 1)**: Contains metric values that reference the structure defined in metadata
+   - **Metadata Delta (type 2)**: Contains changes to the metadata structure
+
+### Document Structure
+
+1. **Common Fields**:
+   - `_id`: Timestamp as BSON DateTime, representing when metrics were collected
+   - `type`: Integer indicating document type (0=Metadata, 1=Metric, 2=MetadataDelta)
+   - `doc`: For metadata documents, contains the actual metrics structure
+
+2. **Nested Metrics**: Metrics are often deeply nested in a hierarchical structure:
+   ```
+   sysMaxOpenFiles: {
+     start: <timestamp>,
+     sys_max_file_handles: <value>,
+     end: <timestamp>
+   }
+   ```
+
+3. **Metric Types**: Metrics can be various BSON types:
+   - Double (floating point values)
+   - Int32 (32-bit integers)
+   - Int64 (64-bit integers)
+   - Nested documents (containing sub-metrics)
+
+### Surprising Aspects
+
+1. **Reference-Based Model**: The first document (metadata) establishes a reference structure that subsequent metric documents use. This is more efficient than repeating the structure in every document.
+
+2. **No Compression Within Documents**: While the MongoDB documentation mentions compression, individual BSON documents within the FTDC file are not compressed. The compression mentioned likely refers to the delta encoding used between metric documents.
+
+3. **Hierarchical Naming**: Metric names follow a hierarchical pattern based on their position in nested documents (e.g., `ulimits_cpuTime_secs_soft`).
+
+4. **Timestamp Handling**: Each metric collection has an overall timestamp (`_id`), but individual metrics or sections may also have their own start/end timestamps.
+
+5. **Special Values**: Some metrics use special values like `-1` or maximum int64 values to represent "unlimited" or "not applicable" states.
+
+### Example Metrics
+
+From our analysis of real FTDC files, we observed these common metrics:
+
+1. **System Resource Metrics**:
+   - `sysMaxOpenFiles_sys_max_file_handles`: Maximum number of file handles allowed by the system
+   - `ulimits_cpuTime_secs_soft/hard`: CPU time limits (soft and hard)
+   - `ulimits_fileSize_blocks_soft/hard`: File size limits
+   - `ulimits_stackSize_kb_soft/hard`: Stack size limits
+   - `ulimits_dataSegSize_kb_soft/hard`: Data segment size limits
+
+2. **MongoDB-Specific Metrics**:
+   - `hostInfo_system_numNumaNodes`: Number of NUMA nodes
+   - `hostInfo_extra_pageSize`: System page size
+   - `buildInfo_ok`: Build information status
+   - `getCmdLineOpts_parsed_net_port`: Configured MongoDB port
+
+3. **Performance Metrics**:
+   - Memory usage statistics
+   - Connection counts
+   - Operation counters (queries, inserts, updates, deletes)
+   - Replication lag metrics (for replica sets)
+
+### Implementation Challenges and Lessons Learned
+
+1. **BSON Document Handling**: The BSON format requires careful handling of document sizes and structure. We found that:
+   - The 4-byte size prefix must be included in the document data when parsing
+   - BSON documents must be read in their entirety to be valid
+   - Error handling for malformed BSON is essential for robustness
+
+2. **Recursive Metric Extraction**: Extracting metrics from nested documents required a recursive approach:
+   - Metric names are constructed by joining parent and child keys with underscores
+   - Different data types (Double, Int32, Int64) need proper conversion to a common format
+   - Skipping special fields like timestamps and metadata is necessary to avoid duplicate metrics
+
+3. **Document Type Handling**: Different document types require different processing:
+   - Metadata documents establish the reference structure and provide initial values
+   - Metric documents rely on the reference structure but provide updated values
+   - Metadata delta documents can be skipped in simple implementations
+
+4. **Streaming Large Files**: For efficient processing of large FTDC files:
+   - Buffered reading is essential for performance
+   - Async processing allows for better resource utilization
+   - Stream-based APIs provide a clean interface for consumers
+
+This understanding of the FTDC format was crucial for implementing an effective parser that can handle real-world MongoDB diagnostic data files.

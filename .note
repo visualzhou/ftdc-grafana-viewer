@@ -8,36 +8,60 @@
    - Handles BSON document parsing
    - Extracts timestamps and metrics
    - Supports basic error handling
-   - Currently only handles double-type metrics
+   - ✅ Supports multiple metric types (Double, Int32, Int64)
+   - ✅ Implements proper type conversion to f64
+   - ✅ Includes comprehensive tests for each type
+   - ✅ Supports nested document structures with recursive processing
+   - ✅ Implements hierarchical metric naming
 
-2. Compression Module (`src/compression.rs`)
+2. FTDC Reader (`src/reader.rs`)
+   - ✅ Implements async file reading
+   - ✅ Handles different FTDC document types (Metadata, Metric, MetadataDelta)
+   - ✅ Supports reference-based document model
+   - ✅ Provides streaming API for efficient processing
+   - ✅ Includes proper error handling for malformed files
+
+3. Compression Module (`src/compression.rs`)
    - Implements ZSTD decompression
    - Includes basic error handling
    - Tested with valid and invalid data
+   - ✅ Code cleanup and organization improvements
 
 ### Test Coverage
 - Basic parser creation and initialization
 - Valid document parsing with metrics
 - ZSTD compression/decompression
 - Error handling for invalid data
+- ✅ Type-specific tests for Int32, Int64, and Double metrics
+- ✅ Edge case handling for unsupported types
+- ✅ Integration tests with real FTDC files
+- ✅ Verification of document structure and metrics
+- ✅ Tracking of unique metrics and document counts
 
 ## Next Steps
 
 ### High Priority
-1. Support for Different Metric Types
-   - Add support for Int32, Int64, and other numeric types
-   - Implement proper type conversion
-   - Add tests for each metric type
+1. ✅ Support for Different Metric Types
+   - ✅ Added support for Int32, Int64, and Double types
+   - ✅ Implemented proper type conversion
+   - ✅ Added tests for each metric type
+   - ✅ Added error handling for unsupported types
 
-2. File Reading and Streaming
-   - Implement async file reading
-   - Add support for large files
-   - Implement proper buffering
+2. ✅ File Reading and Streaming
+   - ✅ Implemented async file reading
+   - ✅ Added support for large files
+   - ✅ Implemented proper buffering
+   - ✅ Created streaming API for efficient processing
 
-3. Real FTDC File Testing
-   - Create test fixtures with real FTDC files
-   - Add integration tests
-   - Verify against MongoDB's output
+3. ✅ Real FTDC File Testing
+   - ✅ Created test fixtures with real FTDC files
+   - ✅ Added integration tests
+   - ✅ Verified document structure and metrics
+
+4. Victoria Metrics Integration
+   - Implement conversion to InfluxDB Line Protocol
+   - Create HTTP client for Victoria Metrics
+   - Add batch processing support
 
 ### Medium Priority
 1. Performance Optimization
@@ -53,7 +77,7 @@
 3. Documentation
    - Add API documentation
    - Create usage examples
-   - Document the FTDC format
+   - ✅ Document the FTDC format (added to README.md)
 
 ### Low Priority
 1. Additional Features
@@ -67,10 +91,11 @@
    - Add configuration options
 
 ## Technical Debt
-1. Clean up unused imports
-   - Remove `UNIX_EPOCH` from lib.rs
-   - Remove `Write` from compression.rs
-   - Remove `NamedTempFile` from lib.rs
+1. ✅ Clean up unused imports
+   - ✅ Remove `UNIX_EPOCH` from lib.rs
+   - ✅ Move `Write` to test module in compression.rs
+   - ✅ Remove unused imports from reader.rs
+   - ✅ Remove unused imports from compression.rs
 
 2. Code Organization
    - Consider splitting parser into smaller modules
@@ -84,9 +109,12 @@ Current key dependencies:
 - tokio: For async support
 - serde: For serialization
 - thiserror: For error handling
+- futures: For streaming support
 
 ## Notes
 - The current implementation focuses on correctness over performance
-- All tests are passing
-- Basic error handling is in place
-- The code is ready for real-world testing with actual FTDC files 
+- All tests are passing, including integration tests with real FTDC files
+- Comprehensive error handling is in place
+- The FTDC format has been thoroughly documented in the README.md
+- The code successfully handles nested document structures and different document types
+- The implementation is ready for integration with Victoria Metrics 

@@ -1,20 +1,29 @@
-use std::io::Read;
-use crate::{Result, FtdcError};
-use zstd::Decoder;
+use crate::FtdcError;
+use std::io::Write;
 
 pub struct Compression;
 
 impl Compression {
     /// Decompresses ZSTD-compressed data
-    pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
-        let mut decoder = Decoder::new(data)
+    pub fn decompress(data: &[u8]) -> Result<Vec<u8>, FtdcError> {
+        let mut decoder = zstd::Decoder::new(data).map_err(|e| FtdcError::Zstd(e.to_string()))?;
+
+        let mut decompressed = Vec::new();
+        std::io::copy(&mut decoder, &mut decompressed)
             .map_err(|e| FtdcError::Zstd(e.to_string()))?;
-        
-        let mut buffer = Vec::new();
-        decoder.read_to_end(&mut buffer)
+
+        Ok(decompressed)
+    }
+
+    pub fn compress(data: &[u8]) -> Result<Vec<u8>, FtdcError> {
+        let mut encoder =
+            zstd::Encoder::new(Vec::new(), 1).map_err(|e| FtdcError::Zstd(e.to_string()))?;
+
+        encoder
+            .write_all(data)
             .map_err(|e| FtdcError::Zstd(e.to_string()))?;
-        
-        Ok(buffer)
+
+        encoder.finish().map_err(|e| FtdcError::Zstd(e.to_string()))
     }
 }
 
@@ -40,4 +49,4 @@ mod tests {
         let invalid_data = b"Not a valid ZSTD stream";
         assert!(Compression::decompress(invalid_data).is_err());
     }
-} 
+}
