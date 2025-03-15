@@ -99,9 +99,12 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
         println!("  Line Protocol: {}", line[0]);
     }
     
-    // Print some example metric names
-    println!("\nSample of unique metric names (first 20):");
-    for (i, name) in unique_metric_names.iter().take(20).enumerate() {
+    // Print all unique metric names
+    println!("\nAll unique metric names ({} total):", unique_metric_names.len());
+    let mut sorted_metrics: Vec<_> = unique_metric_names.iter().collect();
+    sorted_metrics.sort(); // Sort alphabetically for easier reading
+    
+    for (i, name) in sorted_metrics.iter().enumerate() {
         println!("{}. {}", i+1, name);
     }
     
