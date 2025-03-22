@@ -57,6 +57,15 @@ async fn test_ftdc_decoder_layers() -> io::Result<()> {
         decompressed_chunk.compressed_metrics.len()
     );
 
+    // Create a document reconstructor early (moved from below)
+    let reconstructor: MetricDocumentReconstructor =
+        MetricDocumentReconstructor::new(decompressed_chunk.reference_doc.clone())
+            .expect("Failed to create document reconstructor");
+
+    println!("\nLayer 2.5: Early Document Reconstructor");
+    println!("  Number of metrics: {}", reconstructor.metric_count());
+    println!("  (Metric paths are no longer stored explicitly)");
+
     // Layer 3: Decode the metrics array
     let metrics_decoder = MetricsArrayDecoder::new();
     match metrics_decoder.decode_metrics_array(
@@ -75,14 +84,9 @@ async fn test_ftdc_decoder_layers() -> io::Result<()> {
             println!("  Number of samples: {}", sample_count);
             println!("  Metrics per sample: {}", metrics_per_sample);
 
-            // Layer 4: Create a document reconstructor
-            let reconstructor =
-                MetricDocumentReconstructor::new(decompressed_chunk.reference_doc.clone())
-                    .expect("Failed to create document reconstructor");
-
+            // Layer 4: Use the document reconstructor (already created above)
             println!("\nLayer 4: Document Reconstructor");
-            println!("  Number of metrics: {}", reconstructor.metric_count());
-            println!("  (Metric paths are no longer stored explicitly)");
+            println!("  Using reconstructor created earlier");
 
             // Apply delta decoding to the first sample
             if metrics_array.len() >= metrics_per_sample {
