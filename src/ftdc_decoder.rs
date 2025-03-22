@@ -216,7 +216,11 @@ impl MetricDocumentReconstructor {
     fn count_numeric_fields_recursive(doc: &Document, count: &mut usize) {
         for (_, value) in doc.iter() {
             match value {
-                Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) | Bson::DateTime(_) => {
+                Bson::Double(_)
+                | Bson::Int32(_)
+                | Bson::Int64(_)
+                | Bson::DateTime(_)
+                | Bson::Boolean(_) => {
                     *count += 1;
                 }
                 Bson::Timestamp(_) => {
@@ -246,6 +250,7 @@ impl MetricDocumentReconstructor {
             Bson::Int32(i) => Some(*i as u64),
             Bson::Int64(i) => Some(*i as u64),
             Bson::DateTime(dt) => Some(dt.timestamp_millis() as u64),
+            Bson::Boolean(b) => Some(if *b { 1 } else { 0 }),
             // Timestamp is handled separately, using two values instead of one
             _ => None,
         }
@@ -258,6 +263,7 @@ impl MetricDocumentReconstructor {
             Bson::Int32(_) => Bson::Int32(value as i32),
             Bson::Int64(_) => Bson::Int64(value as i64),
             Bson::DateTime(_) => Bson::DateTime(bson::DateTime::from_millis(value as i64)),
+            Bson::Boolean(_) => Bson::Boolean(value != 0),
             // Timestamp is handled separately, using two values instead of one
             _ => Bson::Int64(value as i64), // Fallback
         }
@@ -269,7 +275,11 @@ impl MetricDocumentReconstructor {
 
         for (_key, value) in doc.iter_mut() {
             match value {
-                Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) | Bson::DateTime(_) => {
+                Bson::Double(_)
+                | Bson::Int32(_)
+                | Bson::Int64(_)
+                | Bson::DateTime(_)
+                | Bson::Boolean(_) => {
                     if value_index < values.len() {
                         *value = Self::u64_to_bson(values[value_index], value);
                         value_index += 1;
@@ -479,6 +489,43 @@ mod tests {
 
         let count = MetricDocumentReconstructor::count_numeric_fields(&doc);
         assert_eq!(count, 4);
+    }
+
+    #[test]
+    fn test_boolean_values() {
+        // Create a document with boolean fields
+        let reference_doc = doc! {
+            "counter": 100i32,
+            "flag1": true,
+            "flag2": false,
+            "nested": {
+                "flag3": true
+            }
+        };
+
+        // Create a reconstructor
+        let reconstructor = MetricDocumentReconstructor::new(reference_doc.clone()).unwrap();
+
+        // Should count 4 metrics: 1 integer and 3 booleans
+        assert_eq!(reconstructor.metric_count(), 4);
+
+        // Create a document with values
+        let timestamp = bson::DateTime::now();
+        let doc = reconstructor
+            .reconstruct_document(&[200, 1, 0, 1], timestamp)
+            .unwrap();
+
+        // Verify all values including booleans were set correctly
+        assert_eq!(doc.get_i32("counter").unwrap(), 200);
+        assert_eq!(doc.get_bool("flag1").unwrap(), true);
+        assert_eq!(doc.get_bool("flag2").unwrap(), false);
+        assert_eq!(
+            doc.get_document("nested")
+                .unwrap()
+                .get_bool("flag3")
+                .unwrap(),
+            true
+        );
     }
 
     #[test]

@@ -65,6 +65,7 @@ async fn test_ftdc_decoder_layers() -> io::Result<()> {
     println!("\nLayer 2.5: Early Document Reconstructor");
     println!("  Number of metrics: {}", reconstructor.metric_count());
     println!("  (Metric paths are no longer stored explicitly)");
+    println!("  Metric types: Double, Int32, Int64, DateTime, Bool (should all be counted)");
 
     // Layer 3: Decode the metrics array
     let metrics_decoder = MetricsArrayDecoder::new();
@@ -215,7 +216,7 @@ fn count_metrics(doc: &Document) -> usize {
 
     for (_, value) in doc.iter() {
         match value {
-            Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) => {
+            Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) | Bson::Boolean(_) => {
                 count += 1;
             }
             Bson::Document(subdoc) => {
