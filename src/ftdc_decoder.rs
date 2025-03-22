@@ -405,12 +405,23 @@ impl FtdcDecoder {
         let mut samples = Vec::new();
         let mut previous_values = vec![0u64; decompressed_chunk.metric_count as usize];
 
-        for (i, row) in metrics_array.iter().enumerate() {
+        // Calculate how many metrics per sample
+        let metrics_per_sample = decompressed_chunk.metric_count as usize;
+        let sample_count = decompressed_chunk.sample_count as usize;
+
+        // For each sample
+        for i in 0..sample_count {
             // Apply delta decoding
-            let mut absolute_values = vec![0u64; decompressed_chunk.metric_count as usize];
-            for j in 0..decompressed_chunk.metric_count as usize {
-                if j < row.len() {
-                    absolute_values[j] = previous_values[j].saturating_add(row[j]);
+            let mut absolute_values = vec![0u64; metrics_per_sample];
+
+            // Process each metric in this sample
+            for j in 0..metrics_per_sample {
+                // Calculate the index in the flat array
+                let index = i * metrics_per_sample + j;
+
+                if index < metrics_array.len() {
+                    // Get the value and apply delta decoding
+                    absolute_values[j] = previous_values[j].saturating_add(metrics_array[index]);
                     previous_values[j] = absolute_values[j];
                 }
             }
