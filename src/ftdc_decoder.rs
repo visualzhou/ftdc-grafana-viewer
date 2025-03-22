@@ -1,8 +1,8 @@
+use crate::varint;
 use bson::{Bson, Document};
 use flate2::read::ZlibDecoder;
 use std::io::{self, Read};
 use thiserror::Error;
-use crate::varint;
 
 /// Errors that can occur during FTDC decoding
 #[derive(Error, Debug)]

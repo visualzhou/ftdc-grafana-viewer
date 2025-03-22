@@ -6,8 +6,8 @@ use thiserror::Error;
 mod compression;
 mod ftdc_decoder;
 mod reader;
-mod victoria_metrics;
 mod varint;
+mod victoria_metrics;
 
 pub use compression::Compression;
 pub use ftdc_decoder::{
