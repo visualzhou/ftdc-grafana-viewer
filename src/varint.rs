@@ -80,10 +80,10 @@ pub fn decode_varint(input: &[u8]) -> io::Result<(u64, usize)> {
 
     for (i, &byte) in input.iter().enumerate() {
         let bytes_read = i + 1;
-        
+
         // Extract the 7 bits of data from the byte
         let value = (byte & 0x7F) as u64;
-        
+
         // Add the bits to the result at the current shift position
         result |= value << shift;
 
@@ -94,7 +94,7 @@ pub fn decode_varint(input: &[u8]) -> io::Result<(u64, usize)> {
 
         // For each byte, we use 7 more bits of the output value
         shift += 7;
-        
+
         // Sanity check: we can only encode up to 64 bits
         if shift > 63 {
             return Err(io::Error::new(
@@ -118,18 +118,32 @@ mod tests {
     #[test]
     fn test_varint_encode_decode_simple() {
         let test_cases = vec![
-            0u64, 1, 127, 128, 129, 255, 256, 
-            0x7FFF, 0x8000, 0xFFFF, 0x10000,
-            0x7FFFFFFF, 0x80000000, 0xFFFFFFFF, 0x100000000,
-            0x7FFFFFFFFFFFFFFF, 0x8000000000000000, 0xFFFFFFFFFFFFFFFF,
+            0u64,
+            1,
+            127,
+            128,
+            129,
+            255,
+            256,
+            0x7FFF,
+            0x8000,
+            0xFFFF,
+            0x10000,
+            0x7FFFFFFF,
+            0x80000000,
+            0xFFFFFFFF,
+            0x100000000,
+            0x7FFFFFFFFFFFFFFF,
+            0x8000000000000000,
+            0xFFFFFFFFFFFFFFFF,
         ];
-        
+
         for &value in &test_cases {
             let mut buf = [0u8; MAX_VARINT_SIZE_64];
             let written = encode_varint(value, &mut buf).unwrap();
-            
+
             let (decoded, read) = decode_varint(&buf).unwrap();
-            
+
             assert_eq!(value, decoded, "Value mismatch for {}", value);
             assert_eq!(written, read, "Size mismatch for {}", value);
         }
@@ -138,25 +152,43 @@ mod tests {
     #[test]
     fn test_varint_vec_encode() {
         let test_cases = vec![
-            0u64, 1, 127, 128, 129, 255, 256, 
-            0x7FFF, 0x8000, 0xFFFF, 0x10000,
-            0x7FFFFFFF, 0x80000000, 0xFFFFFFFF, 0x100000000,
-            0x7FFFFFFFFFFFFFFF, 0x8000000000000000, 0xFFFFFFFFFFFFFFFF,
+            0u64,
+            1,
+            127,
+            128,
+            129,
+            255,
+            256,
+            0x7FFF,
+            0x8000,
+            0xFFFF,
+            0x10000,
+            0x7FFFFFFF,
+            0x80000000,
+            0xFFFFFFFF,
+            0x100000000,
+            0x7FFFFFFFFFFFFFFF,
+            0x8000000000000000,
+            0xFFFFFFFFFFFFFFFF,
         ];
-        
+
         for &value in &test_cases {
             // Using vec
             let mut vec = Vec::new();
             let written_vec = encode_varint_vec(value, &mut vec).unwrap();
-            
+
             // Using array
             let mut buf = [0u8; MAX_VARINT_SIZE_64];
             let written_buf = encode_varint(value, &mut buf).unwrap();
-            
+
             // Compare results
-            assert_eq!(written_vec, written_buf, "Size mismatch for vec vs buf for {}", value);
+            assert_eq!(
+                written_vec, written_buf,
+                "Size mismatch for vec vs buf for {}",
+                value
+            );
             assert_eq!(&vec, &buf[0..written_buf], "Content mismatch for {}", value);
-            
+
             // Decode from vec
             let (decoded, read) = decode_varint(&vec).unwrap();
             assert_eq!(value, decoded, "Value mismatch for {}", value);
@@ -170,30 +202,51 @@ mod tests {
         assert_eq!(encode_varint(0, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 1);
         assert_eq!(encode_varint(127, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 1);
         assert_eq!(encode_varint(128, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 2);
-        assert_eq!(encode_varint(16383, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 2);
-        assert_eq!(encode_varint(16384, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 3);
-        
+        assert_eq!(
+            encode_varint(16383, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            2
+        );
+        assert_eq!(
+            encode_varint(16384, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            3
+        );
+
         // Largest 1-byte varint (7 bits)
-        assert_eq!(encode_varint(0x7F, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 1);
-        
+        assert_eq!(
+            encode_varint(0x7F, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            1
+        );
+
         // Smallest 2-byte varint
-        assert_eq!(encode_varint(0x80, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 2);
-        
+        assert_eq!(
+            encode_varint(0x80, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            2
+        );
+
         // Largest 2-byte varint (14 bits)
-        assert_eq!(encode_varint(0x3FFF, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 2);
-        
+        assert_eq!(
+            encode_varint(0x3FFF, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            2
+        );
+
         // A 9-byte varint
-        assert_eq!(encode_varint(0x7FFFFFFFFFFFFFFF, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 9);
-        
+        assert_eq!(
+            encode_varint(0x7FFFFFFFFFFFFFFF, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            9
+        );
+
         // The largest possible value (10 bytes)
-        assert_eq!(encode_varint(0xFFFFFFFFFFFFFFFF, &mut [0; MAX_VARINT_SIZE_64]).unwrap(), 10);
+        assert_eq!(
+            encode_varint(0xFFFFFFFFFFFFFFFF, &mut [0; MAX_VARINT_SIZE_64]).unwrap(),
+            10
+        );
     }
 
     #[test]
     fn test_varint_buffer_too_small() {
         // Buffer is too small
         let mut buf = [0u8; 5]; // MAX_VARINT_SIZE_64 is 10
-        
+
         // Should return an error
         let result = encode_varint(0xFFFFFFFFFFFFFFFF, &mut buf);
         assert!(result.is_err());
@@ -205,11 +258,10 @@ mod tests {
         let buf = [0x80];
         let result = decode_varint(&buf);
         assert!(result.is_err());
-        
+
         // Test with too many continuation bits (would exceed 64 bits)
         let buf = [
-            0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 
-            0x80, 0x80, 0x80, 0x02
+            0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02,
         ];
         let result = decode_varint(&buf);
         assert!(result.is_err());
@@ -224,20 +276,20 @@ mod tests {
         let written = encode_varint(1, &mut buf).unwrap();
         assert_eq!(written, 1);
         assert_eq!(buf[0], 0x01);
-        
+
         // 127 -> [0x7F]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
         let written = encode_varint(127, &mut buf).unwrap();
         assert_eq!(written, 1);
         assert_eq!(buf[0], 0x7F);
-        
+
         // 128 -> [0x80, 0x01]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
         let written = encode_varint(128, &mut buf).unwrap();
         assert_eq!(written, 2);
         assert_eq!(buf[0], 0x80);
         assert_eq!(buf[1], 0x01);
-        
+
         // 300 -> [0xAC, 0x02]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
         let written = encode_varint(300, &mut buf).unwrap();
@@ -245,9 +297,9 @@ mod tests {
         assert_eq!(buf[0], 0xAC);
         assert_eq!(buf[1], 0x02);
     }
-    
+
     // Additional tests from MongoDB's C++ implementation
-    
+
     /// Test simple integer packing and unpacking
     /// Similar to MongoDB's 'TestInt' function
     fn test_int_simple(value: u64) {
@@ -256,7 +308,7 @@ mod tests {
         let (decoded, _) = decode_varint(&buf).unwrap();
         assert_eq!(value, decoded, "Value mismatch for {}", value);
     }
-    
+
     /// Test various integer combinations like MongoDB's 'TestIntCompression'
     #[test]
     fn test_mongodb_int_compression() {
@@ -264,11 +316,11 @@ mod tests {
         for i in 0..63 {
             test_int_simple(i);
             test_int_simple(i.saturating_sub(1));
-            
+
             // Also test with the bit set
             test_int_simple(1u64 << i);
         }
-        
+
         // Check numbers composed of repeating hex numbers (matching MongoDB's test)
         for i in 0..15 {
             let mut v = 0u64;
@@ -278,7 +330,7 @@ mod tests {
             }
         }
     }
-    
+
     /// Test writing multiple zeros (similar to MongoDB's TestDataBuilder)
     #[test]
     fn test_mongodb_multiple_zeros() {
@@ -287,19 +339,19 @@ mod tests {
         for _ in 0..16 {
             encode_varint_vec(0, &mut zeros).unwrap();
         }
-        
+
         // Decode them all back
         let mut offset = 0;
         let mut count = 0;
-        
+
         while offset < zeros.len() {
             let (value, bytes_read) = decode_varint(&zeros[offset..]).unwrap();
             assert_eq!(value, 0, "Expected zero value");
             offset += bytes_read;
             count += 1;
         }
-        
+
         // Verify we decoded 16 zeros
         assert_eq!(count, 16, "Expected to decode 16 zeros");
     }
-} 
+}
