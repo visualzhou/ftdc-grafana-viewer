@@ -5,6 +5,7 @@ use thiserror::Error;
 
 mod compression;
 mod ftdc_decoder;
+mod metrics_array_decoder;
 mod reader;
 mod varint;
 mod victoria_metrics;
@@ -12,8 +13,9 @@ mod victoria_metrics;
 pub use compression::Compression;
 pub use ftdc_decoder::{
     FtdcDecoder, FtdcDecoderError, MetricChunkDecompressor, MetricChunkExtractor,
-    MetricDocumentReconstructor, MetricSample, MetricsArrayDecoder,
+    MetricDocumentReconstructor, MetricSample,
 };
+pub use metrics_array_decoder::{MetricsArrayDecoder, MetricsDecoderError};
 pub use reader::{FtdcReader, ReaderError, ReaderResult};
 pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
 pub use victoria_metrics::{VictoriaMetricsClient, VictoriaMetricsError};
