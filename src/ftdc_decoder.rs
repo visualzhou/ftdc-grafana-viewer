@@ -314,7 +314,7 @@ impl MetricDocumentReconstructor {
     }
 
     /// Converts a BSON value to u64
-    fn bson_to_u64(value: &Bson) -> Option<u64> {
+    fn _bson_to_u64(value: &Bson) -> Option<u64> {
         match value {
             Bson::Double(d) => Some(*d as u64),
             Bson::Int32(i) => Some(*i as u64),
