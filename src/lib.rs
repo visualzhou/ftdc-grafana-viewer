@@ -4,10 +4,15 @@ use std::time::SystemTime;
 use thiserror::Error;
 
 mod compression;
+mod ftdc_decoder;
 mod reader;
 mod victoria_metrics;
 
 pub use compression::Compression;
+pub use ftdc_decoder::{
+    FtdcDecoder, FtdcDecoderError, MetricChunkDecompressor, MetricChunkExtractor,
+    MetricDocumentReconstructor, MetricSample, MetricsArrayDecoder,
+};
 pub use reader::{FtdcReader, ReaderError, ReaderResult};
 pub use victoria_metrics::{VictoriaMetricsClient, VictoriaMetricsError};
 
@@ -33,6 +38,9 @@ pub enum FtdcError {
 
     #[error("Compression error: {0}")]
     Compression(String),
+
+    #[error("Decoder error: {0}")]
+    Decoder(#[from] ftdc_decoder::FtdcDecoderError),
 }
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
@@ -67,19 +75,32 @@ pub struct FtdcDocument {
 
 /// Main parser for FTDC files
 pub struct FtdcParser {
-    // Will be implemented in the next step
+    decoder: FtdcDecoder,
 }
 
 impl FtdcParser {
     /// Creates a new FTDC parser
     pub fn new() -> Self {
-        Self {}
+        Self {
+            decoder: FtdcDecoder::new(),
+        }
     }
 
     /// Parses a single FTDC document from a byte buffer
     pub async fn parse_document(&self, data: &[u8]) -> Result<FtdcDocument> {
         // Parse the BSON document directly (no decompression needed)
         let doc: Document = bson::from_slice(data)?;
+
+        // Check if this is a metric document (type: 1)
+        if let Some(Bson::Int32(1)) = doc.get("type") {
+            // Use the decoder to extract metrics
+            let samples = self.decoder.decode_document(&doc)?;
+
+            // For simplicity, just return the first sample
+            if let Some(first_sample) = samples.first() {
+                return self.convert_sample_to_ftdc_document(first_sample);
+            }
+        }
 
         // Extract timestamp
         let timestamp = match doc.get("_id") {
@@ -89,6 +110,17 @@ impl FtdcParser {
 
         // Extract metrics
         let metrics = self.extract_metrics(&doc)?;
+
+        Ok(FtdcDocument { timestamp, metrics })
+    }
+
+    /// Converts a MetricSample to an FtdcDocument
+    fn convert_sample_to_ftdc_document(&self, sample: &MetricSample) -> Result<FtdcDocument> {
+        let timestamp = sample.timestamp.to_system_time();
+        let mut metrics = Vec::new();
+
+        // Extract metrics from the sample document
+        self.extract_metrics_from_doc(&sample.metrics, timestamp, "", &mut metrics)?;
 
         Ok(FtdcDocument { timestamp, metrics })
     }
@@ -110,7 +142,13 @@ impl FtdcParser {
     }
 
     /// Recursively extracts metrics from a document
-    fn extract_metrics_from_doc(&self, doc: &Document, timestamp: SystemTime, prefix: &str, metrics: &mut Vec<MetricValue>) -> Result<()> {
+    fn extract_metrics_from_doc(
+        &self,
+        doc: &Document,
+        timestamp: SystemTime,
+        prefix: &str,
+        metrics: &mut Vec<MetricValue>,
+    ) -> Result<()> {
         for (key, value) in doc.iter() {
             // Skip special fields
             if key == "_id" || key == "type" || key == "start" || key == "end" {
@@ -183,9 +221,19 @@ impl FtdcParser {
                         let array_metric_name = format!("{}_{}", metric_name, i);
                         match item {
                             Bson::Document(subdoc) => {
-                                self.extract_metrics_from_doc(subdoc, timestamp, &array_metric_name, metrics)?;
+                                self.extract_metrics_from_doc(
+                                    subdoc,
+                                    timestamp,
+                                    &array_metric_name,
+                                    metrics,
+                                )?;
                             }
-                            _ => self.extract_metric_value(item, timestamp, &array_metric_name, metrics)?,
+                            _ => self.extract_metric_value(
+                                item,
+                                timestamp,
+                                &array_metric_name,
+                                metrics,
+                            )?,
                         }
                     }
                 }
@@ -200,7 +248,13 @@ impl FtdcParser {
     }
 
     /// Helper function to extract a single metric value from a BSON value
-    fn extract_metric_value(&self, value: &Bson, timestamp: SystemTime, name: &str, metrics: &mut Vec<MetricValue>) -> Result<()> {
+    fn extract_metric_value(
+        &self,
+        value: &Bson,
+        timestamp: SystemTime,
+        name: &str,
+        metrics: &mut Vec<MetricValue>,
+    ) -> Result<()> {
         match value {
             Bson::Double(v) => {
                 metrics.push(MetricValue {
@@ -256,7 +310,12 @@ impl FtdcParser {
                     metric_type: MetricType::Timestamp,
                 });
             }
-            _ => return Err(FtdcError::UnsupportedType(format!("Unsupported BSON type: {:?}", value))),
+            _ => {
+                return Err(FtdcError::UnsupportedType(format!(
+                    "Unsupported BSON type: {:?}",
+                    value
+                )))
+            }
         }
         Ok(())
     }
@@ -310,9 +369,16 @@ mod tests {
         assert!(!doc.metrics.is_empty());
 
         // Verify metrics
-        let sys_max_file_handles = doc.metrics.iter().find(|m| m.name == "sysMaxOpenFiles_sys_max_file_handles").unwrap();
+        let sys_max_file_handles = doc
+            .metrics
+            .iter()
+            .find(|m| m.name == "sysMaxOpenFiles_sys_max_file_handles")
+            .unwrap();
         assert_eq!(sys_max_file_handles.value, 42.5);
-        assert!(matches!(sys_max_file_handles.metric_type, MetricType::Double));
+        assert!(matches!(
+            sys_max_file_handles.metric_type,
+            MetricType::Double
+        ));
 
         let memory_metric = doc.metrics.iter().find(|m| m.name == "memory").unwrap();
         assert_eq!(memory_metric.value, 1024.0);

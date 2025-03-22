@@ -1,0 +1,4100 @@
+
+running 1 test
+
+=== Reference Document Analysis ===
+Reference document size: 116488 bytes
+Successfully parsed reference document
+
+Top-level keys: ["start", "replSetGetStatus", "local.oplog.rs.stats", "config.transactions.stats", "config.image_collection.stats", "serverStatus", "transportLayerStats", "systemMetrics", "end"]
+
+=== Reference Document Structure ===
+start: 2025-03-12 15:58:06.0 +00:00:00
+replSetGetStatus:
+  start: 2025-03-12 15:58:06.0 +00:00:00
+  set: "foo"
+  date: 2025-03-12 15:58:06.0 +00:00:00
+  myState: 1
+  term: 1
+  syncSourceHost: ""
+  syncSourceId: -1
+  heartbeatIntervalMillis: -8435278861361219328
+  optimes:
+    lastCommittedOpTime:
+      ts: Timestamp { time: 1741795085, increment: 1 }
+      t: 1
+    lastCommittedWallTime: 1970-01-01 0:00:00.0 +00:00:00
+    readConcernMajorityOpTime:
+      ts: Timestamp { time: 0, increment: 0 }
+      t: -1
+    appliedOpTime:
+      ts: Timestamp { time: 0, increment: 0 }
+      t: -1
+    durableOpTime:
+      ts: Timestamp { time: 0, increment: 0 }
+      t: -1
+    writtenOpTime:
+      ts: Timestamp { time: 0, increment: 0 }
+      t: -1
+    lastAppliedWallTime: 1970-01-01 0:00:00.0 +00:00:00
+    lastDurableWallTime: 1970-01-01 0:00:00.0 +00:00:00
+    lastWrittenWallTime: 1970-01-01 0:00:00.0 +00:00:00
+  lastStableRecoveryTimestamp: Timestamp { time: 0, increment: 0 }
+  electionCandidateMetrics:
+    lastElectionReason: "electionTimeout"
+  logServerManagerMetrics:
+    oplogLSN: 7480952926408540161
+    phylogLSN: 7480952926408540173
+  members: [Array with 1 items]
+    First item:
+      _id: 0
+      name: "localhost:27017"
+      health: 1
+      state: 1
+      stateStr: "PRIMARY"
+      uptime: 1
+      optime:
+        ts: Timestamp { time: 0, increment: 0 }
+        t: -1
+      optimeDate: 1970-01-01 0:00:00.0 +00:00:00
+      optimeWritten:
+        ts: Timestamp { time: 0, increment: 0 }
+        t: -1
+      optimeWrittenDate: 1970-01-01 0:00:00.0 +00:00:00
+      lastAppliedWallTime: 1970-01-01 0:00:00.0 +00:00:00
+      lastDurableWallTime: 1970-01-01 0:00:00.0 +00:00:00
+      lastWrittenWallTime: 1970-01-01 0:00:00.0 +00:00:00
+      syncSourceHost: ""
+      syncSourceId: -1
+      infoMessage: ""
+      electionTime: Timestamp { time: 0, increment: 0 }
+      electionDate: 1970-01-01 0:00:00.0 +00:00:00
+      configVersion: 1
+      configTerm: 1
+      self: true
+      lastHeartbeatMessage: ""
+  ok: 1
+  end: 2025-03-12 15:58:06.0 +00:00:00
+local.oplog.rs.stats:
+  start: 2025-03-12 15:58:06.0 +00:00:00
+  ns: "local.oplog.rs"
+  host: "localhost:27017"
+  localTime: 2025-03-12 15:58:06.0 +00:00:00
+  storageStats:
+    size: 122
+    count: 1
+    avgObjSize: 122
+    numOrphanDocs: 0
+    storageSize: 4096
+    freeStorageSize: 0
+    capped: true
+    max: 0
+    maxSize: 16953586688
+    wiredTiger:
+      uri: String(64 chars): "statistics:table:collection-548bcf13-ec1a-435d-..."
+      LSM:
+        bloom filter false positives: 0
+        bloom filter hits: 0
+        bloom filter misses: 0
+        bloom filter pages evicted from cache: 0
+        bloom filter pages read into cache: 0
+        bloom filters in the LSM tree: 0
+        chunks in the LSM tree: 0
+        highest merge generation in the LSM tree: 0
+        queries that could have benefited from a Bloom filter that did not exist: 0
+        sleep for LSM checkpoint throttle: 0
+        sleep for LSM merge throttle: 0
+        total size of bloom filters: 0
+      autocommit:
+        retries for readonly operations: 0
+        retries for update operations: 0
+      backup:
+        total modified incremental blocks with compressed data: 0
+        total modified incremental blocks without compressed data: 0
+      block-disagg:
+        Bytes read from the shared history store in SLS: 0
+        Bytes written to the shared history store in SLS: 0
+        Disaggregated block manager get: 0
+        Disaggregated block manager get from the shared history store in SLS: 0
+        Disaggregated block manager put : 0
+        Disaggregated block manager put to the shared history store in SLS: 0
+      block-manager:
+        allocations requiring file extension: 0
+        blocks allocated: 0
+        blocks freed: 0
+        checkpoint size: 0
+        file allocation unit size: 0
+        file bytes available for reuse: 0
+        file magic number: 120897
+        file major version number: 0
+        file size in bytes: 0
+        minor version number: 0
+      btree:
+        btree checkpoint generation: 2
+        btree clean tree checkpoint expiration time: 0
+        btree compact pages reviewed: 0
+        btree compact pages rewritten: 0
+        btree compact pages skipped: 0
+        btree expected number of compact bytes rewritten: 0
+        btree expected number of compact pages rewritten: 0
+        btree number of pages reconciled during checkpoint: 2
+        btree skipped by compaction as process would not reduce size: 0
+        column-store fixed-size leaf pages: 0
+        column-store fixed-size time windows: 0
+        column-store internal pages: 0
+        column-store variable-size RLE encoded values: 0
+        column-store variable-size deleted values: 0
+        column-store variable-size leaf pages: 0
+        fixed-record size: 0
+        maximum internal page size: 4096
+        maximum leaf page key size: 4294966271
+        maximum leaf page size: 32768
+        maximum leaf page value size: 4294966271
+        maximum tree depth: 3
+        number of key/value pairs: 0
+        overflow pages: 0
+        row-store empty values: 0
+        row-store internal pages: 0
+        row-store leaf pages: 0
+      cache:
+        bytes currently in the cache: 1652
+        bytes dirty in the cache cumulative: 1652
+        bytes read into cache: 0
+        bytes written from cache: 247
+        checkpoint blocked page eviction: 0
+        checkpoint of history store file blocked non-history store page eviction: 0
+        data source pages selected for eviction unable to be evicted: 0
+        eviction gave up due to detecting a disk value without a timestamp behind the last update on the chain: 0
+        eviction gave up due to detecting a tombstone without a timestamp ahead of the selected on disk update: 0
+        eviction gave up due to detecting a tombstone without a timestamp ahead of the selected on disk update after validating the update chain: 0
+        eviction gave up due to detecting update chain entries without timestamps after the selected on disk update: 0
+        eviction gave up due to needing to remove a record from the history store but checkpoint is running: 0
+        eviction gave up due to no progress being made: 0
+        eviction walk passes of a file: 0
+        eviction walk target pages histogram - 0-9: 0
+        eviction walk target pages histogram - 10-31: 0
+        eviction walk target pages histogram - 128 and higher: 0
+        eviction walk target pages histogram - 32-63: 0
+        eviction walk target pages histogram - 64-128: 0
+        eviction walk target pages reduced due to history store cache pressure: 0
+        eviction walks abandoned: 0
+        eviction walks gave up because they restarted their walk twice: 0
+        eviction walks gave up because they saw too many pages and found no candidates: 0
+        eviction walks gave up because they saw too many pages and found too few candidates: 0
+        eviction walks random search fails to locate a page, results in a null position: 0
+        eviction walks reached end of tree: 0
+        eviction walks restarted: 0
+        eviction walks started from root of tree: 0
+        eviction walks started from saved location in tree: 0
+        hazard pointer blocked page eviction: 0
+        history store table insert calls: 0
+        history store table insert calls that returned restart: 0
+        history store table reads: 0
+        history store table reads missed: 0
+        history store table reads requiring squashed modifies: 0
+        history store table resolved updates without timestamps that lose their durable timestamp: 0
+        history store table truncation by rollback to stable to remove an unstable update: 0
+        history store table truncation by rollback to stable to remove an update: 0
+        history store table truncation to remove all the keys of a btree: 0
+        history store table truncation to remove an update: 0
+        history store table truncation to remove range of updates due to an update without a timestamp on data page: 0
+        history store table truncation to remove range of updates due to key being removed from the data page during reconciliation: 0
+        history store table truncations that would have happened in non-dryrun mode: 0
+        history store table truncations to remove an unstable update that would have happened in non-dryrun mode: 0
+        history store table truncations to remove an update that would have happened in non-dryrun mode: 0
+        history store table updates without timestamps fixed up by reinserting with the fixed timestamp: 0
+        history store table writes requiring squashed modifies: 0
+        in-memory page passed criteria to be split: 0
+        in-memory page splits: 0
+        internal page split blocked its eviction: 0
+        internal pages evicted: 0
+        internal pages split during eviction: 0
+        leaf pages split during eviction: 0
+        locate a random in-mem ref by examining all entries on the root page: 0
+        modified pages evicted: 0
+        multi-block reconciliation blocked whilst checkpoint is running: 0
+        number of pages read that had deltas attached: 0
+        overflow keys on a multiblock row-store page blocked its eviction: 0
+        overflow pages read into cache: 0
+        page split during eviction deepened the tree: 0
+        page written requiring history store records: 0
+        pages read into cache: 0
+        pages read into cache after truncate: 0
+        pages read into cache after truncate in prepare state: 0
+        pages read into cache by checkpoint: 0
+        pages requested from the cache: 3
+        pages requested from the cache due to pre-fetch: 0
+        pages seen by eviction walk: 0
+        pages written from cache: 2
+        pages written requiring in-memory restoration: 0
+        recent modification of a page blocked its eviction: 0
+        reverse splits performed: 0
+        reverse splits skipped because of VLCS namespace gap restrictions: 0
+        the number of times full update inserted to history store: 0
+        the number of times reverse modify inserted to history store: 0
+        tracked dirty bytes in the cache: 0
+        uncommitted truncate blocked page eviction: 0
+        unmodified pages evicted: 0
+      cache_walk:
+        Average difference between current eviction generation when the page was last considered: 0
+        Average on-disk page image size seen: 0
+        Average time in cache for pages that have been visited by the eviction server: 0
+        Average time in cache for pages that have not been visited by the eviction server: 0
+        Clean pages currently in cache: 0
+        Current eviction generation: 0
+        Dirty pages currently in cache: 0
+        Entries in the root page: 0
+        Internal pages currently in cache: 0
+        Leaf pages currently in cache: 0
+        Maximum difference between current eviction generation when the page was last considered: 0
+        Maximum page size seen: 0
+        Minimum on-disk page image size seen: 0
+        Number of pages never visited by eviction server: 0
+        On-disk page image sizes smaller than a single allocation unit: 0
+        Pages created in memory and never written: 0
+        Pages currently queued for eviction: 0
+        Pages that could not be queued for eviction: 0
+        Refs skipped during cache traversal: 0
+        Size of the root page: 0
+        Total number of pages currently in cache: 0
+      checkpoint:
+        checkpoint has acquired a snapshot for its transaction: 0
+        pages added for eviction during checkpoint cleanup: 0
+        pages removed during checkpoint cleanup: 0
+        pages skipped during checkpoint cleanup tree walk: 0
+        pages visited during checkpoint cleanup: 0
+        transaction checkpoints due to obsolete pages: 0
+      compression:
+        compressed page maximum internal page size prior to compression: 4096
+        compressed page maximum leaf page size prior to compression : 131072
+        page written to disk failed to compress: 1
+        page written to disk was too small to compress: 1
+        pages read from disk: 0
+        pages read from disk with compression ratio greater than 64: 0
+        pages read from disk with compression ratio smaller than  2: 0
+        pages read from disk with compression ratio smaller than  4: 0
+        pages read from disk with compression ratio smaller than  8: 0
+        pages read from disk with compression ratio smaller than 16: 0
+        pages read from disk with compression ratio smaller than 32: 0
+        pages read from disk with compression ratio smaller than 64: 0
+        pages written to disk: 0
+        pages written to disk with compression ratio greater than 64: 0
+        pages written to disk with compression ratio smaller than  2: 0
+        pages written to disk with compression ratio smaller than  4: 0
+        pages written to disk with compression ratio smaller than  8: 0
+        pages written to disk with compression ratio smaller than 16: 0
+        pages written to disk with compression ratio smaller than 32: 0
+        pages written to disk with compression ratio smaller than 64: 0
+      cursor:
+        Total number of deleted pages skipped during tree walk: 0
+        Total number of entries skipped by cursor next calls: 0
+        Total number of entries skipped by cursor prev calls: 0
+        Total number of entries skipped to position the history store cursor: 0
+        Total number of in-memory deleted pages skipped during tree walk: 0
+        Total number of on-disk deleted pages skipped during tree walk: 0
+        Total number of times a search near has exited due to prefix config: 0
+        Total number of times cursor fails to temporarily release pinned page to encourage eviction of hot or large page: 0
+        Total number of times cursor temporarily releases pinned page to encourage eviction of hot or large page: 0
+        bulk loaded cursor insert calls: 0
+        cache cursors reuse count: 1
+        close calls that result in cache: 1
+        create calls: 2
+        cursor bound calls that return an error: 0
+        cursor bounds cleared from reset: 0
+        cursor bounds comparisons performed: 0
+        cursor bounds next called on an unpositioned cursor: 0
+        cursor bounds next early exit: 0
+        cursor bounds prev called on an unpositioned cursor: 0
+        cursor bounds prev early exit: 0
+        cursor bounds search early exit: 0
+        cursor bounds search near call repositioned cursor: 0
+        cursor cache calls that return an error: 0
+        cursor close calls that return an error: 0
+        cursor compare calls that return an error: 0
+        cursor equals calls that return an error: 0
+        cursor get key calls that return an error: 0
+        cursor get value calls that return an error: 0
+        cursor insert calls that return an error: 0
+        cursor insert check calls that return an error: 0
+        cursor largest key calls that return an error: 0
+        cursor modify calls that return an error: 0
+        cursor next calls that return an error: 0
+        cursor next calls that skip due to a globally visible history store tombstone: 0
+        cursor next calls that skip greater than 1 and fewer than 100 entries: 0
+        cursor next calls that skip greater than or equal to 100 entries: 0
+        cursor next random calls that return an error: 0
+        cursor prev calls that return an error: 0
+        cursor prev calls that skip due to a globally visible history store tombstone: 0
+        cursor prev calls that skip greater than or equal to 100 entries: 0
+        cursor prev calls that skip less than 100 entries: 0
+        cursor reconfigure calls that return an error: 0
+        cursor remove calls that return an error: 0
+        cursor reopen calls that return an error: 0
+        cursor reserve calls that return an error: 0
+        cursor reset calls that return an error: 0
+        cursor search calls that return an error: 0
+        cursor search near calls that return an error: 0
+        cursor update calls that return an error: 0
+        insert calls: 1
+        insert key and value bytes: 131
+        modify: 0
+        modify key and value bytes affected: 0
+        modify value bytes modified: 0
+        next calls: 3
+        open cursor count: 1
+        operation restarted: 0
+        prev calls: 1
+        remove calls: 0
+        remove key bytes removed: 0
+        reserve calls: 0
+        reset calls: 6
+        search calls: 2
+        search history store calls: 0
+        search near calls: 0
+        truncate calls: 0
+        update calls: 0
+        update key and value bytes: 0
+        update value size change: 0
+      layered:
+        Layered table cursor insert operations: 0
+        Layered table cursor next operations: 0
+        Layered table cursor next operations from ingest table: 0
+        Layered table cursor next operations from stable table: 0
+        Layered table cursor prev operations: 0
+        Layered table cursor prev operations from ingest table: 0
+        Layered table cursor prev operations from stable table: 0
+        Layered table cursor remove operations: 0
+        Layered table cursor search near operations: 0
+        Layered table cursor search near operations from ingest table: 0
+        Layered table cursor search near operations from stable table: 0
+        Layered table cursor search operations: 0
+        Layered table cursor search operations from ingest table: 0
+        Layered table cursor search operations from stable table: 0
+        Layered table cursor update operations: 0
+        checkpoints performed on this table by the layered table manager: 0
+        checkpoints refreshed on shared layered constituents: 0
+        how many log applications the layered table manager applied on this tree: 0
+        how many log applications the layered table manager skipped on this tree: 0
+        how many previously-applied LSNs the layered table manager skipped on this tree: 0
+      reconciliation:
+        VLCS pages explicitly reconciled as empty: 0
+        approximate byte size of timestamps in pages written: 0
+        approximate byte size of transaction IDs in pages written: 0
+        dictionary matches: 0
+        fast-path pages deleted: 0
+        internal page key bytes discarded using suffix compression: 0
+        internal page multi-block writes: 0
+        leaf page key bytes discarded using prefix compression: 0
+        leaf page multi-block writes: 0
+        leaf-page overflow keys: 0
+        maximum blocks required for a page: 1
+        overflow values written: 0
+        page reconciliation calls: 2
+        page reconciliation calls for eviction: 0
+        pages deleted: 0
+        pages written including an aggregated newest start durable timestamp : 0
+        pages written including an aggregated newest stop durable timestamp : 0
+        pages written including an aggregated newest stop timestamp : 0
+        pages written including an aggregated newest stop transaction ID: 0
+        pages written including an aggregated newest transaction ID : 0
+        pages written including an aggregated oldest start timestamp : 0
+        pages written including an aggregated prepare: 0
+        pages written including at least one prepare: 0
+        pages written including at least one start durable timestamp: 0
+        pages written including at least one start timestamp: 0
+        pages written including at least one start transaction ID: 0
+        pages written including at least one stop durable timestamp: 0
+        pages written including at least one stop timestamp: 0
+        pages written including at least one stop transaction ID: 0
+        records written including a prepare: 0
+        records written including a start durable timestamp: 0
+        records written including a start timestamp: 0
+        records written including a start transaction ID: 0
+        records written including a stop durable timestamp: 0
+        records written including a stop timestamp: 0
+        records written including a stop transaction ID: 0
+      session:
+        object compaction: 0
+      transaction:
+        a reader raced with a prepared transaction commit and skipped an update or updates: 0
+        number of times overflow removed value is read: 0
+        race to read prepared update retry: 0
+        rollback to stable history store keys that would have been swept in non-dryrun mode: 0
+        rollback to stable history store records with stop timestamps older than newer records: 0
+        rollback to stable inconsistent checkpoint: 0
+        rollback to stable keys removed: 0
+        rollback to stable keys restored: 0
+        rollback to stable keys that would have been removed in non-dryrun mode: 0
+        rollback to stable keys that would have been restored in non-dryrun mode: 0
+        rollback to stable restored tombstones from history store: 0
+        rollback to stable restored updates from history store: 0
+        rollback to stable skipping delete rle: 0
+        rollback to stable skipping stable rle: 0
+        rollback to stable sweeping history store keys: 0
+        rollback to stable tombstones from history store that would have been restored in non-dryrun mode: 0
+        rollback to stable updates from history store that would have been restored in non-dryrun mode: 0
+        rollback to stable updates removed from history store: 0
+        rollback to stable updates that would have been removed from history store in non-dryrun mode: 0
+        update conflicts: 0
+    nindexes: 0
+    indexDetails:
+    indexBuilds: [Array with 0 items]
+    totalIndexSize: 0
+    indexSizes:
+    totalSize: 4096
+    scaleFactor: 1
+  end: 2025-03-12 15:58:06.0 +00:00:00
+config.transactions.stats:
+  start: 2025-03-12 15:58:06.0 +00:00:00
+  ok: 0
+  errmsg: String(165 chars): "PlanExecutor error during aggregation :: caused..."
+  code: 26
+  codeName: "NamespaceNotFound"
+  end: 2025-03-12 15:58:06.001 +00:00:00
+config.image_collection.stats:
+  start: 2025-03-12 15:58:06.001 +00:00:00
+  ok: 0
+  errmsg: String(169 chars): "PlanExecutor error during aggregation :: caused..."
+  code: 26
+  codeName: "NamespaceNotFound"
+  end: 2025-03-12 15:58:06.001 +00:00:00
+serverStatus:
+  start: 2025-03-12 15:58:06.001 +00:00:00
+  host: "localhost"
+  version: String(54 chars): "8.0.0-rc18-287-gdb40f3c-patch-67d1a5affab948000..."
+  process: "mongod"
+  service: [Array with 1 items]
+    First item: String("shard")
+  pid: 16729
+  uptime: 1
+  uptimeMillis: 518
+  uptimeEstimate: 0
+  localTime: 2025-03-12 15:58:06.001 +00:00:00
+  asserts:
+    regular: 0
+    warning: 0
+    msg: 0
+    user: 26
+    tripwire: 0
+    rollovers: 0
+  batchedDeletes:
+    batches: 0
+    docs: 0
+    stagedSizeBytes: 0
+    timeInBatchMillis: 0
+    refetchesDueToYield: 0
+  catalogStats:
+    collections: 0
+    capped: 0
+    clustered: 0
+    timeseries: 0
+    views: 0
+    internalCollections: 2
+    internalViews: 0
+    csfle: 0
+    queryableEncryption: 0
+  changeStreamPreImages:
+    purgingJob:
+      totalPass: 1
+      docsDeleted: 0
+      bytesDeleted: 0
+      scannedCollections: 1
+      scannedInternalCollections: 0
+      maxStartWallTimeMillis: 0
+      timeElapsedMillis: 0
+  collectionCatalog:
+    numScansDueToMissingMapping: 0
+  connections:
+    current: 0
+    available: 52428
+    totalCreated: 0
+    rejected: 0
+    active: 0
+    threaded: 0
+    exhaustIsMaster: 0
+    exhaustHello: 0
+    awaitingTopologyChanges: 0
+    loadBalanced: 0
+  electionMetrics:
+    stepUpCmd:
+      called: 0
+      successful: 0
+    priorityTakeover:
+      called: 0
+      successful: 0
+    catchUpTakeover:
+      called: 0
+      successful: 0
+    electionTimeout:
+      called: 0
+      successful: 0
+    freezeTimeout:
+      called: 0
+      successful: 0
+    numStepDownsCausedByHigherTerm: 0
+    numCatchUps: 0
+    numCatchUpsSucceeded: 0
+    numCatchUpsAlreadyCaughtUp: 0
+    numCatchUpsSkipped: 0
+    numCatchUpsTimedOut: 0
+    numCatchUpsFailedWithError: 0
+    numCatchUpsFailedWithNewTerm: 0
+    numCatchUpsFailedWithReplSetAbortPrimaryCatchUpCmd: 0
+    averageCatchUpOps: 0
+  encryptionAtRest:
+    encryptionEnabled: false
+  extra_info:
+    note: "fields vary by platform"
+    user_time_us: 763009
+    system_time_us: 20100
+    maximum_resident_set_kb: 153116
+    input_blocks: 744
+    output_blocks: 424
+    page_reclaims: 2845
+    page_faults: 21
+    voluntary_context_switches: 560
+    involuntary_context_switches: 4
+    threads: 76
+    pressure:
+      memory:
+        some:
+          totalMicros: 0
+        full:
+          totalMicros: 0
+      cpu:
+        some:
+          totalMicros: 518355
+        full:
+          totalMicros: 0
+      io:
+        some:
+          totalMicros: 18220780
+        full:
+          totalMicros: 18020257
+  featureCompatibilityVersion:
+    major: 8
+    minor: 0
+    transitioning: 0
+  flowControl:
+    enabled: false
+    targetRateLimit: 1000000000
+    timeAcquiringMicros: 0
+    locksPerKiloOp: 0
+    sustainerRate: 0
+    isLagged: false
+    isLaggedCount: 0
+    isLaggedTimeMicros: 0
+  globalLock:
+    totalTime: 1305000
+    currentQueue:
+      total: 0
+      readers: 0
+      writers: 0
+    activeClients:
+      total: 0
+      readers: 0
+      writers: 0
+  grpc:
+    counters:
+      client_calls_created: 4
+      server_calls_created: 0
+      client_channels_created: 3
+      client_subchannels_created: 1
+      server_channels_created: 0
+      insecure_connections_created: 1
+      syscall_write: 16
+      syscall_read: 16
+      tcp_read_alloc_8k: 1
+      tcp_read_alloc_64k: 0
+      http2_settings_writes: 1
+      http2_pings_sent: 3
+      http2_writes_begun: 16
+      http2_transport_stalls: 0
+      http2_stream_stalls: 0
+      cq_pluck_creates: 4
+      cq_next_creates: 0
+      cq_callback_creates: 0
+      wrr_updates: 0
+      work_serializer_items_enqueued: 0
+      work_serializer_items_dequeued: 0
+  indexBuilds:
+    total: 0
+    killedDueToInsufficientDiskSpace: 0
+    failedDueToDataCorruption: 0
+    phases:
+      scanCollection: 0
+      drainSideWritesTable: 0
+      drainSideWritesTablePreCommit: 0
+      waitForCommitQuorum: 0
+      drainSideWritesTableOnCommit: 0
+      processConstraintsViolatonTableOnCommit: 0
+      commit: 0
+  indexBulkBuilder:
+    count: 0
+    resumed: 0
+    filesOpenedForExternalSort: 0
+    filesClosedForExternalSort: 0
+    spilledRanges: 0
+    bytesSpilledUncompressed: 0
+    bytesSpilled: 0
+    numSorted: 0
+    bytesSorted: 0
+    memUsage: 0
+  indexStats:
+    count: 0
+    features:
+      2d:
+        count: 0
+        accesses: 0
+      2dsphere:
+        count: 0
+        accesses: 0
+      2dsphere_bucket:
+        count: 0
+        accesses: 0
+      collation:
+        count: 0
+        accesses: 0
+      columnstore:
+        count: 0
+        accesses: 0
+      compound:
+        count: 0
+        accesses: 0
+      hashed:
+        count: 0
+        accesses: 0
+      id:
+        count: 0
+        accesses: 0
+      normal:
+        count: 0
+        accesses: 0
+      partial:
+        count: 0
+        accesses: 0
+      single:
+        count: 0
+        accesses: 0
+      sparse:
+        count: 0
+        accesses: 0
+      text:
+        count: 0
+        accesses: 0
+      ttl:
+        count: 0
+        accesses: 0
+      unique:
+        count: 0
+        accesses: 0
+      wildcard:
+        count: 0
+        accesses: 0
+  internalTransactions:
+    started: 0
+    retriedTransactions: 0
+    retriedCommits: 0
+    succeeded: 0
+  locks:
+    MultiDocumentTransactionsBarrier:
+      acquireCount:
+        W: 7
+    ReplicationStateTransition:
+      acquireCount:
+        w: 36
+    Global:
+      acquireCount:
+        r: 31
+        w: 9
+        W: 7
+    Database:
+      acquireCount:
+        r: 9
+        w: 9
+    Collection:
+      acquireCount:
+        r: 8
+        w: 5
+        W: 2
+    Mutex:
+      acquireCount:
+        r: 2
+    oplog:
+      acquireCount:
+        r: 1
+        w: 2
+  logicalSessionRecordCache:
+    activeSessionsCount: 0
+    sessionsCollectionJobCount: 0
+    lastSessionsCollectionJobDurationMillis: 0
+    lastSessionsCollectionJobTimestamp: 2025-03-12 15:58:05.485 +00:00:00
+    lastSessionsCollectionJobEntriesRefreshed: 0
+    lastSessionsCollectionJobEntriesEnded: 0
+    lastSessionsCollectionJobCursorsClosed: 0
+    transactionReaperJobCount: 0
+    lastTransactionReaperJobDurationMillis: 0
+    lastTransactionReaperJobTimestamp: 2025-03-12 15:58:05.485 +00:00:00
+    lastTransactionReaperJobEntriesCleanedUp: 0
+    sessionCatalogSize: 0
+  mirroredReads:
+    seen: 2
+    sent: 0
+    processedAsSecondary: 0
+  network:
+    bytesIn: 0
+    bytesOut: 0
+    physicalBytesIn: 0
+    physicalBytesOut: 0
+    numSlowDNSOperations: 0
+    numSlowSSLOperations: 0
+    numRequests: 0
+    tcpFastOpen:
+      kernelSetting: 1
+      serverSupported: false
+      clientSupported: false
+      accepted: 0
+    compression:
+      snappy:
+        compressor:
+          bytesIn: 0
+          bytesOut: 0
+        decompressor:
+          bytesIn: 0
+          bytesOut: 0
+      zstd:
+        compressor:
+          bytesIn: 0
+          bytesOut: 0
+        decompressor:
+          bytesIn: 0
+          bytesOut: 0
+      zlib:
+        compressor:
+          bytesIn: 0
+          bytesOut: 0
+        decompressor:
+          bytesIn: 0
+          bytesOut: 0
+    serviceExecutors:
+      passthrough:
+        threadsRunning: 0
+        clientsInTotal: 0
+        clientsRunning: 0
+        clientsWaitingForData: 0
+      inline:
+        threadsRunning: 0
+        clientsInTotal: 0
+        clientsRunning: 0
+        clientsWaitingForData: 0
+    listenerProcessingTime:
+      durationMicros: 0
+  opLatencies:
+    commands:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+    reads:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+    writes:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+    transactions:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+  opWorkingTime:
+    commands:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+    reads:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+    writes:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+    transactions:
+      latency: 0
+      ops: 0
+      queryableEncryptionLatencyMicros: 0
+  opcounters:
+    insert: 0
+    query: 4
+    update: 0
+    delete: 0
+    getmore: 0
+    command: 0
+  opcountersRepl:
+    insert: 0
+    query: 0
+    update: 0
+    delete: 0
+    getmore: 0
+    command: 0
+  oplog:
+    latestOptime: Timestamp { time: 0, increment: 0 }
+    earliestOptime: Timestamp { time: 1741795085, increment: 1 }
+  oplogTruncation:
+    totalTimeProcessingMicros: 0
+    processingMethod: "scanning"
+    totalTimeTruncatingMicros: 0
+    truncateCount: 0
+  queryAnalyzers:
+    activeCollections: 0
+    totalCollections: 0
+    totalSampledReadsCount: 0
+    totalSampledWritesCount: 0
+    totalSampledReadsBytes: 0
+    totalSampledWritesBytes: 0
+  querySettings:
+    count: 0
+    size: 0
+    rejectCount: 0
+  queues:
+    execution:
+      write:
+        out: 0
+        available: 8
+        totalTickets: 8
+        exempt:
+          addedToQueue: 0
+          removedFromQueue: 0
+          queueLength: 0
+          startedProcessing: 0
+          processing: 0
+          finishedProcessing: 0
+          totalTimeProcessingMicros: 0
+          canceled: 0
+          newAdmissions: 0
+          totalTimeQueuedMicros: 0
+        normalPriority:
+          addedToQueue: 0
+          removedFromQueue: 0
+          queueLength: 0
+          startedProcessing: 2
+          processing: 0
+          finishedProcessing: 2
+          totalTimeProcessingMicros: 16
+          canceled: 0
+          newAdmissions: 1
+          totalTimeQueuedMicros: 0
+      read:
+        out: 0
+        available: 8
+        totalTickets: 8
+        exempt:
+          addedToQueue: 0
+          removedFromQueue: 0
+          queueLength: 0
+          startedProcessing: 10
+          processing: 0
+          finishedProcessing: 10
+          totalTimeProcessingMicros: 451
+          canceled: 0
+          newAdmissions: 2
+          totalTimeQueuedMicros: 0
+        normalPriority:
+          addedToQueue: 0
+          removedFromQueue: 0
+          queueLength: 0
+          startedProcessing: 13
+          processing: 0
+          finishedProcessing: 13
+          totalTimeProcessingMicros: 1717
+          canceled: 0
+          newAdmissions: 7
+          totalTimeQueuedMicros: 0
+      monitor:
+        timesDecreased: 0
+        timesIncreased: 0
+        totalAmountDecreased: 0
+        totalAmountIncreased: 0
+        resizeDurationMicros: 16
+    ingress:
+      out: 0
+      available: 1000000
+      totalTickets: 1000000
+      exempt:
+        addedToQueue: 0
+        removedFromQueue: 0
+        queueLength: 0
+        startedProcessing: 0
+        processing: 0
+        finishedProcessing: 0
+        totalTimeProcessingMicros: 0
+        canceled: 0
+        newAdmissions: 0
+        totalTimeQueuedMicros: 0
+      normalPriority:
+        addedToQueue: 0
+        removedFromQueue: 0
+        queueLength: 0
+        startedProcessing: 4
+        processing: 0
+        finishedProcessing: 4
+        totalTimeProcessingMicros: 892
+        canceled: 0
+        newAdmissions: 4
+        totalTimeQueuedMicros: 0
+  readConcernCounters:
+    nonTransactionOps:
+      none: 0
+      noneInfo:
+        CWRC:
+          local: 0
+          available: 0
+          majority: 0
+        implicitDefault:
+          local: 0
+          available: 0
+      local: 0
+      available: 0
+      majority: 0
+      snapshot:
+        withClusterTime: 0
+        withoutClusterTime: 0
+      linearizable: 0
+    transactionOps:
+      none: 0
+      noneInfo:
+        CWRC:
+          local: 0
+          majority: 0
+        implicitDefault:
+          local: 0
+      local: 0
+      majority: 0
+      snapshot:
+        withClusterTime: 0
+        withoutClusterTime: 0
+  readPreferenceCounters:
+    executedOnPrimary:
+      primary:
+        internal: 0
+        external: 0
+      primaryPreferred:
+        internal: 0
+        external: 0
+      secondary:
+        internal: 0
+        external: 0
+      secondaryPreferred:
+        internal: 0
+        external: 0
+      nearest:
+        internal: 1
+        external: 0
+      tagged:
+        internal: 0
+        external: 0
+    executedOnSecondary:
+      primary:
+        internal: 0
+        external: 0
+      primaryPreferred:
+        internal: 0
+        external: 0
+      secondary:
+        internal: 0
+        external: 0
+      secondaryPreferred:
+        internal: 0
+        external: 0
+      nearest:
+        internal: 0
+        external: 0
+      tagged:
+        internal: 0
+        external: 0
+  repl:
+    topologyVersion:
+      processId: ObjectId("000000000000000000000000")
+      counter: 0
+    hosts: [Array with 1 items]
+      First item: String("10.2.0.200:27017")
+    setName: "foo"
+    setVersion: 1
+    isWritablePrimary: true
+    secondary: false
+    primary: "10.2.0.200:27017"
+    me: "10.2.0.200:27017"
+    primaryOnlyServices:
+    userWriteBlockMode: 1
+  scramCache:
+    SCRAM-SHA-1:
+      count: 0
+      hits: 0
+      misses: 0
+    SCRAM-SHA-256:
+      count: 0
+      hits: 0
+      misses: 0
+  security:
+    authentication:
+      saslSupportedMechsReceived: 0
+      mechanisms:
+        MONGODB-X509:
+          speculativeAuthenticate:
+            received: 0
+            successful: 0
+          clusterAuthenticate:
+            received: 0
+            successful: 0
+          authenticate:
+            received: 0
+            successful: 0
+        SCRAM-SHA-1:
+          speculativeAuthenticate:
+            received: 0
+            successful: 0
+          clusterAuthenticate:
+            received: 0
+            successful: 0
+          authenticate:
+            received: 0
+            successful: 0
+        SCRAM-SHA-256:
+          speculativeAuthenticate:
+            received: 0
+            successful: 0
+          clusterAuthenticate:
+            received: 0
+            successful: 0
+          authenticate:
+            received: 0
+            successful: 0
+      totalAuthenticationTimeMicros: 0
+  shardSplits:
+    totalCommitted: 0
+    totalCommittedDurationMillis: 0
+    totalCommittedDurationWithoutCatchupMillis: 0
+    totalAborted: 0
+  storageEngine:
+    name: "wiredTiger"
+    supportsCommittedReads: true
+    oldestRequiredTimestampForCrashRecovery: Timestamp { time: 1741795085, increment: 1 }
+    supportsPendingDrops: true
+    dropPendingIdents: 0
+    supportsSnapshotReadConcern: true
+    readOnly: false
+    persistent: true
+    backupCursorOpen: false
+  tcmalloc:
+    usingPerCPUCaches: true
+    maxPerCPUCacheSizeBytes: 134217728
+    generic:
+      bytes_in_use_by_app: 107590288
+      current_allocated_bytes: 107590288
+      heap_size: 115343360
+      peak_memory_usage: 9953362
+      physical_memory_used: 130959638
+      virtual_memory_used: 130959638
+    tcmalloc:
+      central_cache_free: 346216
+      cpu_free: 3158592
+      current_total_thread_cache_bytes: 51912
+      desired_usage_limit_bytes: -1
+      hard_usage_limit_bytes: -1
+      local_bytes: 3210504
+      max_total_thread_cache_bytes: 33554432
+      metadata_bytes: 6993350
+      page_algorithm: 1
+      pageheap_free_bytes: 4120576
+      pageheap_unmapped_bytes: 0
+      required_bytes: 126839062
+      sharded_transfer_cache_free: 0
+      thread_cache_count: 1
+      thread_cache_free: 51912
+      transfer_cache_free: 75616
+      release_rate: 0
+      memory_used_to_memory_held_pct_at_peak: 1201
+      total_bytes_held: 23368998
+      estimated_size_class_overhead_bytes: 1399740
+    tcmalloc_derived:
+      unmapped_bytes: 0
+      total_free_bytes: 7752752
+  tenantMigrations:
+    currentMigrationsDonating: 0
+    currentMigrationsReceiving: 0
+    totalMigrationDonationsCommitted: 0
+    totalMigrationDonationsAborted: 0
+  trafficRecording:
+    running: false
+  transactions:
+    retriedCommandsCount: 0
+    retriedStatementsCount: 0
+    transactionsCollectionWriteCount: 0
+    currentActive: 0
+    currentInactive: 0
+    currentOpen: 0
+    totalAborted: 0
+    totalCommitted: 0
+    totalStarted: 0
+    totalPrepared: 0
+    totalPreparedThenCommitted: 0
+    totalPreparedThenAborted: 0
+    currentPrepared: 0
+  transportSecurity:
+    1.0: 0
+    1.1: 0
+    1.2: 0
+    1.3: 0
+    unknown: 0
+  twoPhaseCommitCoordinator:
+    totalCreated: 0
+    totalStartedTwoPhaseCommit: 0
+    totalAbortedTwoPhaseCommit: 0
+    totalCommittedTwoPhaseCommit: 0
+    currentInSteps:
+      writingParticipantList: 0
+      waitingForVotes: 0
+      writingDecision: 0
+      waitingForDecisionAcks: 0
+      writingEndOfTransaction: 0
+      deletingCoordinatorDoc: 0
+  wiredTiger:
+    uri: "statistics:"
+    autocommit:
+      retries for readonly operations: 0
+      retries for update operations: 0
+    background-compact:
+      background compact failed calls: 0
+      background compact failed calls due to cache pressure: 0
+      background compact interrupted: 0
+      background compact moving average of bytes rewritten: 0
+      background compact recovered bytes: 0
+      background compact running: 0
+      background compact skipped file as it is part of the exclude list: 0
+      background compact skipped file as not meeting requirements for compaction: 0
+      background compact sleeps due to cache pressure: 0
+      background compact successful calls: 0
+      background compact timeout: 0
+      number of files tracked by background compaction: 0
+    backup:
+      backup cursor open: 0
+      backup duplicate cursor open: 0
+      backup granularity size: 0
+      incremental backup enabled: 0
+      opening the backup cursor in progress: 0
+      total modified incremental blocks: 0
+      total modified incremental blocks with compressed data: 0
+      total modified incremental blocks without compressed data: 0
+    block-cache:
+      cached blocks updated: 0
+      cached bytes updated: 0
+      evicted blocks: 0
+      file size causing bypass: 0
+      lookups: 0
+      number of blocks not evicted due to overhead: 0
+      number of bypasses because no-write-allocate setting was on: 0
+      number of bypasses due to overhead on put: 0
+      number of bypasses on get: 0
+      number of bypasses on put because file is too small: 0
+      number of eviction passes: 0
+      number of hits: 0
+      number of misses: 0
+      number of put bypasses on checkpoint I/O: 0
+      removed blocks: 0
+      time sleeping to remove block (usecs): 0
+      total blocks: 0
+      total blocks inserted on read path: 0
+      total blocks inserted on write path: 0
+      total bytes: 0
+      total bytes inserted on read path: 0
+      total bytes inserted on write path: 0
+    block-disagg:
+      Bytes read from the shared history store in SLS: 0
+      Bytes written to the shared history store in SLS: 0
+      Disaggregated block manager get: 0
+      Disaggregated block manager get from the shared history store in SLS: 0
+      Disaggregated block manager put : 10
+      Disaggregated block manager put to the shared history store in SLS: 0
+    block-manager:
+      blocks pre-loaded: 0
+      blocks read: 0
+      blocks written: 14
+      bytes read: 0
+      bytes read for internal pages: 0
+      bytes read for internal pages before decompression and decryption: 0
+      bytes read for leaf pages: 0
+      bytes read for leaf pages before decompression and decryption: 0
+      bytes read via memory map API: 0
+      bytes read via system call API: 0
+      bytes written: 43816
+      bytes written by compaction: 0
+      bytes written for checkpoint: 43816
+      bytes written for internal pages after compression and encryption: 399
+      bytes written for internal pages before compression and encryption: 399
+      bytes written for leaf pages after compression and encryption: 30638
+      bytes written for leaf pages before compression and encryption: 30732
+      bytes written via memory map API: 0
+      bytes written via system call API: 0
+      mapped blocks read: 0
+      mapped bytes read: 0
+      number of times the file was remapped because it changed size via fallocate or truncate: 0
+      number of times the region was remapped via write: 0
+    cache:
+      application thread time evicting (usecs): 0
+      application threads page read from disk to cache count: 0
+      application threads page read from disk to cache time (usecs): 0
+      application threads page write from cache to disk count: 12
+      application threads page write from cache to disk time (usecs): 145
+      bytes allocated for updates: 60219
+      bytes belonging to page images in the cache: 0
+      bytes belonging to the history store table in the cache: 779
+      bytes currently in the cache: 68682
+      bytes dirty in the cache cumulative: 12431
+      bytes not belonging to page images in the cache: 68682
+      bytes read into cache: 0
+      bytes written from cache: 31131
+      checkpoint blocked page eviction: 0
+      checkpoint of history store file blocked non-history store page eviction: 0
+      eviction calls to get a page: 12
+      eviction calls to get a page found queue empty: 12
+      eviction calls to get a page found queue empty after locking: 0
+      eviction currently operating in aggressive mode: 0
+      eviction empty score: 0
+      eviction gave up due to detecting a disk value without a timestamp behind the last update on the chain: 0
+      eviction gave up due to detecting a tombstone without a timestamp ahead of the selected on disk update: 0
+      eviction gave up due to detecting a tombstone without a timestamp ahead of the selected on disk update after validating the update chain: 0
+      eviction gave up due to detecting update chain entries without timestamps after the selected on disk update: 0
+      eviction gave up due to needing to remove a record from the history store but checkpoint is running: 0
+      eviction gave up due to no progress being made: 0
+      eviction passes of a file: 0
+      eviction server candidate queue empty when topping up: 0
+      eviction server candidate queue not empty when topping up: 0
+      eviction server evicting pages: 0
+      eviction server skips dirty pages during a running checkpoint: 0
+      eviction server skips internal pages as it has an active child.: 0
+      eviction server skips metadata pages with history: 0
+      eviction server skips pages that are written with transactions greater than the last running: 0
+      eviction server skips pages that previously failed eviction and likely will again: 0
+      eviction server skips pages that we do not want to evict: 0
+      eviction server skips tree that we do not want to evict: 0
+      eviction server skips trees because there are too many active walks: 0
+      eviction server skips trees that are being checkpointed: 0
+      eviction server skips trees that are configured to stick in cache: 0
+      eviction server skips trees that disable eviction: 0
+      eviction server skips trees that were not useful before: 0
+      eviction server slept, because we did not make progress with eviction: 0
+      eviction server unable to reach eviction goal: 0
+      eviction server waiting for a leaf page: 0
+      eviction state: 32
+      eviction walk most recent sleeps for checkpoint handle gathering: 0
+      eviction walk target pages histogram - 0-9: 0
+      eviction walk target pages histogram - 10-31: 0
+      eviction walk target pages histogram - 128 and higher: 0
+      eviction walk target pages histogram - 32-63: 0
+      eviction walk target pages histogram - 64-128: 0
+      eviction walk target pages reduced due to history store cache pressure: 0
+      eviction walk target strategy both clean and dirty pages: 0
+      eviction walk target strategy only clean pages: 0
+      eviction walk target strategy only dirty pages: 0
+      eviction walks abandoned: 0
+      eviction walks gave up because they restarted their walk twice: 0
+      eviction walks gave up because they saw too many pages and found no candidates: 0
+      eviction walks gave up because they saw too many pages and found too few candidates: 0
+      eviction walks random search fails to locate a page, results in a null position: 0
+      eviction walks reached end of tree: 0
+      eviction walks restarted: 0
+      eviction walks started from root of tree: 0
+      eviction walks started from saved location in tree: 0
+      eviction worker thread active: 4
+      eviction worker thread created: 0
+      eviction worker thread evicting pages: 0
+      eviction worker thread removed: 0
+      eviction worker thread stable number: 0
+      files with active eviction walks: 0
+      files with new eviction walks started: 0
+      force re-tuning of eviction workers once in a while: 0
+      forced eviction - do not retry count to evict pages selected to evict during reconciliation: 0
+      forced eviction - history store pages failed to evict while session has history store cursor open: 0
+      forced eviction - history store pages selected while session has history store cursor open: 0
+      forced eviction - history store pages successfully evicted while session has history store cursor open: 0
+      forced eviction - pages evicted that were clean count: 0
+      forced eviction - pages evicted that were clean time (usecs): 0
+      forced eviction - pages evicted that were dirty count: 0
+      forced eviction - pages evicted that were dirty time (usecs): 0
+      forced eviction - pages selected because of a large number of updates to a single item: 0
+      forced eviction - pages selected because of too many deleted items count: 0
+      forced eviction - pages selected count: 0
+      forced eviction - pages selected unable to be evicted count: 0
+      forced eviction - pages selected unable to be evicted time: 0
+      hazard pointer blocked page eviction: 0
+      hazard pointer check calls: 0
+      hazard pointer check entries walked: 0
+      hazard pointer maximum array length: 0
+      history store table insert calls: 0
+      history store table insert calls that returned restart: 0
+      history store table max on-disk size: 0
+      history store table on-disk size: 4096
+      history store table reads: 0
+      history store table reads missed: 0
+      history store table reads requiring squashed modifies: 0
+      history store table resolved updates without timestamps that lose their durable timestamp: 0
+      history store table truncation by rollback to stable to remove an unstable update: 0
+      history store table truncation by rollback to stable to remove an update: 0
+      history store table truncation to remove all the keys of a btree: 0
+      history store table truncation to remove an update: 0
+      history store table truncation to remove range of updates due to an update without a timestamp on data page: 0
+      history store table truncation to remove range of updates due to key being removed from the data page during reconciliation: 0
+      history store table truncations that would have happened in non-dryrun mode: 0
+      history store table truncations to remove an unstable update that would have happened in non-dryrun mode: 0
+      history store table truncations to remove an update that would have happened in non-dryrun mode: 0
+      history store table updates without timestamps fixed up by reinserting with the fixed timestamp: 0
+      history store table writes requiring squashed modifies: 0
+      in-memory page passed criteria to be split: 0
+      in-memory page splits: 0
+      internal page split blocked its eviction: 0
+      internal pages evicted: 0
+      internal pages queued for eviction: 0
+      internal pages seen by eviction walk: 0
+      internal pages seen by eviction walk that are already queued: 0
+      internal pages split during eviction: 0
+      leaf pages split during eviction: 0
+      locate a random in-mem ref by examining all entries on the root page: 0
+      maximum bytes configured: 15976103936
+      maximum milliseconds spent at a single eviction: 0
+      maximum page size seen at eviction: 0
+      modified pages evicted: 0
+      modified pages evicted by application threads: 0
+      multi-block reconciliation blocked whilst checkpoint is running: 0
+      number of pages read that had deltas attached: 0
+      operations timed out waiting for space in cache: 0
+      overflow keys on a multiblock row-store page blocked its eviction: 0
+      overflow pages read into cache: 0
+      page split during eviction deepened the tree: 0
+      page written requiring history store records: 0
+      pages considered for eviction that were brought in by pre-fetch: 0
+      pages currently held in the cache: 22
+      pages evicted by application threads: 0
+      pages evicted in parallel with checkpoint: 0
+      pages queued for eviction: 0
+      pages queued for eviction post lru sorting: 0
+      pages queued for urgent eviction: 0
+      pages queued for urgent eviction during walk: 0
+      pages queued for urgent eviction from history store due to high dirty content: 0
+      pages read into cache: 0
+      pages read into cache after truncate: 0
+      pages read into cache after truncate in prepare state: 0
+      pages read into cache by checkpoint: 0
+      pages removed from the ordinary queue to be queued for urgent eviction: 0
+      pages requested from the cache: 228
+      pages requested from the cache due to pre-fetch: 0
+      pages seen by eviction walk: 0
+      pages seen by eviction walk that are already queued: 0
+      pages selected for eviction unable to be evicted: 0
+      pages selected for eviction unable to be evicted because of active children on an internal page: 0
+      pages selected for eviction unable to be evicted because of failure in reconciliation: 0
+      pages selected for eviction unable to be evicted because of race between checkpoint and updates without timestamps: 0
+      pages walked for eviction: 0
+      pages written from cache: 12
+      pages written requiring in-memory restoration: 0
+      percentage overhead: 8
+      recent modification of a page blocked its eviction: 0
+      reverse splits performed: 0
+      reverse splits skipped because of VLCS namespace gap restrictions: 0
+      the number of times full update inserted to history store: 0
+      the number of times reverse modify inserted to history store: 0
+      total milliseconds spent inside reentrant history store evictions in a reconciliation: 0
+      tracked bytes belonging to internal pages in the cache: 6648
+      tracked bytes belonging to leaf pages in the cache: 62034
+      tracked dirty bytes in the cache: 0
+      tracked dirty pages in the cache: 0
+      uncommitted truncate blocked page eviction: 0
+      unmodified pages evicted: 0
+    capacity:
+      background fsync file handles considered: 0
+      background fsync file handles synced: 0
+      background fsync time (msecs): 0
+      bytes read: 0
+      bytes written for checkpoint: 30638
+      bytes written for chunk cache: 0
+      bytes written for eviction: 0
+      bytes written for log: 22784
+      bytes written total: 53422
+      threshold to call fsync: 0
+      time waiting due to total capacity (usecs): 0
+      time waiting during checkpoint (usecs): 0
+      time waiting during eviction (usecs): 0
+      time waiting during logging (usecs): 0
+      time waiting during read (usecs): 0
+      time waiting for chunk cache IO bandwidth (usecs): 0
+    checkpoint:
+      checkpoint cleanup successful calls: 0
+      checkpoint has acquired a snapshot for its transaction: 0
+      checkpoints skipped because database was clean: 0
+      fsync calls after allocating the transaction ID: 1
+      fsync duration after allocating the transaction ID (usecs): 6
+      generation: 2
+      max time (msecs): 4
+      min time (msecs): 4
+      most recent duration for checkpoint dropping all handles (usecs): 162
+      most recent duration for gathering all handles (usecs): 206
+      most recent duration for gathering applied handles (usecs): 187
+      most recent duration for gathering skipped handles (usecs): 0
+      most recent duration for handles metadata checked (usecs): 5
+      most recent duration for locking the handles (usecs): 175
+      most recent handles applied: 11
+      most recent handles checkpoint dropped: 5
+      most recent handles metadata checked: 5
+      most recent handles metadata locked: 5
+      most recent handles skipped: 0
+      most recent handles walked: 21
+      most recent time (msecs): 4
+      number of checkpoints started by api: 1
+      number of checkpoints started by compaction: 0
+      number of files synced: 10
+      number of handles visited after writes complete: 5
+      number of history store pages caused to be reconciled: 10
+      number of internal pages visited: 6
+      number of leaf pages visited: 6
+      number of pages caused to be reconciled: 12
+      pages added for eviction during checkpoint cleanup: 0
+      pages removed during checkpoint cleanup: 0
+      pages skipped during checkpoint cleanup tree walk: 0
+      pages visited during checkpoint cleanup: 0
+      prepare currently running: 0
+      prepare max time (msecs): 0
+      prepare min time (msecs): 0
+      prepare most recent time (msecs): 0
+      prepare total time (msecs): 0
+      progress state: 0
+      scrub dirty target: 0
+      scrub max time (msecs): 0
+      scrub min time (msecs): 0
+      scrub most recent time (msecs): 0
+      scrub total time (msecs): 0
+      stop timing stress active: 0
+      time spent on per-tree checkpoint work (usecs): 358
+      total failed number of checkpoints: 0
+      total succeed number of checkpoints: 1
+      total time (msecs): 4
+      transaction checkpoints due to obsolete pages: 0
+      wait cycles while cache dirty level is decreasing: 0
+    chunk-cache:
+      aggregate number of spanned chunks on read: 0
+      chunks evicted: 0
+      could not allocate due to exceeding bitmap capacity: 0
+      could not allocate due to exceeding capacity: 0
+      lookups: 0
+      number of chunks loaded from flushed tables in chunk cache: 0
+      number of metadata entries inserted: 0
+      number of metadata entries removed: 0
+      number of metadata inserts/deletes dropped by the worker thread: 0
+      number of metadata inserts/deletes pushed to the worker thread: 0
+      number of metadata inserts/deletes read by the worker thread: 0
+      number of misses: 0
+      number of times a read from storage failed: 0
+      retried accessing a chunk while I/O was in progress: 0
+      retries from a chunk cache checksum mismatch: 0
+      timed out due to too many retries: 0
+      total bytes read from persistent content: 0
+      total bytes used by the cache: 0
+      total bytes used by the cache for pinned chunks: 0
+      total chunks held by the chunk cache: 0
+      total number of chunks inserted on startup from persisted metadata.: 0
+      total pinned chunks held by the chunk cache: 0
+    connection:
+      auto adjusting condition resets: 10
+      auto adjusting condition wait calls: 24
+      auto adjusting condition wait raced to update timeout and skipped updating: 0
+      detected system time went backwards: 0
+      files currently open: 9
+      hash bucket array size for data handles: 512
+      hash bucket array size general: 512
+      memory allocations: 8268
+      memory frees: 7141
+      memory re-allocations: 107
+      number of sessions without a sweep for 5+ minutes: 0
+      number of sessions without a sweep for 60+ minutes: 0
+      pthread mutex condition wait calls: 68
+      pthread mutex shared lock read-lock calls: 496
+      pthread mutex shared lock write-lock calls: 166
+      total fsync I/Os: 31
+      total read I/Os: 13
+      total write I/Os: 27
+    cursor:
+      Total number of deleted pages skipped during tree walk: 0
+      Total number of entries skipped by cursor next calls: 0
+      Total number of entries skipped by cursor prev calls: 0
+      Total number of entries skipped to position the history store cursor: 0
+      Total number of in-memory deleted pages skipped during tree walk: 0
+      Total number of on-disk deleted pages skipped during tree walk: 0
+      Total number of times a search near has exited due to prefix config: 0
+      Total number of times cursor fails to temporarily release pinned page to encourage eviction of hot or large page: 0
+      Total number of times cursor temporarily releases pinned page to encourage eviction of hot or large page: 0
+      bulk cursor count: 0
+      cached cursor count: 11
+      cursor bound calls that return an error: 0
+      cursor bounds cleared from reset: 2
+      cursor bounds comparisons performed: 4
+      cursor bounds next called on an unpositioned cursor: 4
+      cursor bounds next early exit: 0
+      cursor bounds prev called on an unpositioned cursor: 0
+      cursor bounds prev early exit: 0
+      cursor bounds search early exit: 0
+      cursor bounds search near call repositioned cursor: 0
+      cursor bulk loaded cursor insert calls: 0
+      cursor cache calls that return an error: 0
+      cursor close calls that result in cache: 126
+      cursor close calls that return an error: 0
+      cursor compare calls that return an error: 0
+      cursor create calls: 63
+      cursor equals calls that return an error: 0
+      cursor get key calls that return an error: 0
+      cursor get value calls that return an error: 0
+      cursor insert calls: 70
+      cursor insert calls that return an error: 0
+      cursor insert check calls that return an error: 0
+      cursor insert key and value bytes: 47937
+      cursor largest key calls that return an error: 0
+      cursor modify calls: 0
+      cursor modify calls that return an error: 0
+      cursor modify key and value bytes affected: 0
+      cursor modify value bytes modified: 0
+      cursor next calls: 45
+      cursor next calls that return an error: 0
+      cursor next calls that skip due to a globally visible history store tombstone: 0
+      cursor next calls that skip greater than 1 and fewer than 100 entries: 0
+      cursor next calls that skip greater than or equal to 100 entries: 0
+      cursor next random calls that return an error: 0
+      cursor operation restarted: 0
+      cursor prev calls: 7
+      cursor prev calls that return an error: 0
+      cursor prev calls that skip due to a globally visible history store tombstone: 0
+      cursor prev calls that skip greater than or equal to 100 entries: 0
+      cursor prev calls that skip less than 100 entries: 0
+      cursor reconfigure calls that return an error: 0
+      cursor remove calls: 0
+      cursor remove calls that return an error: 0
+      cursor remove key bytes removed: 0
+      cursor reopen calls that return an error: 0
+      cursor reserve calls: 0
+      cursor reserve calls that return an error: 0
+      cursor reset calls: 321
+      cursor reset calls that return an error: 0
+      cursor search calls: 154
+      cursor search calls that return an error: 0
+      cursor search history store calls: 0
+      cursor search near calls: 2
+      cursor search near calls that return an error: 0
+      cursor sweep buckets: 387
+      cursor sweep cursors closed: 0
+      cursor sweep cursors examined: 0
+      cursor sweeps: 3
+      cursor truncate calls: 0
+      cursor truncates performed on individual keys: 0
+      cursor update calls: 0
+      cursor update calls that return an error: 0
+      cursor update key and value bytes: 0
+      cursor update value size change: 0
+      cursors reused from cache: 115
+      open cursor count: 10
+    data-handle:
+      connection data handle size: 504
+      connection data handles currently active: 21
+      connection sweep candidate became referenced: 0
+      connection sweep dhandles closed: 0
+      connection sweep dhandles removed from hash list: 0
+      connection sweep time-of-death sets: 0
+      connection sweeps: 0
+      connection sweeps skipped due to checkpoint gathering handles: 0
+      session dhandles swept: 0
+      session sweep attempts: 30
+    layered:
+      Layered table cursor insert operations: 6
+      Layered table cursor next operations: 7
+      Layered table cursor next operations from ingest table: 0
+      Layered table cursor next operations from stable table: 7
+      Layered table cursor prev operations: 0
+      Layered table cursor prev operations from ingest table: 0
+      Layered table cursor prev operations from stable table: 0
+      Layered table cursor remove operations: 0
+      Layered table cursor search near operations: 0
+      Layered table cursor search near operations from ingest table: 0
+      Layered table cursor search near operations from stable table: 0
+      Layered table cursor search operations: 10
+      Layered table cursor search operations from ingest table: 0
+      Layered table cursor search operations from stable table: 10
+      Layered table cursor update operations: 0
+      checkpoints performed on this table by the layered table manager: 0
+      checkpoints refreshed on shared layered constituents: 0
+      how many log applications the layered table manager applied on this tree: 0
+      how many log applications the layered table manager skipped on this tree: 0
+      how many previously-applied LSNs the layered table manager skipped on this tree: 0
+      the number of tables the layered table manager has open: 3
+      whether the layered table manager thread has been started: 1
+      whether the layered table manager thread is currently busy doing work: 1
+    lock:
+      checkpoint lock acquisitions: 3
+      checkpoint lock application thread wait time (usecs): 0
+      checkpoint lock internal thread wait time (usecs): 0
+      dhandle lock application thread time waiting (usecs): 0
+      dhandle lock internal thread time waiting (usecs): 0
+      dhandle read lock acquisitions: 18
+      dhandle write lock acquisitions: 102
+      metadata lock acquisitions: 1
+      metadata lock application thread wait time (usecs): 0
+      metadata lock internal thread wait time (usecs): 0
+      schema lock acquisitions: 20
+      schema lock application thread wait time (usecs): 0
+      schema lock internal thread wait time (usecs): 0
+      table lock application thread time waiting for the table lock (usecs): 0
+      table lock internal thread time waiting for the table lock (usecs): 0
+      table read lock acquisitions: 0
+      table write lock acquisitions: 11
+      txn global lock application thread time waiting (usecs): 0
+      txn global lock internal thread time waiting (usecs): 0
+      txn global read lock acquisitions: 9
+      txn global write lock acquisitions: 15
+    log:
+      busy returns attempting to switch slots: 0
+      force log remove time sleeping (usecs): 0
+      log bytes of payload data: 19106
+      log bytes written: 22656
+      log files manually zero-filled: 0
+      log flush operations: 6
+      log force write operations: 12
+      log force write operations skipped: 11
+      log records compressed: 17
+      log records not compressed: 10
+      log records too small to compress: 27
+      log release advances write LSN: 10
+      log scan operations: 0
+      log scan records requiring two reads: 0
+      log server thread advances write LSN: 1
+      log server thread write LSN walk skipped: 1001
+      log sync operations: 12
+      log sync time duration (usecs): 6349
+      log sync_dir operations: 1
+      log sync_dir time duration (usecs): 0
+      log write operations: 54
+      logging bytes consolidated: 22272
+      maximum log file size: 104857600
+      number of pre-allocated log files to create: 1
+      pre-allocated log files not ready and missed: 1
+      pre-allocated log files prepared: 1
+      pre-allocated log files used: 0
+      records processed by log scan: 0
+      slot close lost race: 0
+      slot close unbuffered waits: 0
+      slot closures: 11
+      slot join atomic update races: 0
+      slot join calls atomic updates raced: 0
+      slot join calls did not yield: 54
+      slot join calls found active slot closed: 0
+      slot join calls slept: 0
+      slot join calls yielded: 0
+      slot join found active slot closed: 0
+      slot joins yield time (usecs): 0
+      slot transitions unable to find free slot: 0
+      slot unbuffered writes: 0
+      total in-memory size of compressed records: 27184
+      total log buffer size: 33554432
+      total size of compressed records: 14431
+      written slots coalesced: 0
+      yields waiting for previous log file close: 0
+    perf:
+      block manager read latency histogram (bucket 1) - 0-10ms: 0
+      block manager read latency histogram (bucket 2) - 10-49ms: 0
+      block manager read latency histogram (bucket 3) - 50-99ms: 0
+      block manager read latency histogram (bucket 4) - 100-249ms: 0
+      block manager read latency histogram (bucket 5) - 250-499ms: 0
+      block manager read latency histogram (bucket 6) - 500-999ms: 0
+      block manager read latency histogram (bucket 7) - 1000ms+: 0
+      block manager read latency histogram total (msecs): 0
+      block manager write latency histogram (bucket 1) - 0-10ms: 14
+      block manager write latency histogram (bucket 2) - 10-49ms: 0
+      block manager write latency histogram (bucket 3) - 50-99ms: 0
+      block manager write latency histogram (bucket 4) - 100-249ms: 0
+      block manager write latency histogram (bucket 5) - 250-499ms: 0
+      block manager write latency histogram (bucket 6) - 500-999ms: 0
+      block manager write latency histogram (bucket 7) - 1000ms+: 0
+      block manager write latency histogram total (msecs): 0
+      file system read latency histogram (bucket 1) - 0-10ms: 13
+      file system read latency histogram (bucket 2) - 10-49ms: 0
+      file system read latency histogram (bucket 3) - 50-99ms: 0
+      file system read latency histogram (bucket 4) - 100-249ms: 0
+      file system read latency histogram (bucket 5) - 250-499ms: 0
+      file system read latency histogram (bucket 6) - 500-999ms: 0
+      file system read latency histogram (bucket 7) - 1000ms+: 0
+      file system read latency histogram total (msecs): 0
+      file system write latency histogram (bucket 1) - 0-10ms: 27
+      file system write latency histogram (bucket 2) - 10-49ms: 0
+      file system write latency histogram (bucket 3) - 50-99ms: 0
+      file system write latency histogram (bucket 4) - 100-249ms: 0
+      file system write latency histogram (bucket 5) - 250-499ms: 0
+      file system write latency histogram (bucket 6) - 500-999ms: 0
+      file system write latency histogram (bucket 7) - 1000ms+: 0
+      file system write latency histogram total (msecs): 0
+      operation read latency histogram (bucket 1) - 0-100us: 102
+      operation read latency histogram (bucket 2) - 100-249us: 0
+      operation read latency histogram (bucket 3) - 250-499us: 0
+      operation read latency histogram (bucket 4) - 500-999us: 0
+      operation read latency histogram (bucket 5) - 1000-9999us: 0
+      operation read latency histogram (bucket 6) - 10000us+: 0
+      operation read latency histogram total (usecs): 41
+      operation write latency histogram (bucket 1) - 0-100us: 70
+      operation write latency histogram (bucket 2) - 100-249us: 0
+      operation write latency histogram (bucket 3) - 250-499us: 0
+      operation write latency histogram (bucket 4) - 500-999us: 0
+      operation write latency histogram (bucket 5) - 1000-9999us: 0
+      operation write latency histogram (bucket 6) - 10000us+: 0
+      operation write latency histogram total (usecs): 144
+    prefetch:
+      could not perform pre-fetch on internal page: 0
+      could not perform pre-fetch on ref without the pre-fetch flag set: 0
+      number of times pre-fetch failed to start: 0
+      pre-fetch not repeating for recently pre-fetched ref: 0
+      pre-fetch not triggered after single disk read: 0
+      pre-fetch not triggered as there is no valid dhandle: 0
+      pre-fetch not triggered by page read: 12
+      pre-fetch not triggered due to disk read count: 0
+      pre-fetch not triggered due to internal session: 0
+      pre-fetch not triggered due to special btree handle: 0
+      pre-fetch page not on disk when reading: 0
+      pre-fetch pages queued: 0
+      pre-fetch pages read in background: 0
+      pre-fetch skipped reading in a page due to harmless error: 0
+      pre-fetch triggered by page read: 0
+    reconciliation:
+      VLCS pages explicitly reconciled as empty: 0
+      approximate byte size of timestamps in pages written: 0
+      approximate byte size of transaction IDs in pages written: 96
+      fast-path pages deleted: 0
+      leaf-page overflow keys: 0
+      maximum milliseconds spent in a reconciliation call: 0
+      maximum milliseconds spent in building a disk image in a reconciliation: 0
+      maximum milliseconds spent in moving updates to the history store in a reconciliation: 0
+      overflow values written: 0
+      page reconciliation calls: 12
+      page reconciliation calls for eviction: 0
+      page reconciliation calls that resulted in values with prepared transaction metadata: 0
+      page reconciliation calls that resulted in values with timestamps: 0
+      page reconciliation calls that resulted in values with transaction ids: 1
+      pages deleted: 0
+      pages written including an aggregated newest start durable timestamp : 0
+      pages written including an aggregated newest stop durable timestamp : 0
+      pages written including an aggregated newest stop timestamp : 0
+      pages written including an aggregated newest stop transaction ID: 0
+      pages written including an aggregated newest transaction ID : 0
+      pages written including an aggregated oldest start timestamp : 0
+      pages written including an aggregated prepare: 0
+      pages written including at least one prepare state: 0
+      pages written including at least one start durable timestamp: 0
+      pages written including at least one start timestamp: 0
+      pages written including at least one start transaction ID: 1
+      pages written including at least one stop durable timestamp: 0
+      pages written including at least one stop timestamp: 0
+      pages written including at least one stop transaction ID: 0
+      records written including a prepare state: 0
+      records written including a start durable timestamp: 0
+      records written including a start timestamp: 0
+      records written including a start transaction ID: 12
+      records written including a stop durable timestamp: 0
+      records written including a stop timestamp: 0
+      records written including a stop transaction ID: 0
+      split bytes currently awaiting free: 0
+      split objects currently awaiting free: 0
+    session:
+      attempts to remove a local object and the object is in use: 0
+      flush_tier failed calls: 0
+      flush_tier operation calls: 0
+      flush_tier tables skipped due to no checkpoint: 0
+      flush_tier tables switched: 0
+      local objects removed: 0
+      open session count: 26
+      session query timestamp calls: 0
+      table alter failed calls: 0
+      table alter successful calls: 0
+      table alter triggering checkpoint calls: 0
+      table alter unchanged and skipped: 0
+      table compact conflicted with checkpoint: 0
+      table compact dhandle successful calls: 0
+      table compact failed calls: 0
+      table compact failed calls due to cache pressure: 0
+      table compact passes: 0
+      table compact running: 0
+      table compact skipped as process would not reduce file size: 0
+      table compact successful calls: 0
+      table compact timeout: 0
+      table create failed calls: 0
+      table create successful calls: 5
+      table create with import failed calls: 0
+      table create with import successful calls: 0
+      table drop failed calls: 0
+      table drop successful calls: 0
+      table rename failed calls: 0
+      table rename successful calls: 0
+      table salvage failed calls: 0
+      table salvage successful calls: 0
+      table truncate failed calls: 0
+      table truncate successful calls: 0
+      table verify failed calls: 0
+      table verify successful calls: 0
+      tiered operations dequeued and processed: 0
+      tiered operations removed without processing: 0
+      tiered operations scheduled: 0
+      tiered storage local retention time (secs): 0
+    thread-state:
+      active filesystem fsync calls: 0
+      active filesystem read calls: 0
+      active filesystem write calls: 0
+    thread-yield:
+      application thread operations waiting for cache: 0
+      application thread snapshot refreshed for eviction: 0
+      application thread time waiting for cache (usecs): 0
+      connection close blocked waiting for transaction state stabilization: 0
+      connection close yielded for lsm manager shutdown: 0
+      data handle lock yielded: 0
+      get reference for page index and slot time sleeping (usecs): 0
+      page access yielded due to prepare state change: 0
+      page acquire busy blocked: 0
+      page acquire eviction blocked: 0
+      page acquire locked blocked: 0
+      page acquire read blocked: 0
+      page acquire time sleeping (usecs): 0
+      page delete rollback time sleeping for state change (usecs): 0
+      page reconciliation yielded due to child modification: 0
+    transaction:
+      Number of prepared updates: 0
+      Number of prepared updates committed: 0
+      Number of prepared updates repeated on the same key: 0
+      Number of prepared updates rolled back: 0
+      a reader raced with a prepared transaction commit and skipped an update or updates: 0
+      number of times overflow removed value is read: 0
+      oldest pinned transaction ID rolled back for eviction: 0
+      prepared transactions: 0
+      prepared transactions committed: 0
+      prepared transactions currently active: 0
+      prepared transactions rolled back: 0
+      query timestamp calls: 4
+      race to read prepared update retry: 0
+      rollback to stable calls: 0
+      rollback to stable history store keys that would have been swept in non-dryrun mode: 0
+      rollback to stable history store records with stop timestamps older than newer records: 0
+      rollback to stable inconsistent checkpoint: 0
+      rollback to stable keys removed: 0
+      rollback to stable keys restored: 0
+      rollback to stable keys that would have been removed in non-dryrun mode: 0
+      rollback to stable keys that would have been restored in non-dryrun mode: 0
+      rollback to stable pages visited: 0
+      rollback to stable restored tombstones from history store: 0
+      rollback to stable restored updates from history store: 0
+      rollback to stable skipping delete rle: 0
+      rollback to stable skipping stable rle: 0
+      rollback to stable sweeping history store keys: 0
+      rollback to stable tombstones from history store that would have been restored in non-dryrun mode: 0
+      rollback to stable tree walk skipping pages: 0
+      rollback to stable updates aborted: 0
+      rollback to stable updates from history store that would have been restored in non-dryrun mode: 0
+      rollback to stable updates removed from history store: 0
+      rollback to stable updates that would have been aborted in non-dryrun mode: 0
+      rollback to stable updates that would have been removed from history store in non-dryrun mode: 0
+      sessions scanned in each walk of concurrent sessions: 1380
+      set timestamp calls: 6
+      set timestamp durable calls: 0
+      set timestamp durable updates: 0
+      set timestamp force calls: 0
+      set timestamp global oldest timestamp set to be more recent than the global stable timestamp: 0
+      set timestamp oldest calls: 1
+      set timestamp oldest updates: 1
+      set timestamp stable calls: 5
+      set timestamp stable updates: 1
+      transaction begins: 21
+      transaction checkpoint history store file duration (usecs): 73
+      transaction range of IDs currently pinned: 0
+      transaction range of IDs currently pinned by a checkpoint: 0
+      transaction range of timestamps currently pinned: 1288490188800
+      transaction range of timestamps pinned by a checkpoint: 7480952926408540161
+      transaction range of timestamps pinned by the oldest active read timestamp: 0
+      transaction range of timestamps pinned by the oldest timestamp: 1288490188800
+      transaction read timestamp of the oldest active reader: 0
+      transaction rollback to stable currently running: 0
+      transaction walk of concurrent sessions: 59
+      transactions committed: 5
+      transactions rolled back: 16
+      update conflicts: 0
+    snapshot-window-settings:
+      total number of SnapshotTooOld errors: 0
+      minimum target snapshot window size in seconds: 300
+      current available snapshot window size in seconds: 300
+      latest majority snapshot timestamp available: "Mar 12 15:58:05:1"
+      oldest majority snapshot timestamp available: "Mar 12 15:53:05:1"
+      pinned timestamp requests: 0
+      min pinned timestamp: Timestamp { time: 4294967295, increment: 4294967295 }
+    oplog:
+      visibility timestamp: Timestamp { time: 1741795085, increment: 1 }
+  mem:
+    bits: 64
+    resident: 149
+    virtual: 4044
+    supported: true
+    secureAllocByteCount: 176
+    secureAllocBytesInPages: 4096
+  metrics:
+    abortExpiredTransactions:
+      passes: 1
+    aggStageCounters:
+      $_addReshardingResumeId: 0
+      $_analyzeShardKeyReadWriteDistribution: 0
+      $_backupFile: 0
+      $_internalAllCollectionStats: 0
+      $_internalApplyOplogUpdate: 0
+      $_internalBoundedSort: 0
+      $_internalChangeStreamAddPostImage: 0
+      $_internalChangeStreamAddPreImage: 0
+      $_internalChangeStreamCheckInvalidate: 0
+      $_internalChangeStreamCheckResumability: 0
+      $_internalChangeStreamCheckTopologyChange: 0
+      $_internalChangeStreamHandleTopologyChange: 0
+      $_internalChangeStreamOplogMatch: 0
+      $_internalChangeStreamTransform: 0
+      $_internalChangeStreamUnwindTransaction: 0
+      $_internalComputeGeoNearDistance: 0
+      $_internalConvertBucketIndexStats: 0
+      $_internalDensify: 0
+      $_internalFindAndModifyImageLookup: 0
+      $_internalInhibitOptimization: 0
+      $_internalProjection: 0
+      $_internalReplaceRoot: 0
+      $_internalReshardingIterateTransaction: 0
+      $_internalReshardingOwnershipMatch: 0
+      $_internalSearchIdLookup: 0
+      $_internalSearchMongotRemote: 0
+      $_internalSetWindowFields: 0
+      $_internalShardServerInfo: 0
+      $_internalShredDocuments: 0
+      $_internalSplitPipeline: 0
+      $_internalStreamingGroup: 0
+      $_internalUnpackBucket: 0
+      $_unpackBucket: 0
+      $addFields: 0
+      $backupCursor: 0
+      $backupCursorExtend: 0
+      $bucket: 0
+      $bucketAuto: 0
+      $changeStream: 0
+      $changeStreamSplitLargeEvent: 0
+      $collStats: 3
+      $count: 0
+      $currentOp: 0
+      $densify: 0
+      $documents: 0
+      $facet: 0
+      $fill: 0
+      $geoNear: 0
+      $graphLookup: 0
+      $group: 0
+      $hoppingWindow: 0
+      $indexStats: 0
+      $limit: 0
+      $listCachedAndActiveUsers: 0
+      $listCatalog: 0
+      $listLocalSessions: 0
+      $listSampledQueries: 0
+      $listSearchIndexes: 0
+      $listSessions: 0
+      $lookup: 0
+      $match: 0
+      $merge: 0
+      $mergeCursors: 0
+      $operationMetrics: 0
+      $out: 0
+      $planCacheStats: 0
+      $project: 0
+      $querySettings: 0
+      $queryStats: 0
+      $queue: 0
+      $redact: 0
+      $replaceRoot: 0
+      $replaceWith: 0
+      $sample: 0
+      $search: 0
+      $searchBeta: 0
+      $searchMeta: 0
+      $set: 0
+      $setVariableFromSubPipeline: 0
+      $setWindowFields: 0
+      $shardedDataDistribution: 0
+      $skip: 0
+      $sort: 0
+      $sortByCount: 0
+      $tumblingWindow: 0
+      $unionWith: 0
+      $unset: 0
+      $unwind: 0
+      $validate: 0
+      $vectorSearch: 0
+    changeStreams:
+      largeEventsFailed: 0
+      largeEventsSplit: 0
+      showExpandedEvents: 0
+    commands:
+      <UNKNOWN>: 0
+      _addShard:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrAbortReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrAddShard:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrAddShardToZone:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrBalancerCollectionStatus:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrBalancerStart:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrBalancerStatus:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrBalancerStop:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCheckClusterMetadataConsistency:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCheckMetadataConsistency:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCleanupReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrClearJumboFlag:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCollMod:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitChunkMigration:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitChunkSplit:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitChunksMerge:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitIndex:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitMergeAllChunksOnShard:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitMovePrimary:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitRefineCollectionShardKey:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCommitReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrConfigureCollectionBalancing:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrCreateDatabase:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrDropIndexCatalogEntry:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrEnsureChunkVersionIsGreaterThan:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrGetHistoricalPlacement:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrMoveRange:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRefineCollectionShardKey:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRemoveChunks:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRemoveShard:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRemoveShardFromZone:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRemoveTags:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRepairShardedCollectionChunksHistory:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrResetPlacementHistory:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrRunRestore:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrSetAllowMigrations:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrSetClusterParameter:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrSetUserWriteBlockMode:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrTransitionFromDedicatedConfigServer:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrTransitionToDedicatedConfigServer:
+        failed: 0
+        rejected: 0
+        total: 0
+      _configsvrUpdateZoneKeyRange:
+        failed: 0
+        rejected: 0
+        total: 0
+      _flushDatabaseCacheUpdates:
+        failed: 0
+        rejected: 0
+        total: 0
+      _flushDatabaseCacheUpdatesWithWriteConcern:
+        failed: 0
+        rejected: 0
+        total: 0
+      _flushReshardingStateChange:
+        failed: 0
+        rejected: 0
+        total: 0
+      _flushRoutingTableCacheUpdates:
+        failed: 0
+        rejected: 0
+        total: 0
+      _flushRoutingTableCacheUpdatesWithWriteConcern:
+        failed: 0
+        rejected: 0
+        total: 0
+      _getAuditConfigGeneration:
+        failed: 0
+        rejected: 0
+        total: 0
+      _getNextSessionMods:
+        failed: 0
+        rejected: 0
+        total: 0
+      _getUserCacheGeneration:
+        failed: 0
+        rejected: 0
+        total: 0
+      _isSelf:
+        failed: 0
+        rejected: 0
+        total: 0
+      _killOperations:
+        failed: 0
+        rejected: 0
+        total: 0
+      _mergeAuthzCollections:
+        failed: 0
+        rejected: 0
+        total: 0
+      _migrateClone:
+        failed: 0
+        rejected: 0
+        total: 0
+      _recvChunkAbort:
+        failed: 0
+        rejected: 0
+        total: 0
+      _recvChunkCommit:
+        failed: 0
+        rejected: 0
+        total: 0
+      _recvChunkReleaseCritSec:
+        failed: 0
+        rejected: 0
+        total: 0
+      _recvChunkStart:
+        failed: 0
+        rejected: 0
+        total: 0
+      _recvChunkStatus:
+        failed: 0
+        rejected: 0
+        total: 0
+      _refreshQueryAnalyzerConfiguration:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrAbortReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrBeginMigrationBlockingOperation:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrChangePrimary:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCheckMetadataConsistency:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCheckMetadataConsistencyParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCleanupReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCleanupStructuredEncryptionData:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCloneCatalogData:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCollMod:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCollModParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCommitIndexParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCommitReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCompactStructuredEncryptionData:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrConvertToCapped:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrConvertToCappedParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCoordinateMultiUpdate:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCreateCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrCreateCollectionParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropCollectionIfUUIDNotMatchingWithWriteConcern:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropCollectionParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropDatabase:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropDatabaseParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropIndexCatalogEntryParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrDropIndexes:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrEndMigrationBlockingOperation:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrGetStatsForBalancing:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrJoinDDLCoordinators:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrJoinMigrations:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrMergeAllChunksOnShard:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrMovePrimary:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrMovePrimaryEnterCriticalSection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrMovePrimaryExitCriticalSection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrMoveRange:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrNotifyShardingEvent:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrParticipantBlock:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrRefineCollectionShardKey:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrRenameCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrRenameCollectionParticipant:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrRenameCollectionParticipantUnblock:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrRenameIndexMetadata:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrReshardCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrReshardingOperationTime:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrSetAllowMigrations:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrSetClusterParameter:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrSetUserWriteBlockMode:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrUntrackUnsplittableCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      _shardsvrValidateShardKeyCandidate:
+        failed: 0
+        rejected: 0
+        total: 0
+      _transferMods:
+        failed: 0
+        rejected: 0
+        total: 0
+      abortShardSplit:
+        failed: 0
+        rejected: 0
+        total: 0
+      abortTransaction:
+        failed: 0
+        rejected: 0
+        total: 0
+      aggregate:
+        failed: 0
+        rejected: 0
+        total: 0
+      analyze:
+        failed: 0
+        rejected: 0
+        total: 0
+      analyzeShardKey:
+        failed: 0
+        rejected: 0
+        total: 0
+      appendOplogNote:
+        failed: 0
+        rejected: 0
+        total: 0
+      applyOps:
+        failed: 0
+        rejected: 0
+        total: 0
+      authenticate:
+        failed: 0
+        rejected: 0
+        total: 0
+      autoCompact:
+        failed: 0
+        rejected: 0
+        total: 0
+      autoSplitVector:
+        failed: 0
+        rejected: 0
+        total: 0
+      buildInfo:
+        failed: 0
+        rejected: 0
+        total: 0
+      bulkWrite:
+        arrayFilters: 0
+        failed: 0
+        pipeline: 0
+        rejected: 0
+        total: 0
+      checkShardingIndex:
+        failed: 0
+        rejected: 0
+        total: 0
+      cleanupOrphaned:
+        failed: 0
+        rejected: 0
+        total: 0
+      cleanupStructuredEncryptionData:
+        failed: 0
+        rejected: 0
+        total: 0
+      cloneCollectionAsCapped:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterAbortTransaction:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterAggregate:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterBulkWrite:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterCommitTransaction:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterCount:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterDelete:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterFind:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterGetMore:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterInsert:
+        failed: 0
+        rejected: 0
+        total: 0
+      clusterUpdate:
+        arrayFilters: 0
+        failed: 0
+        pipeline: 0
+        rejected: 0
+        total: 0
+      collMod:
+        failed: 0
+        rejected: 0
+        total: 0
+        validator:
+          failed: 0
+          jsonSchema: 0
+          total: 0
+      collStats:
+        failed: 0
+        rejected: 0
+        total: 0
+      commitShardSplit:
+        failed: 0
+        rejected: 0
+        total: 0
+      commitTransaction:
+        failed: 0
+        rejected: 0
+        total: 0
+      compact:
+        failed: 0
+        rejected: 0
+        total: 0
+      compactStructuredEncryptionData:
+        failed: 0
+        rejected: 0
+        total: 0
+      configureQueryAnalyzer:
+        failed: 0
+        rejected: 0
+        total: 0
+      connPoolStats:
+        failed: 0
+        rejected: 0
+        total: 0
+      connPoolSync:
+        failed: 0
+        rejected: 0
+        total: 0
+      connectionStatus:
+        failed: 0
+        rejected: 0
+        total: 0
+      convertToCapped:
+        failed: 0
+        rejected: 0
+        total: 0
+      coordinateCommitTransaction:
+        failed: 0
+        rejected: 0
+        total: 0
+      count:
+        failed: 0
+        rejected: 0
+        total: 0
+      create:
+        failed: 0
+        rejected: 0
+        total: 0
+        validator:
+          failed: 0
+          jsonSchema: 0
+          total: 0
+      createIndexes:
+        failed: 0
+        rejected: 0
+        total: 0
+      createRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      createSearchIndexes:
+        failed: 0
+        rejected: 0
+        total: 0
+      createUser:
+        failed: 0
+        rejected: 0
+        total: 0
+      currentOp:
+        failed: 0
+        rejected: 0
+        total: 0
+      dataSize:
+        failed: 0
+        rejected: 0
+        total: 0
+      dbCheck:
+        failed: 0
+        rejected: 0
+        total: 0
+      dbHash:
+        failed: 0
+        rejected: 0
+        total: 0
+      dbStats:
+        failed: 0
+        rejected: 0
+        total: 0
+      delete:
+        failed: 0
+        rejected: 0
+        total: 0
+      distinct:
+        failed: 0
+        rejected: 0
+        total: 0
+      donorAbortMigration:
+        failed: 0
+        rejected: 0
+        total: 0
+      donorForgetMigration:
+        failed: 0
+        rejected: 0
+        total: 0
+      donorStartMigration:
+        failed: 0
+        rejected: 0
+        total: 0
+      drop:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropAllRolesFromDatabase:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropAllUsersFromDatabase:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropConnections:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropDatabase:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropIndexes:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropSearchIndex:
+        failed: 0
+        rejected: 0
+        total: 0
+      dropUser:
+        failed: 0
+        rejected: 0
+        total: 0
+      endSessions:
+        failed: 0
+        rejected: 0
+        total: 0
+      explain:
+        failed: 0
+        rejected: 0
+        total: 0
+      exportCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      features:
+        failed: 0
+        rejected: 0
+        total: 0
+      filemd5:
+        failed: 0
+        rejected: 0
+        total: 0
+      find:
+        failed: 0
+        rejected: 0
+        total: 4
+      findAndModify:
+        arrayFilters: 0
+        failed: 0
+        pipeline: 0
+        rejected: 0
+        total: 0
+      flushRouterConfig:
+        failed: 0
+        rejected: 0
+        total: 0
+      forgetShardSplit:
+        failed: 0
+        rejected: 0
+        total: 0
+      fsync:
+        failed: 0
+        rejected: 0
+        total: 0
+      fsyncUnlock:
+        failed: 0
+        rejected: 0
+        total: 0
+      getAuditConfig:
+        failed: 0
+        rejected: 0
+        total: 0
+      getChangeStreamState:
+        failed: 0
+        rejected: 0
+        total: 0
+      getClusterParameter:
+        failed: 0
+        rejected: 0
+        total: 0
+      getCmdLineOpts:
+        failed: 0
+        rejected: 0
+        total: 0
+      getDatabaseVersion:
+        failed: 0
+        rejected: 0
+        total: 0
+      getDefaultRWConcern:
+        failed: 0
+        rejected: 0
+        total: 0
+      getDiagnosticData:
+        failed: 0
+        rejected: 0
+        total: 0
+      getLog:
+        failed: 0
+        rejected: 0
+        total: 0
+      getMore:
+        failed: 0
+        rejected: 0
+        total: 0
+      getParameter:
+        failed: 0
+        rejected: 0
+        total: 0
+      getQueryableEncryptionCountInfo:
+        failed: 0
+        rejected: 0
+        total: 0
+      getShardMap:
+        failed: 0
+        rejected: 0
+        total: 0
+      getShardVersion:
+        failed: 0
+        rejected: 0
+        total: 0
+      grantPrivilegesToRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      grantRolesToRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      grantRolesToUser:
+        failed: 0
+        rejected: 0
+        total: 0
+      hello:
+        failed: 0
+        rejected: 0
+        total: 0
+      hostInfo:
+        failed: 0
+        rejected: 0
+        total: 0
+      importCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      insert:
+        failed: 0
+        rejected: 0
+        total: 0
+      internalRenameIfOptionsAndIndexesMatch:
+        failed: 0
+        rejected: 0
+        total: 0
+      invalidateUserCache:
+        failed: 0
+        rejected: 0
+        total: 0
+      isMaster:
+        failed: 0
+        rejected: 0
+        total: 0
+      killAllSessions:
+        failed: 0
+        rejected: 0
+        total: 0
+      killAllSessionsByPattern:
+        failed: 0
+        rejected: 0
+        total: 0
+      killCursors:
+        failed: 0
+        rejected: 0
+        total: 0
+      killOp:
+        failed: 0
+        rejected: 0
+        total: 0
+      killSessions:
+        failed: 0
+        rejected: 0
+        total: 0
+      listCollections:
+        failed: 0
+        rejected: 0
+        total: 0
+      listCommands:
+        failed: 0
+        rejected: 0
+        total: 0
+      listDatabases:
+        failed: 0
+        rejected: 0
+        total: 0
+      listDatabasesForAllTenants:
+        failed: 0
+        rejected: 0
+        total: 0
+      listIndexes:
+        failed: 0
+        rejected: 0
+        total: 0
+      listSearchIndexes:
+        failed: 0
+        rejected: 0
+        total: 0
+      lockInfo:
+        failed: 0
+        rejected: 0
+        total: 0
+      logApplicationMessage:
+        failed: 0
+        rejected: 0
+        total: 0
+      logRotate:
+        failed: 0
+        rejected: 0
+        total: 0
+      logout:
+        failed: 0
+        rejected: 0
+        total: 0
+      mapReduce:
+        failed: 0
+        rejected: 0
+        total: 0
+      mergeChunks:
+        failed: 0
+        rejected: 0
+        total: 0
+      oidcListKeys:
+        failed: 0
+        rejected: 0
+        total: 0
+      oidcRefreshKeys:
+        failed: 0
+        rejected: 0
+        total: 0
+      ping:
+        failed: 0
+        rejected: 0
+        total: 0
+      planCacheClear:
+        failed: 0
+        rejected: 0
+        total: 0
+      planCacheClearFilters:
+        failed: 0
+        rejected: 0
+        total: 0
+      planCacheListFilters:
+        failed: 0
+        rejected: 0
+        total: 0
+      planCacheSetFilter:
+        failed: 0
+        rejected: 0
+        total: 0
+      prepareTransaction:
+        failed: 0
+        rejected: 0
+        total: 0
+      profile:
+        failed: 0
+        rejected: 0
+        total: 0
+      reIndex:
+        failed: 0
+        rejected: 0
+        total: 0
+      recipientForgetMigration:
+        failed: 0
+        rejected: 0
+        total: 0
+      recipientSyncData:
+        failed: 0
+        rejected: 0
+        total: 0
+      recipientVoteImportedFiles:
+        failed: 0
+        rejected: 0
+        total: 0
+      refreshSessions:
+        failed: 0
+        rejected: 0
+        total: 0
+      removeQuerySettings:
+        failed: 0
+        rejected: 0
+        total: 0
+      renameCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetAbortPrimaryCatchUp:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetFreeze:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetGetConfig:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetGetRBID:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetGetStatus:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetHeartbeat:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetInitiate:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetMaintenance:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetReconfig:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetRequestVotes:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetResizeOplog:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetStepDown:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetStepDownWithForce:
+        failed: 0
+        total: 0
+      replSetStepUp:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetSyncFrom:
+        failed: 0
+        rejected: 0
+        total: 0
+      replSetUpdatePosition:
+        failed: 0
+        rejected: 0
+        total: 0
+      revokePrivilegesFromRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      revokeRolesFromRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      revokeRolesFromUser:
+        failed: 0
+        rejected: 0
+        total: 0
+      rolesInfo:
+        failed: 0
+        rejected: 0
+        total: 0
+      rotateCertificates:
+        failed: 0
+        rejected: 0
+        total: 0
+      rotateFTDC:
+        failed: 0
+        rejected: 0
+        total: 0
+      saslContinue:
+        failed: 0
+        rejected: 0
+        total: 0
+      saslStart:
+        failed: 0
+        rejected: 0
+        total: 0
+      serverStatus:
+        failed: 0
+        rejected: 0
+        total: 0
+      setAuditConfig:
+        failed: 0
+        rejected: 0
+        total: 0
+      setChangeStreamState:
+        failed: 0
+        rejected: 0
+        total: 0
+      setClusterParameter:
+        failed: 0
+        rejected: 0
+        total: 0
+      setDefaultRWConcern:
+        failed: 0
+        rejected: 0
+        total: 0
+      setFeatureCompatibilityVersion:
+        failed: 0
+        rejected: 0
+        total: 0
+      setIndexCommitQuorum:
+        failed: 0
+        rejected: 0
+        total: 0
+      setParameter:
+        failed: 0
+        rejected: 0
+        total: 0
+      setProfilingFilterGlobally:
+        failed: 0
+        rejected: 0
+        total: 0
+      setQuerySettings:
+        failed: 0
+        rejected: 0
+        total: 0
+      setUserWriteBlockMode:
+        failed: 0
+        rejected: 0
+        total: 0
+      shardingState:
+        failed: 0
+        rejected: 0
+        total: 0
+      shutdown:
+        failed: 0
+        rejected: 0
+        total: 0
+      splitChunk:
+        failed: 0
+        rejected: 0
+        total: 0
+      splitVector:
+        failed: 0
+        rejected: 0
+        total: 0
+      startRecordingTraffic:
+        failed: 0
+        rejected: 0
+        total: 0
+      startSession:
+        failed: 0
+        rejected: 0
+        total: 0
+      stopRecordingTraffic:
+        failed: 0
+        rejected: 0
+        total: 0
+      top:
+        failed: 0
+        rejected: 0
+        total: 0
+      transitionToShardedCluster:
+        failed: 0
+        rejected: 0
+        total: 0
+      update:
+        arrayFilters: 0
+        failed: 0
+        pipeline: 0
+        rejected: 0
+        total: 0
+      updateRole:
+        failed: 0
+        rejected: 0
+        total: 0
+      updateSearchIndex:
+        failed: 0
+        rejected: 0
+        total: 0
+      updateUser:
+        failed: 0
+        rejected: 0
+        total: 0
+      usersInfo:
+        failed: 0
+        rejected: 0
+        total: 0
+      validate:
+        failed: 0
+        rejected: 0
+        total: 0
+      validateDBMetadata:
+        failed: 0
+        rejected: 0
+        total: 0
+      voteAbortIndexBuild:
+        failed: 0
+        rejected: 0
+        total: 0
+      voteCommitImportCollection:
+        failed: 0
+        rejected: 0
+        total: 0
+      voteCommitIndexBuild:
+        failed: 0
+        rejected: 0
+        total: 0
+      waitForFailPoint:
+        failed: 0
+        rejected: 0
+        total: 0
+      whatsmyuri:
+        failed: 0
+        rejected: 0
+        total: 0
+    cursor:
+      moreThanOneBatch: 0
+      timedOut: 0
+      totalOpened: 0
+      lifespan:
+        greaterThanOrEqual10Minutes: 0
+        lessThan10Minutes: 0
+        lessThan15Seconds: 0
+        lessThan1Minute: 0
+        lessThan1Second: 0
+        lessThan30Seconds: 0
+        lessThan5Seconds: 0
+      open:
+        multiTarget: 0
+        noTimeout: 0
+        pinned: 0
+        queuedData: 0
+        singleTarget: 0
+        total: 0
+    disagg:
+      logServer:
+        batchCount: [Array with 10 items]
+          First item:
+            lowerBound: 0
+            count: 3
+        batchSizeBytes: [Array with 17 items]
+          First item:
+            lowerBound: 0
+            count: 7
+        totalBatchesSent: 8
+        totalBytesSent: 13293
+        totalEntriesSent: 13
+      phylog:
+        committedLagMillis: 0
+        committedMillis: 1741795085555
+        committedToMaterializedLagMillis: 0
+        generatedToSentLagMillis: 1
+        lastGeneratedMillis: 1741795085555
+        lastSentWallTimeMillis: 1741795085554
+        materializationLagMillis: 0
+        materializedMillis: 1741795085555
+        qentries: 1
+        sentToCommittedLagMillis: -1
+        sentToMaterializedLagMillis: -1
+        totalBytes: 13101
+        totalEntries: 12
+        unmaterialized: 2
+        unsent: 0
+      waiters:
+        replication: 0
+    diskSpaceMonitor:
+      passes: 1
+      tookAction: 0
+    document:
+      deleted: 0
+      inserted: 0
+      returned: 0
+      updated: 0
+    dotsAndDollarsFields:
+      inserts: 0
+      updates: 0
+    getLastError:
+      wtime:
+        num: 0
+        totalMillis: 0
+      wtimeouts: 0
+      default:
+        unsatisfiable: 0
+        wtimeouts: 0
+    mongos:
+      cursor:
+        moreThanOneBatch: 0
+        totalOpened: 0
+      shardRegistry:
+        blockedOpsGauge: 0
+    network:
+      totalEgressConnectionEstablishmentTimeMillis: 0
+      totalIngressTLSConnections: 0
+      totalIngressTLSHandshakeTimeMillis: 0
+      totalTimeForEgressConnectionAcquiredToWireMicros: 0
+      totalTimeToFirstNonAuthCommandMillis: 0
+    operation:
+      killedDueToClientDisconnect: 0
+      killedDueToDefaultMaxTimeMSExpired: 0
+      killedDueToMaxTimeMSExpired: 0
+      numConnectionNetworkTimeouts: 0
+      scanAndOrder: 0
+      temporarilyUnavailableErrors: 0
+      temporarilyUnavailableErrorsConvertedToWriteConflict: 0
+      temporarilyUnavailableErrorsEscaped: 0
+      totalTimeWaitingBeforeConnectionTimeoutMillis: 0
+      transactionTooLargeForCacheErrors: 0
+      transactionTooLargeForCacheErrorsConvertedToWriteConflict: 0
+      unsendableCompletedResponses: 0
+      writeConflicts: 0
+    operatorCounters:
+      expressions:
+        $_internalFindAllValuesAtPath: 0
+        $_internalFleBetween: 0
+        $_internalFleEq: 0
+        $_internalIndexKey: 0
+        $_internalJsEmit: 0
+        $_internalKeyStringValue: 0
+        $_internalOwningShard: 0
+        $abs: 0
+        $acos: 0
+        $acosh: 0
+        $add: 0
+        $allElementsTrue: 0
+        $and: 0
+        $anyElementTrue: 0
+        $arrayElemAt: 0
+        $arrayToObject: 0
+        $asin: 0
+        $asinh: 0
+        $atan: 0
+        $atan2: 0
+        $atanh: 0
+        $avg: 0
+        $binarySize: 0
+        $bitAnd: 0
+        $bitNot: 0
+        $bitOr: 0
+        $bitXor: 0
+        $bsonSize: 0
+        $ceil: 0
+        $cmp: 0
+        $concat: 0
+        $concatArrays: 0
+        $cond: 0
+        $const: 0
+        $convert: 0
+        $cos: 0
+        $cosh: 0
+        $dateAdd: 0
+        $dateDiff: 0
+        $dateFromParts: 0
+        $dateFromString: 0
+        $dateSubtract: 0
+        $dateToParts: 0
+        $dateToString: 0
+        $dateTrunc: 0
+        $dayOfMonth: 0
+        $dayOfWeek: 0
+        $dayOfYear: 0
+        $degreesToRadians: 0
+        $divide: 0
+        $eq: 0
+        $exp: 0
+        $expr: 0
+        $filter: 0
+        $first: 0
+        $firstN: 0
+        $floor: 0
+        $function: 0
+        $getField: 0
+        $gt: 0
+        $gte: 0
+        $hour: 0
+        $ifNull: 0
+        $in: 0
+        $indexOfArray: 0
+        $indexOfBytes: 0
+        $indexOfCP: 0
+        $isArray: 0
+        $isNumber: 0
+        $isoDayOfWeek: 0
+        $isoWeek: 0
+        $isoWeekYear: 0
+        $last: 0
+        $lastN: 0
+        $let: 0
+        $literal: 0
+        $ln: 0
+        $log: 0
+        $log10: 0
+        $lt: 0
+        $lte: 0
+        $ltrim: 0
+        $map: 0
+        $max: 0
+        $maxN: 0
+        $median: 0
+        $mergeObjects: 0
+        $meta: 0
+        $millisecond: 0
+        $min: 0
+        $minN: 0
+        $minute: 0
+        $mod: 0
+        $month: 0
+        $multiply: 0
+        $ne: 0
+        $not: 0
+        $objectToArray: 0
+        $or: 0
+        $percentile: 0
+        $pow: 0
+        $radiansToDegrees: 0
+        $rand: 0
+        $range: 0
+        $reduce: 0
+        $regexFind: 0
+        $regexFindAll: 0
+        $regexMatch: 0
+        $replaceAll: 0
+        $replaceOne: 0
+        $reverseArray: 0
+        $round: 0
+        $rtrim: 0
+        $second: 0
+        $setDifference: 0
+        $setEquals: 0
+        $setField: 0
+        $setIntersection: 0
+        $setIsSubset: 0
+        $setUnion: 0
+        $sin: 0
+        $sinh: 0
+        $size: 0
+        $slice: 0
+        $sortArray: 0
+        $split: 0
+        $sqrt: 0
+        $stdDevPop: 0
+        $stdDevSamp: 0
+        $strLenBytes: 0
+        $strLenCP: 0
+        $strcasecmp: 0
+        $substr: 0
+        $substrBytes: 0
+        $substrCP: 0
+        $subtract: 0
+        $sum: 0
+        $switch: 0
+        $tan: 0
+        $tanh: 0
+        $toBool: 0
+        $toDate: 0
+        $toDecimal: 0
+        $toDouble: 0
+        $toHashedIndexKey: 0
+        $toInt: 0
+        $toLong: 0
+        $toLower: 0
+        $toObjectId: 0
+        $toString: 0
+        $toUUID: 0
+        $toUpper: 0
+        $trim: 0
+        $trunc: 0
+        $tsIncrement: 0
+        $tsSecond: 0
+        $type: 0
+        $unsetField: 0
+        $week: 0
+        $year: 0
+        $zip: 0
+      groupAccumulators:
+        $_internalConstructStats: 0
+        $_internalJsReduce: 0
+        $accumulator: 0
+        $addToSet: 0
+        $avg: 0
+        $bottom: 0
+        $bottomN: 0
+        $count: 0
+        $first: 0
+        $firstN: 0
+        $last: 0
+        $lastN: 0
+        $max: 0
+        $maxN: 0
+        $median: 0
+        $mergeObjects: 0
+        $min: 0
+        $minN: 0
+        $percentile: 0
+        $push: 0
+        $stdDevPop: 0
+        $stdDevSamp: 0
+        $sum: 0
+        $top: 0
+        $topN: 0
+      match:
+        $all: 0
+        $alwaysFalse: 0
+        $alwaysTrue: 0
+        $and: 0
+        $bitsAllClear: 0
+        $bitsAllSet: 0
+        $bitsAnyClear: 0
+        $bitsAnySet: 0
+        $comment: 0
+        $elemMatch: 0
+        $eq: 4
+        $exists: 0
+        $expr: 0
+        $geoIntersects: 0
+        $geoWithin: 0
+        $gt: 2
+        $gte: 0
+        $in: 0
+        $jsonSchema: 0
+        $lt: 0
+        $lte: 0
+        $mod: 0
+        $ne: 0
+        $near: 0
+        $nearSphere: 0
+        $nin: 0
+        $nor: 0
+        $not: 0
+        $or: 0
+        $regex: 0
+        $sampleRate: 0
+        $size: 0
+        $text: 0
+        $type: 0
+        $where: 0
+      windowAccumulators:
+        $addToSet: 0
+        $avg: 0
+        $bottom: 0
+        $bottomN: 0
+        $count: 0
+        $covariancePop: 0
+        $covarianceSamp: 0
+        $denseRank: 0
+        $derivative: 0
+        $documentNumber: 0
+        $expMovingAvg: 0
+        $first: 0
+        $firstN: 0
+        $integral: 0
+        $last: 0
+        $lastN: 0
+        $linearFill: 0
+        $locf: 0
+        $max: 0
+        $maxN: 0
+        $median: 0
+        $min: 0
+        $minN: 0
+        $percentile: 0
+        $push: 0
+        $rank: 0
+        $shift: 0
+        $stdDevPop: 0
+        $stdDevSamp: 0
+        $sum: 0
+        $top: 0
+        $topN: 0
+    query:
+      allowDiskUseFalse: 0
+      deleteManyCount: 0
+      deleteOneNonTargetedShardedCount: 0
+      deleteOneTargetedShardedCount: 0
+      deleteOneUnshardedCount: 0
+      deleteOneWithoutShardKeyWithIdCount: 0
+      deleteOneWithoutShardKeyWithIdRetryCount: 0
+      externalRetryableWriteCount: 0
+      findAndModifyNonTargetedShardedCount: 0
+      findAndModifyTargetedShardedCount: 0
+      findAndModifyUnshardedCount: 0
+      internalRetryableWriteCount: 0
+      nonRetryableDeleteOneWithoutShardKeyWithIdCount: 0
+      nonRetryableUpdateOneWithoutShardKeyWithIdCount: 0
+      recordIdDeduplicationSwitchedToRoaring: 0
+      retryableInternalTransactionCount: 0
+      updateDeleteManyDocumentsMaxCount: 0
+      updateDeleteManyDocumentsTotalCount: 0
+      updateDeleteManyDurationMaxMs: 0
+      updateDeleteManyDurationTotalMs: 0
+      updateManyCount: 0
+      updateOneNonTargetedShardedCount: 0
+      updateOneOpStyleBroadcastWithExactIDCount: 0
+      updateOneTargetedShardedCount: 0
+      updateOneUnshardedCount: 0
+      updateOneWithoutShardKeyWithIdCount: 0
+      updateOneWithoutShardKeyWithIdRetryCount: 0
+      group:
+        spilledBytes: 0
+        spilledDataStorageSize: 0
+        spilledRecords: 0
+        spills: 0
+      lookup:
+        hashLookup: 0
+        hashLookupSpillToDisk: 0
+        hashLookupSpillToDiskBytes: 0
+        indexedLoopJoin: 0
+        nestedLoopJoin: 0
+      multiPlanner:
+        classicCount: 0
+        classicMicros: 0
+        classicWorks: 0
+        sbeCount: 0
+        sbeMicros: 0
+        sbeNumReads: 0
+      planCache:
+        totalQueryShapes: 0
+        totalSizeEstimateBytes: 0
+        classic:
+          hits: 0
+          misses: 0
+          skipped: 4
+        sbe:
+          hits: 0
+          misses: 0
+          skipped: 0
+      queryFramework:
+        aggregate:
+          classicHybrid: 0
+          classicOnly: 0
+          cqf: 0
+          sbeHybrid: 0
+          sbeOnly: 0
+        find:
+          classic: 4
+          cqf: 0
+          sbe: 0
+      setWindowFields:
+        spilledBytes: 0
+        spilledRecords: 0
+        spills: 0
+      sort:
+        spillToDisk: 0
+        spillToDiskBytes: 0
+        totalBytesSorted: 0
+        totalKeysSorted: 0
+    queryExecutor:
+      scanned: 0
+      scannedObjects: 0
+      collectionScans:
+        nonTailable: 0
+        total: 0
+    queryStats:
+      numEvicted: 0
+      numHmacApplicationErrors: 0
+      numQueryStatsStoreWriteErrors: 0
+      numRateLimitedRequests: 0
+      queryStatsStoreSizeEstimateBytes: 3571
+    repl:
+      buffer:
+        write:
+          count: 0
+          sizeBytes: 0
+          maxSizeBytes: 0
+        apply:
+          count: 0
+          sizeBytes: 0
+          maxSizeBytes: 0
+          maxCount: 0
+      write:
+        batchSize: 0
+        batches:
+          num: 0
+          totalMillis: 0
+      apply:
+        attemptsToBecomeSecondary: 0
+        batchSize: 0
+        batches:
+          num: 0
+          totalMillis: 0
+        ops: 0
+      initialSync:
+        completed: 0
+        failedAttempts: 0
+        failures: 0
+      network:
+        bytes: 0
+        getmores:
+          num: 0
+          totalMillis: 0
+          numEmptyBatches: 0
+        notPrimaryLegacyUnacknowledgedWrites: 0
+        notPrimaryUnacknowledgedWrites: 0
+        oplogGetMoresProcessed:
+          num: 0
+          totalMillis: 0
+        ops: 0
+        readersCreated: 0
+        replSetUpdatePosition:
+          num: 0
+      reconfig:
+        numAutoReconfigsForRemovalOfNewlyAddedFields: 0
+      stateTransition:
+        lastStateTransition: ""
+        totalOperationsKilled: 0
+        totalOperationsRunning: 0
+      syncSource:
+        numSelections: 0
+        numSyncSourceChangesDueToSignificantlyCloserNode: 0
+        numTimesChoseDifferent: 0
+        numTimesChoseSame: 0
+        numTimesCouldNotFind: 0
+      waiters:
+        opTime: 0
+        replication: 0
+    ttl:
+      collSubpassesIncreasedPriority: 0
+      deletedDocuments: 0
+      passes: 0
+      subPasses: 0
+    wiredTiger:
+      recordStoreCursorBoundRetries: 0
+  ok: 1
+  end: 2025-03-12 15:58:06.002 +00:00:00
+transportLayerStats:
+  start: 2025-03-12 15:58:06.002 +00:00:00
+  listenerSocketBacklogQueueDepths: [Array with 2 items]
+    First item:
+      /tmp/mongodb-27017.sock: 0
+  end: 2025-03-12 15:58:06.002 +00:00:00
+systemMetrics:
+  start: 2025-03-12 15:58:06.002 +00:00:00
+  cpu:
+    num_logical_cores: 8
+    num_cores_available_to_process: 8
+    user_ms: 197020
+    nice_ms: 1430
+    system_ms: 37540
+    idle_ms: 2162030
+    iowait_ms: 37780
+    irq_ms: 0
+    softirq_ms: 460
+    steal_ms: 0
+    guest_ms: 0
+    guest_nice_ms: 0
+    ctxt: 2182703
+    btime: 1741794781
+    processes: 16828
+    procs_running: 2
+    procs_blocked: 0
+  memory:
+    MemTotal_kb: 32253668
+    MemFree_kb: 27194960
+    MemAvailable_kb: 31273228
+    Buffers_kb: 2168
+    Cached_kb: 4277640
+    SwapCached_kb: 0
+    Active_kb: 362832
+    Inactive_kb: 4115296
+    Active(anon)_kb: 972
+    Inactive(anon)_kb: 198644
+    Active(file)_kb: 361860
+    Inactive(file)_kb: 3916652
+    SwapTotal_kb: 0
+    SwapFree_kb: 0
+    Dirty_kb: 197456
+    AnonHugePages_kb: 88064
+  status:
+    process_opting_into_THP_if_enabled: 1
+  netstat:
+    TcpExt:SyncookiesSent: 0
+    TcpExt:SyncookiesRecv: 0
+    TcpExt:SyncookiesFailed: 0
+    TcpExt:EmbryonicRsts: 0
+    TcpExt:PruneCalled: 0
+    TcpExt:RcvPruned: 0
+    TcpExt:OfoPruned: 0
+    TcpExt:OutOfWindowIcmps: 0
+    TcpExt:LockDroppedIcmps: 0
+    TcpExt:ArpFilter: 0
+    TcpExt:TW: 98
+    TcpExt:TWRecycled: 0
+    TcpExt:TWKilled: 0
+    TcpExt:PAWSActive: 0
+    TcpExt:PAWSEstab: 0
+    TcpExt:DelayedACKs: 155
+    TcpExt:DelayedACKLocked: 1
+    TcpExt:DelayedACKLost: 6
+    TcpExt:ListenOverflows: 0
+    TcpExt:ListenDrops: 0
+    TcpExt:TCPHPHits: 6562
+    TcpExt:TCPPureAcks: 614
+    TcpExt:TCPHPAcks: 2186
+    TcpExt:TCPRenoRecovery: 0
+    TcpExt:TCPSackRecovery: 0
+    TcpExt:TCPSACKReneging: 0
+    TcpExt:TCPSACKReorder: 0
+    TcpExt:TCPRenoReorder: 0
+    TcpExt:TCPTSReorder: 0
+    TcpExt:TCPFullUndo: 0
+    TcpExt:TCPPartialUndo: 0
+    TcpExt:TCPDSACKUndo: 0
+    TcpExt:TCPLossUndo: 0
+    TcpExt:TCPLostRetransmit: 0
+    TcpExt:TCPRenoFailures: 0
+    TcpExt:TCPSackFailures: 0
+    TcpExt:TCPLossFailures: 0
+    TcpExt:TCPFastRetrans: 0
+    TcpExt:TCPSlowStartRetrans: 0
+    TcpExt:TCPTimeouts: 6
+    TcpExt:TCPLossProbes: 0
+    TcpExt:TCPLossProbeRecovery: 0
+    TcpExt:TCPRenoRecoveryFail: 0
+    TcpExt:TCPSackRecoveryFail: 0
+    TcpExt:TCPRcvCollapsed: 0
+    TcpExt:TCPBacklogCoalesce: 1673
+    TcpExt:TCPDSACKOldSent: 6
+    TcpExt:TCPDSACKOfoSent: 0
+    TcpExt:TCPDSACKRecv: 0
+    TcpExt:TCPDSACKOfoRecv: 0
+    TcpExt:TCPAbortOnData: 11
+    TcpExt:TCPAbortOnClose: 9
+    TcpExt:TCPAbortOnMemory: 0
+    TcpExt:TCPAbortOnTimeout: 0
+    TcpExt:TCPAbortOnLinger: 0
+    TcpExt:TCPAbortFailed: 0
+    TcpExt:TCPMemoryPressures: 0
+    TcpExt:TCPMemoryPressuresChrono: 0
+    TcpExt:TCPSACKDiscard: 0
+    TcpExt:TCPDSACKIgnoredOld: 0
+    TcpExt:TCPDSACKIgnoredNoUndo: 0
+    TcpExt:TCPSpuriousRTOs: 0
+    TcpExt:TCPMD5NotFound: 0
+    TcpExt:TCPMD5Unexpected: 0
+    TcpExt:TCPMD5Failure: 0
+    TcpExt:TCPSackShifted: 0
+    TcpExt:TCPSackMerged: 0
+    TcpExt:TCPSackShiftFallback: 0
+    TcpExt:TCPBacklogDrop: 0
+    TcpExt:PFMemallocDrop: 0
+    TcpExt:TCPMinTTLDrop: 0
+    TcpExt:TCPDeferAcceptDrop: 0
+    TcpExt:IPReversePathFilter: 0
+    TcpExt:TCPTimeWaitOverflow: 0
+    TcpExt:TCPReqQFullDoCookies: 0
+    TcpExt:TCPReqQFullDrop: 0
+    TcpExt:TCPRetransFail: 0
+    TcpExt:TCPRcvCoalesce: 33706
+    TcpExt:TCPOFOQueue: 7
+    TcpExt:TCPOFODrop: 0
+    TcpExt:TCPOFOMerge: 0
+    TcpExt:TCPChallengeACK: 0
+    TcpExt:TCPSYNChallenge: 0
+    TcpExt:TCPFastOpenActive: 0
+    TcpExt:TCPFastOpenActiveFail: 0
+    TcpExt:TCPFastOpenPassive: 0
+    TcpExt:TCPFastOpenPassiveFail: 0
+    TcpExt:TCPFastOpenListenOverflow: 0
+    TcpExt:TCPFastOpenCookieReqd: 0
+    TcpExt:TCPFastOpenBlackhole: 0
+    TcpExt:TCPSpuriousRtxHostQueues: 0
+    TcpExt:BusyPollRxPackets: 0
+    TcpExt:TCPAutoCorking: 101
+    TcpExt:TCPFromZeroWindowAdv: 0
+    TcpExt:TCPToZeroWindowAdv: 0
+    TcpExt:TCPWantZeroWindowAdv: 0
+    TcpExt:TCPSynRetrans: 5
+    TcpExt:TCPOrigDataSent: 4127
+    TcpExt:TCPHystartTrainDetect: 0
+    TcpExt:TCPHystartTrainCwnd: 0
+    TcpExt:TCPHystartDelayDetect: 0
+    TcpExt:TCPHystartDelayCwnd: 0
+    TcpExt:TCPACKSkippedSynRecv: 0
+    TcpExt:TCPACKSkippedPAWS: 0
+    TcpExt:TCPACKSkippedSeq: 0
+    TcpExt:TCPACKSkippedFinWait2: 0
+    TcpExt:TCPACKSkippedTimeWait: 0
+    TcpExt:TCPACKSkippedChallenge: 0
+    TcpExt:TCPWinProbe: 0
+    TcpExt:TCPKeepAlive: 0
+    TcpExt:TCPMTUPFail: 0
+    TcpExt:TCPMTUPSuccess: 0
+    TcpExt:TCPDelivered: 4325
+    TcpExt:TCPDeliveredCE: 0
+    TcpExt:TCPAckCompressed: 0
+    TcpExt:TCPZeroWindowDrop: 0
+    TcpExt:TCPRcvQDrop: 0
+    TcpExt:TCPWqueueTooBig: 0
+    TcpExt:TCPFastOpenPassiveAltKey: 0
+    TcpExt:TcpTimeoutRehash: 0
+    TcpExt:TcpDuplicateDataRehash: 0
+    TcpExt:TCPDSACKRecvSegs: 0
+    TcpExt:TCPDSACKIgnoredDubious: 0
+    TcpExt:TCPMigrateReqSuccess: 0
+    TcpExt:TCPMigrateReqFailure: 0
+    IpExt:InNoRoutes: 0
+    IpExt:InTruncatedPkts: 0
+    IpExt:InMcastPkts: 0
+    IpExt:OutMcastPkts: 2
+    IpExt:InBcastPkts: 0
+    IpExt:OutBcastPkts: 0
+    IpExt:InOctets: 1205406055
+    IpExt:OutOctets: 44769019
+    IpExt:InMcastOctets: 0
+    IpExt:OutMcastOctets: 80
+    IpExt:InBcastOctets: 0
+    IpExt:OutBcastOctets: 0
+    IpExt:InCsumErrors: 0
+    IpExt:InNoECTPkts: 857921
+    IpExt:InECT1Pkts: 0
+    IpExt:InECT0Pkts: 0
+    IpExt:InCEPkts: 0
+    IpExt:ReasmOverlaps: 0
+    Ip:Forwarding: 1
+    Ip:DefaultTTL: 127
+    Ip:InReceives: 112568
+    Ip:InHdrErrors: 0
+    Ip:InAddrErrors: 2
+    Ip:ForwDatagrams: 5705
+    Ip:InUnknownProtos: 0
+    Ip:InDiscards: 0
+    Ip:InDelivers: 106861
+    Ip:OutRequests: 68947
+    Ip:OutDiscards: 0
+    Ip:OutNoRoutes: 0
+    Ip:ReasmTimeout: 0
+    Ip:ReasmReqds: 0
+    Ip:ReasmOKs: 0
+    Ip:ReasmFails: 0
+    Ip:FragOKs: 0
+    Ip:FragFails: 0
+    Ip:FragCreates: 0
+    Tcp:RtoAlgorithm: 1
+    Tcp:RtoMin: 200
+    Tcp:RtoMax: 120000
+    Tcp:ActiveOpens: 229
+    Tcp:PassiveOpens: 19
+    Tcp:AttemptFails: 0
+    Tcp:EstabResets: 9
+    Tcp:CurrEstab: 3
+    Tcp:InSegs: 106650
+    Tcp:OutSegs: 63073
+    Tcp:RetransSegs: 5
+    Tcp:InErrs: 0
+    Tcp:OutRsts: 41
+    Tcp:InCsumErrors: 0
+  sockstat:
+    sockets:
+      used: 164
+    TCP:
+      inuse: 5
+      orphan: 0
+      tw: 9
+      alloc: 7
+  disks:
+    nvme0n1:
+      reads: 7503
+      reads_merged: 14
+      read_sectors: 697814
+      read_time_ms: 23245
+      writes: 32433
+      writes_merged: 56894
+      write_sectors: 6469753
+      write_time_ms: 423695
+      io_in_progress: 0
+      io_time_ms: 33700
+      io_queued_ms: 446940
+    nvme2n1:
+      reads: 231
+      reads_merged: 0
+      read_sectors: 7249
+      read_time_ms: 71
+      writes: 746
+      writes_merged: 0
+      write_sectors: 333128
+      write_time_ms: 628
+      io_in_progress: 0
+      io_time_ms: 260
+      io_queued_ms: 699
+    nvme1n1:
+      reads: 247
+      reads_merged: 0
+      read_sectors: 7401
+      read_time_ms: 75
+      writes: 8537
+      writes_merged: 15
+      write_sectors: 4246680
+      write_time_ms: 8265
+      io_in_progress: 0
+      io_time_ms: 1200
+      io_queued_ms: 8341
+    nvme3n1:
+      reads: 103
+      reads_merged: 0
+      read_sectors: 4532
+      read_time_ms: 4
+      writes: 0
+      writes_merged: 0
+      write_sectors: 0
+      write_time_ms: 0
+      io_in_progress: 0
+      io_time_ms: 0
+      io_queued_ms: 4
+  mounts:
+    /dev:
+      capacity: 4194304
+      available: 4194304
+      free: 4194304
+    /dev/shm:
+      capacity: 16513875968
+      available: 16513875968
+      free: 16513875968
+    /run:
+      capacity: 6605553664
+      available: 6605004800
+      free: 6605004800
+    /:
+      capacity: 17101205504
+      available: 7541047296
+      free: 7541047296
+    /tmp:
+      capacity: 16513880064
+      available: 16513105920
+      free: 16513105920
+    /boot/efi:
+      capacity: 10446848
+      available: 9023488
+      free: 9023488
+    /run/user/0:
+      capacity: 3302772736
+      available: 3302772736
+      free: 3302772736
+    /media/ebs:
+      capacity: 343429611520
+      available: 339071647744
+      free: 339071647744
+    /media/ebs2:
+      capacity: 343429611520
+      available: 340791566336
+      free: 340791566336
+  vmstat:
+    nr_mlock: 1
+    nr_anon_transparent_hugepages: 45
+    pswpin: 0
+    pswpout: 0
+    pgfault: 3736398
+    pgmajfault: 1691
+    numa_pages_migrated: 0
+    thp_fault_alloc: 52
+    thp_fault_fallback: 0
+    thp_collapse_alloc: 0
+    thp_swpout: 0
+    balloon_inflate: 0
+    balloon_deflate: 0
+  files:
+    sys_file_handles_in_use: 1312
+  pressure:
+    cpu:
+      some:
+        totalMicros: 518578
+      full:
+        totalMicros: 0
+    memory:
+      some:
+        totalMicros: 0
+      full:
+        totalMicros: 0
+    io:
+      some:
+        totalMicros: 18220780
+      full:
+        totalMicros: 18020257
+  end: 2025-03-12 15:58:06.066 +00:00:00
+end: 2025-03-12 15:58:06.066 +00:00:00
+
+Sample count: 3479
+Metric count: 299
+test test_show_reference_document ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

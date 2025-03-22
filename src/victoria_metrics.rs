@@ -48,30 +48,35 @@ impl VictoriaMetricsClient {
     /// Convert a metric value to InfluxDB Line Protocol format
     fn metric_to_line_protocol(metric: &MetricValue) -> VictoriaMetricsResult<String> {
         let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
-        
+
         // Sanitize metric name (replace spaces and special chars with underscores)
         let sanitized_name = metric.name.replace(' ', "_").replace('.', "_");
-        
+
         // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
         // Include the metric name as a tag for better identification in Victoria Metrics
-        let line = format!("mongodb_ftdc,metric_type={},metric_name={} value={} {}", 
+        let line = format!(
+            "mongodb_ftdc,metric_type={},metric_name={} value={} {}",
             metric.metric_type.to_string().to_lowercase(),
             sanitized_name,
-            metric.value, 
-            timestamp_ns);
-            
+            metric.value,
+            timestamp_ns
+        );
+
         Ok(line)
     }
 
     /// Convert an FTDC document to InfluxDB Line Protocol format
-    pub fn document_to_line_protocol(&self, doc: &FtdcDocument) -> VictoriaMetricsResult<Vec<String>> {
+    pub fn document_to_line_protocol(
+        &self,
+        doc: &FtdcDocument,
+    ) -> VictoriaMetricsResult<Vec<String>> {
         let mut lines = Vec::with_capacity(doc.metrics.len());
-        
+
         for metric in &doc.metrics {
             let line = Self::metric_to_line_protocol(metric)?;
             lines.push(line);
         }
-        
+
         Ok(lines)
     }
 
@@ -80,21 +85,25 @@ impl VictoriaMetricsClient {
         // Split lines into batches of batch_size
         for chunk in lines.chunks(self.batch_size) {
             let payload = chunk.join("\n");
-            
-            let response = self.client
+
+            let response = self
+                .client
                 .post(&format!("{}/write", self.base_url))
                 .header("Content-Type", "text/plain")
                 .body(payload)
                 .send()
                 .await?;
-                
+
             if !response.status().is_success() {
                 let status = response.status();
-                let message = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                let message = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
                 return Err(VictoriaMetricsError::Server { status, message });
             }
         }
-        
+
         Ok(())
     }
 
@@ -129,7 +138,7 @@ mod tests {
     #[test]
     fn test_metric_to_line_protocol() {
         let timestamp = SystemTime::UNIX_EPOCH + Duration::from_secs(1615000000);
-        
+
         // Test each metric type
         let test_cases = vec![
             (MetricType::Double, 42.5, "double"),
@@ -150,7 +159,10 @@ mod tests {
             };
 
             let line = VictoriaMetricsClient::metric_to_line_protocol(&metric).unwrap();
-            assert!(line.starts_with(&format!("mongodb_ftdc,metric_type={},metric_name=test_metric value={} ", expected_type, value)));
+            assert!(line.starts_with(&format!(
+                "mongodb_ftdc,metric_type={},metric_name=test_metric value={} ",
+                expected_type, value
+            )));
         }
     }
 
@@ -160,4 +172,4 @@ mod tests {
         let nanos = VictoriaMetricsClient::system_time_to_nanos(timestamp).unwrap();
         assert_eq!(nanos, 1_000_000_000);
     }
-} 
+}

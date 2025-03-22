@@ -59,14 +59,12 @@ async fn test_victoria_metrics_client_error() {
     let timestamp = UNIX_EPOCH + Duration::from_secs(1615000000);
     let doc = FtdcDocument {
         timestamp,
-        metrics: vec![
-            MetricValue {
-                name: "test_metric1".to_string(),
-                value: 42.5,
-                timestamp,
-                metric_type: MetricType::Double,
-            },
-        ],
+        metrics: vec![MetricValue {
+            name: "test_metric1".to_string(),
+            value: 42.5,
+            timestamp,
+            metric_type: MetricType::Double,
+        }],
     };
 
     // Setup the mock to return a 500 error
@@ -109,24 +107,24 @@ async fn test_line_protocol_conversion() {
 
     // Convert to line protocol
     let lines = client.document_to_line_protocol(&doc).unwrap();
-    
+
     // Print the lines for debugging
     println!("Line 1: {}", lines[0]);
     println!("Line 2: {}", lines[1]);
-    
+
     // Check that we have the expected number of lines
     assert_eq!(lines.len(), 2);
-    
+
     // Check that the lines are formatted correctly
     assert!(lines[0].contains("mongodb_ftdc,metric_type=double"));
     assert!(lines[0].contains("value=42.5"));
-    
+
     assert!(lines[1].contains("mongodb_ftdc,metric_type=int64"));
     assert!(lines[1].contains("value=100"));
-    
+
     // Check that special characters are handled correctly
     assert!(!lines[0].contains("test.metric.with.dots"));
     assert!(lines[0].contains("test_metric_with_dots"));
     assert!(!lines[1].contains("test metric with spaces"));
     assert!(lines[1].contains("test_metric_with_spaces"));
-} 
+}
