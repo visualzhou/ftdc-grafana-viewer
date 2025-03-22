@@ -6,21 +6,26 @@ authors = ["Your Name <your.email@example.com>"]
 description = "MongoDB FTDC to Victoria Metrics importer"
 
 [dependencies]
-zstd = "0.13"
-bson = "2.9"
+libflate = "2.0"
+byteorder = "1.5"
+bson = "2.9.0"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.36", features = ["full"] }
+serde_json = "1.0"
+tokio = { version = "1.36.0", features = ["full"] }
 bytes = "1.5"
 futures = "0.3"
 async-trait = "0.1"
 reqwest = { version = "0.11", features = ["json"] }
 structopt = "0.3"
+varinteger = "1.0"
+tempfile = "3.10.0"
+zstd = "0.13.0"
+flate2 = "1.0.28"
 
 [dev-dependencies]
 criterion = "0.5"
-tempfile = "3.10"
 tokio-test = "0.4"
 wiremock = "0.5"
