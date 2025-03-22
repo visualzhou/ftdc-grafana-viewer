@@ -216,12 +216,12 @@ impl MetricDocumentReconstructor {
     fn count_numeric_fields_recursive(doc: &Document, count: &mut usize) {
         for (_, value) in doc.iter() {
             match value {
-                Bson::Double(_)
-                | Bson::Int32(_)
-                | Bson::Int64(_)
-                | Bson::Timestamp(_)
-                | Bson::DateTime(_) => {
+                Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) | Bson::DateTime(_) => {
                     *count += 1;
+                }
+                Bson::Timestamp(_) => {
+                    // Timestamp counts as two metrics (seconds and increment)
+                    *count += 2;
                 }
                 Bson::Document(subdoc) => {
                     Self::count_numeric_fields_recursive(subdoc, count);
@@ -246,7 +246,7 @@ impl MetricDocumentReconstructor {
             Bson::Int32(i) => Some(*i as u64),
             Bson::Int64(i) => Some(*i as u64),
             Bson::DateTime(dt) => Some(dt.timestamp_millis() as u64),
-            Bson::Timestamp(ts) => Some((ts.time as u64) << 32 | ts.increment as u64),
+            // Timestamp is handled separately, using two values instead of one
             _ => None,
         }
     }
@@ -258,11 +258,7 @@ impl MetricDocumentReconstructor {
             Bson::Int32(_) => Bson::Int32(value as i32),
             Bson::Int64(_) => Bson::Int64(value as i64),
             Bson::DateTime(_) => Bson::DateTime(bson::DateTime::from_millis(value as i64)),
-            Bson::Timestamp(_ts) => {
-                let time = (value >> 32) as u32;
-                let increment = value as u32;
-                Bson::Timestamp(bson::Timestamp { time, increment })
-            }
+            // Timestamp is handled separately, using two values instead of one
             _ => Bson::Int64(value as i64), // Fallback
         }
     }
@@ -273,14 +269,22 @@ impl MetricDocumentReconstructor {
 
         for (_key, value) in doc.iter_mut() {
             match value {
-                Bson::Double(_)
-                | Bson::Int32(_)
-                | Bson::Int64(_)
-                | Bson::Timestamp(_)
-                | Bson::DateTime(_) => {
+                Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) | Bson::DateTime(_) => {
                     if value_index < values.len() {
                         *value = Self::u64_to_bson(values[value_index], value);
                         value_index += 1;
+                    }
+                }
+                Bson::Timestamp(_) => {
+                    // Timestamp requires two values (seconds and increment)
+                    if value_index + 1 < values.len() {
+                        let seconds = values[value_index];
+                        let increment = values[value_index + 1];
+                        *value = Bson::Timestamp(bson::Timestamp {
+                            time: seconds as u32,
+                            increment: increment as u32,
+                        });
+                        value_index += 2;
                     }
                 }
                 Bson::Document(subdoc) => {
@@ -539,5 +543,33 @@ mod tests {
         // Verify the updated values
         assert_eq!(doc2.get_i32("counter").unwrap(), 105);
         assert_eq!(doc2.get_i32("counter2").unwrap(), 190);
+    }
+
+    #[test]
+    fn test_timestamp_counts_for_two() {
+        // Create a document with a timestamp field
+        let reference_doc = doc! {
+            "counter": 100i32,
+            "ts": bson::Timestamp { time: 1000, increment: 2000 }
+        };
+
+        // Create a reconstructor
+        let reconstructor = MetricDocumentReconstructor::new(reference_doc.clone()).unwrap();
+
+        // Verify the metric count - should be 3 (1 for counter, 2 for timestamp)
+        assert_eq!(reconstructor.metric_count(), 3);
+
+        // Create a document with initial values
+        let timestamp = bson::DateTime::now();
+        let doc1 = reconstructor
+            .reconstruct_document(&[100, 1500, 2500], timestamp)
+            .unwrap();
+
+        // Verify the document has the expected values
+        assert_eq!(doc1.get_i32("counter").unwrap(), 100);
+
+        let ts = doc1.get_timestamp("ts").unwrap();
+        assert_eq!(ts.time, 1500);
+        assert_eq!(ts.increment, 2500);
     }
 }
