@@ -273,27 +273,27 @@ mod tests {
 
         // 1 -> [0x01]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
-        let written = encode_varint(1, &mut buf).unwrap();
-        assert_eq!(written, 1);
+        let _written = encode_varint(1, &mut buf).unwrap();
+        assert_eq!(_written, 1);
         assert_eq!(buf[0], 0x01);
 
         // 127 -> [0x7F]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
-        let written = encode_varint(127, &mut buf).unwrap();
-        assert_eq!(written, 1);
+        let _written = encode_varint(127, &mut buf).unwrap();
+        assert_eq!(_written, 1);
         assert_eq!(buf[0], 0x7F);
 
         // 128 -> [0x80, 0x01]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
-        let written = encode_varint(128, &mut buf).unwrap();
-        assert_eq!(written, 2);
+        let _written = encode_varint(128, &mut buf).unwrap();
+        assert_eq!(_written, 2);
         assert_eq!(buf[0], 0x80);
         assert_eq!(buf[1], 0x01);
 
         // 300 -> [0xAC, 0x02]
         let mut buf = [0u8; MAX_VARINT_SIZE_64];
-        let written = encode_varint(300, &mut buf).unwrap();
-        assert_eq!(written, 2);
+        let _written = encode_varint(300, &mut buf).unwrap();
+        assert_eq!(_written, 2);
         assert_eq!(buf[0], 0xAC);
         assert_eq!(buf[1], 0x02);
     }
