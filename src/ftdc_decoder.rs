@@ -431,8 +431,9 @@ impl FtdcDecoder {
             }
 
             // Calculate the sample timestamp (base timestamp + i seconds)
-            let sample_timestamp =
-                bson::DateTime::from_millis(timestamp.timestamp_millis().saturating_add(i as i64) * 1000);
+            let sample_timestamp = bson::DateTime::from_millis(
+                timestamp.timestamp_millis().saturating_add(i as i64) * 1000,
+            );
 
             // Reconstruct the document
             let metrics_doc =
