@@ -1,7 +1,7 @@
 use bson::{Bson, Document};
 use flate2::read::ZlibDecoder;
 use std::fs::File;
-use std::io::{self, Read, Write};
+use std::io::{self, BufWriter, Read, Write};
 use std::path::Path;
 
 /// Represents the type of FTDC document
@@ -24,7 +24,7 @@ fn get_document_type(doc: &Document) -> FtdcDocumentType {
 }
 
 /// Reads a single BSON document from a file
-fn read_bson_document(file: &mut File) -> io::Result<Option<(Document, usize)>> {
+fn read_bson_document(file: &mut File) -> io::Result<Option<(Document, Vec<u8>, usize)>> {
     // Read document size (first 4 bytes)
     let mut size_buf = [0u8; 4];
     if file.read_exact(&mut size_buf).is_err() {
@@ -41,7 +41,7 @@ fn read_bson_document(file: &mut File) -> io::Result<Option<(Document, usize)>> 
 
     // Parse the BSON document
     match bson::from_slice::<Document>(&doc_data) {
-        Ok(doc) => Ok(Some((doc, doc_size as usize))),
+        Ok(doc) => Ok(Some((doc, doc_data, doc_size as usize))),
         Err(e) => {
             eprintln!("Error parsing BSON document: {}", e);
             Err(io::Error::new(io::ErrorKind::InvalidData, e))
@@ -188,7 +188,7 @@ fn extract_metrics_from_decompressed_data(data: &[u8]) -> io::Result<()> {
 }
 
 #[tokio::test]
-async fn test_ftdc_chunk_detector() -> io::Result<()> {
+async fn test_ftdc_format_and_chunk_analysis() -> io::Result<()> {
     // Path to the example FTDC file
     let path = Path::new("tests/fixtures/ftdc-metrics-example");
 
@@ -201,11 +201,14 @@ async fn test_ftdc_chunk_detector() -> io::Result<()> {
     let mut metadata_delta_count = 0;
     let mut unknown_count = 0;
 
+    // For storing one metric document
+    let mut metric_example: Option<Vec<u8>> = None;
+
     println!("\n=== FTDC Document Analysis ===");
 
     // Read documents until EOF
     let mut doc_index = 0;
-    while let Some((doc, size)) = read_bson_document(&mut file)? {
+    while let Some((doc, doc_data, size)) = read_bson_document(&mut file)? {
         // Determine document type
         let doc_type = get_document_type(&doc);
 
@@ -224,7 +227,12 @@ async fn test_ftdc_chunk_detector() -> io::Result<()> {
                 );
                 metric_count += 1;
 
-                // Process the first metric document
+                // Store the first metric document as an example
+                if metric_example.is_none() {
+                    metric_example = Some(doc_data);
+                }
+
+                // Process the first metric document in detail
                 if metric_count == 1 {
                     process_metric_document(&doc)?;
                 }
@@ -255,6 +263,14 @@ async fn test_ftdc_chunk_detector() -> io::Result<()> {
     println!("Metric documents: {}", metric_count);
     println!("Metadata delta documents: {}", metadata_delta_count);
     println!("Unknown documents: {}", unknown_count);
+
+    // Save one metric document as an example if found
+    if let Some(metric_data) = metric_example {
+        let example_path = Path::new("tests/fixtures/metric-example.bson");
+        let mut file = BufWriter::new(File::create(example_path)?);
+        file.write_all(&metric_data)?;
+        println!("\nSaved one metric document to: {:?}", example_path);
+    }
 
     Ok(())
 }
