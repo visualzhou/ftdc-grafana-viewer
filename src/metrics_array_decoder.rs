@@ -19,13 +19,13 @@ impl MetricsArrayDecoder {
         Self {}
     }
 
-    /// Decodes the compressed metrics array into a 2D array of u64 values
+    /// Decodes the compressed metrics array into a 1D array of u64 values
     pub fn decode_metrics_array(
         &self,
         compressed_metrics: &[u8],
         sample_count: u32,
         metric_count: u32,
-    ) -> Result<Vec<Vec<u64>>> {
+    ) -> Result<Vec<u64>> {
         // Step 1: Decode the varint-encoded values
         let mut values = Vec::new();
         let mut offset = 0;
@@ -53,37 +53,19 @@ impl MetricsArrayDecoder {
             }
         }
 
-        // Step 3: Reshape into a 2D array (column-major order)
+        // Ensure we have the expected number of values
         let expected_values = sample_count as usize * metric_count as usize;
 
-        // Instead of returning an error, log a warning and proceed with the available data
+        // Return an error if the number of decoded values doesn't match the expected count
         if expanded_values.len() != expected_values {
-            eprintln!(
-                "Warning: Decoded values count mismatch: expected {}, got {}. Proceeding with available data.",
+            return Err(MetricsDecoderError::Decoding(format!(
+                "Decoded values count mismatch: expected {}, got {}",
                 expected_values,
                 expanded_values.len()
-            );
-
-            // If we have fewer values than expected, we'll pad with zeros
-            // If we have more values than expected, we'll truncate
-            if expanded_values.len() < expected_values {
-                expanded_values.extend(vec![0; expected_values - expanded_values.len()]);
-            }
+            )));
         }
 
-        // Convert from column-major to row-major order
-        let mut result = vec![vec![0u64; metric_count as usize]; sample_count as usize];
-        for i in 0..sample_count as usize {
-            for j in 0..metric_count as usize {
-                let column_major_index = j * sample_count as usize + i;
-                if column_major_index < expanded_values.len() {
-                    result[i][j] = expanded_values[column_major_index];
-                }
-                // If index is out of bounds, the value remains 0
-            }
-        }
-
-        Ok(result)
+        Ok(expanded_values)
     }
 }
 
@@ -105,10 +87,41 @@ mod tests {
         let result = decoder.decode_metrics_array(&compressed, 5, 1).unwrap();
 
         assert_eq!(result.len(), 5);
-        assert_eq!(result[0][0], 1);
-        assert_eq!(result[1][0], 2);
-        assert_eq!(result[2][0], 0);
-        assert_eq!(result[3][0], 0);
-        assert_eq!(result[4][0], 0);
+        assert_eq!(result[0], 1);
+        assert_eq!(result[1], 2);
+        assert_eq!(result[2], 0);
+        assert_eq!(result[3], 0);
+        assert_eq!(result[4], 0);
+    }
+
+    #[test]
+    fn test_values_count_mismatch_error() {
+        // Create a simple test case with run-length encoding
+        // [1, 2, 0, 3] -> [1, 2, 0, 0, 0]
+        let mut compressed = Vec::new();
+        varint::encode_varint_vec(1, &mut compressed).unwrap();
+        varint::encode_varint_vec(2, &mut compressed).unwrap();
+        varint::encode_varint_vec(0, &mut compressed).unwrap();
+        varint::encode_varint_vec(3, &mut compressed).unwrap();
+
+        let decoder = MetricsArrayDecoder::new();
+
+        // Request 6 values (5x1 matrix) but we'll only get 5
+        let result = decoder.decode_metrics_array(&compressed, 6, 1);
+
+        // Verify that we get an error
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Decoded values count mismatch"));
+        }
+
+        // Request 3 values (3x1 matrix) but we'll get 5
+        let result = decoder.decode_metrics_array(&compressed, 3, 1);
+
+        // Verify that we get an error
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Decoded values count mismatch"));
+        }
     }
 }

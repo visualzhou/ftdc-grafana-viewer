@@ -66,8 +66,14 @@ async fn test_ftdc_decoder_layers() -> io::Result<()> {
     ) {
         Ok(metrics_array) => {
             println!("\nLayer 3: Decoded Metrics Array");
-            println!("  Number of samples: {}", metrics_array.len());
-            println!("  Metrics per sample: {}", metrics_array[0].len());
+            println!("  Total number of values: {}", metrics_array.len());
+
+            // Calculate the metrics per sample
+            let metrics_per_sample = decompressed_chunk.metric_count as usize;
+            let sample_count = decompressed_chunk.sample_count as usize;
+
+            println!("  Number of samples: {}", sample_count);
+            println!("  Metrics per sample: {}", metrics_per_sample);
 
             // Layer 4: Create a document reconstructor
             let reconstructor =
@@ -79,8 +85,13 @@ async fn test_ftdc_decoder_layers() -> io::Result<()> {
             println!("  (Metric paths are no longer stored explicitly)");
 
             // Apply delta decoding to the first sample
-            if !metrics_array.is_empty() {
-                let first_sample = &metrics_array[0];
+            if metrics_array.len() >= metrics_per_sample {
+                // Extract the first sample's metrics (first metrics_per_sample values)
+                let first_sample_metrics: Vec<u64> = metrics_array
+                    .iter()
+                    .take(metrics_per_sample)
+                    .cloned()
+                    .collect();
 
                 // Get the timestamp from the original document
                 let timestamp = match doc.get("_id") {
@@ -90,7 +101,7 @@ async fn test_ftdc_decoder_layers() -> io::Result<()> {
 
                 // Reconstruct the document
                 let reconstructed_doc = reconstructor
-                    .reconstruct_document(first_sample, timestamp)
+                    .reconstruct_document(&first_sample_metrics, timestamp)
                     .expect("Failed to reconstruct document");
 
                 println!("\nReconstructed Document (First Sample):");
