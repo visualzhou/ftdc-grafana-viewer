@@ -7,6 +7,7 @@ mod compression;
 mod ftdc_decoder;
 mod reader;
 mod victoria_metrics;
+mod varint;
 
 pub use compression::Compression;
 pub use ftdc_decoder::{
@@ -14,6 +15,7 @@ pub use ftdc_decoder::{
     MetricDocumentReconstructor, MetricSample, MetricsArrayDecoder,
 };
 pub use reader::{FtdcReader, ReaderError, ReaderResult};
+pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
 pub use victoria_metrics::{VictoriaMetricsClient, VictoriaMetricsError};
 
 #[derive(Error, Debug)]

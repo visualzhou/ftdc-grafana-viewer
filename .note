@@ -188,3 +188,28 @@ Current key dependencies:
 - We've added robust error handling for corrupt data
 - We need to implement MetadataDelta reconstruction
 - We should clean up debug output for production use
+
+# FTDC VarInt Implementation
+
+## Changes Made
+
+1. **Extracted Standalone VarInt Module**
+   - Created new `src/varint.rs` module with proper documentation
+   - Implemented encode/decode functions that match MongoDB's FTDC format
+   - Added to `lib.rs` and removed inline implementation from `ftdc_decoder.rs`
+
+2. **Comprehensive Test Coverage**
+   - Created extensive test suite covering various edge cases
+   - Added direct equivalents of MongoDB's original C++ tests:
+     - `test_mongodb_int_compression` (tests bit patterns, powers of 2)
+     - `test_mongodb_multiple_zeros` (tests sequence encoding)
+   - Verified correctness with known encodings and binary patterns
+
+3. **Integration with FTDC Decoder**
+   - Updated the FTDC decoder to use the new module
+   - All tests pass, confirming compatibility with the existing code
+
+## Notes
+- The implementation follows Google's Protocol Buffer varint encoding
+- Maximum encoding size for uint64 is 10 bytes
+- Zero-value run-length encoding works correctly with the new implementation
