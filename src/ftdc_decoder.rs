@@ -219,6 +219,7 @@ impl MetricDocumentReconstructor {
                 Bson::Double(_)
                 | Bson::Int32(_)
                 | Bson::Int64(_)
+                | Bson::Decimal128(_)
                 | Bson::DateTime(_)
                 | Bson::Boolean(_) => {
                     *count += 1;
