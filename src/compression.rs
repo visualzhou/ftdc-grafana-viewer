@@ -12,7 +12,7 @@ impl Compression {
     /// 2. Varint decompression
     /// 3. Run-length decoding of zeros
     /// 4. Delta decoding (using reference doc values as baseline)
-    pub fn decompress_ftdc(
+    pub fn decompress_metrics_chunk(
         data: &[u8],
         reference_values: Option<&[u64]>,
     ) -> Result<Vec<u64>, FtdcError> {
@@ -39,7 +39,7 @@ impl Compression {
             ));
         };
 
-        println!("\t\tUncompressed size: {} bytes", uncompressed_size);
+        println!("\t\tUncompressed size of chunk: {} bytes", uncompressed_size);
 
         // 1. ZLIB decompression
         let mut decoder = libflate::zlib::Decoder::new(&data[4..])
@@ -52,7 +52,13 @@ impl Compression {
 
         println!("\t\tDecompressed ZLIB data: {} bytes", decompressed.len());
 
-        // 2. Varint decompression (S2-style)
+        // 2. "compressed chunk" parsing
+        // compressed_chunk = // Not a BSON document, raw bytes
+        //     reference_document uint8_t[] // a BSON Document -see role_based_collectors_doc
+        //     sample_count uint32_t
+        //     metric_count uint32_t
+        //     compressed_metrics_array uint8_t[] 
+        
         let mut decoded_values = Vec::new();
         let mut i = 0;
         let mut value_count = 0;
@@ -211,7 +217,7 @@ mod tests {
         let compressed = Compression::compress_ftdc(&original_values).unwrap();
 
         // Decompress
-        let decompressed = Compression::decompress_ftdc(&compressed, None).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
 
         assert_eq!(decompressed, original_values);
     }
@@ -226,12 +232,12 @@ mod tests {
         println!("Compressed size: {} bytes", compressed.len());
 
         // Decompress without reference values (for debugging)
-        let decompressed_no_ref = Compression::decompress_ftdc(&compressed, None).unwrap();
+        let decompressed_no_ref = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
         println!("Decompressed without reference: {:?}", decompressed_no_ref);
 
         // Decompress with reference values
         let decompressed =
-            Compression::decompress_ftdc(&compressed, Some(&reference_values)).unwrap();
+            Compression::decompress_metrics_chunk(&compressed, Some(&reference_values)).unwrap();
         println!("Decompressed with reference: {:?}", decompressed);
 
         // The actual values we expect after decompression
@@ -246,7 +252,7 @@ mod tests {
         let original_values = vec![1, 0, 0, 0, 0, 2];
 
         let compressed = Compression::compress_ftdc(&original_values).unwrap();
-        let decompressed = Compression::decompress_ftdc(&compressed, None).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
 
         assert_eq!(decompressed, original_values);
     }
@@ -256,7 +262,7 @@ mod tests {
         let original_values = vec![u64::MAX, u64::MAX - 1, u64::MAX - 2];
 
         let compressed = Compression::compress_ftdc(&original_values).unwrap();
-        let decompressed = Compression::decompress_ftdc(&compressed, None).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
 
         assert_eq!(decompressed, original_values);
     }
