@@ -322,7 +322,7 @@ impl FtdcReader {
             FtdcDocType::Metadata => {
                 // Store reference document for future metric parsing
                 if let Some(Bson::Document(ref_doc)) = doc.get("doc") {
-                    println!("Found reference document with {} fields", ref_doc.len());
+                    println!("Found reference document (type 0) with {} fields", ref_doc.len());
                     self.reference_doc = Some(ref_doc.clone());
                     let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
                     Ok(Some(FtdcDocument { timestamp, metrics }))
@@ -336,7 +336,7 @@ impl FtdcReader {
                     // Extract and decompress metric data
                     if let Some(Bson::Binary(bin)) = doc.get("data") {
                         println!(
-                            "Processing metric document with binary data: {} bytes",
+                            "Processing metric document (type 1) with binary data: {} bytes",
                             bin.bytes.len()
                         );
 
@@ -427,7 +427,7 @@ impl FtdcReader {
                         );
 
                         println!(
-                            "Reference document has {} numeric values",
+                            "\tReference document has {} numeric values",
                             reference_values.len()
                         );
 
@@ -444,7 +444,7 @@ impl FtdcReader {
                                 }
                             };
 
-                        println!("Successfully decompressed {} values", decompressed.len());
+                        println!("\tSuccessfully decompressed {} values", decompressed.len());
 
                         // Create metrics directly from the column-oriented data
                         let mut metrics = Vec::new();
@@ -512,6 +512,8 @@ impl FtdcReader {
             }
             FtdcDocType::MetadataDelta => {
                 // Skip metadata delta documents in the stream
+                println!(
+                    "Skipping MetadataDelta document (type 2) "                );
                 Box::pin(self.read_next()).await
             }
         }
