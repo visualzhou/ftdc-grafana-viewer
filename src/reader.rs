@@ -1,9 +1,8 @@
-use bson::{ser, Bson, Document};
+use bson::{Bson, Document};
 use futures::Stream;
 use std::path::Path;
 use std::pin::Pin;
 use std::time::SystemTime;
-use thiserror::Error;
 use tokio::{
     fs::File,
     io::{AsyncReadExt, BufReader},
@@ -21,14 +20,14 @@ enum FtdcDocType {
 }
 
 impl TryFrom<i32> for FtdcDocType {
-    type Error = ReaderError;
+    type Error = FtdcError;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(FtdcDocType::Metadata),
             1 => Ok(FtdcDocType::Metric),
             2 => Ok(FtdcDocType::MetadataDelta),
-            _ => Err(ReaderError::InvalidFile(format!(
+            _ => Err(FtdcError::Format(format!(
                 "Invalid FTDC document type: {}",
                 value
             ))),
@@ -36,25 +35,7 @@ impl TryFrom<i32> for FtdcDocType {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ReaderError {
-    #[error("Invalid FTDC file: {0}")]
-    InvalidFile(String),
-
-    #[error("IO error: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("FTDC error: {0}")]
-    Ftdc(#[from] FtdcError),
-
-    #[error("BSON serialization error: {0}")]
-    BsonSer(#[from] ser::Error),
-
-    #[error("BSON deserialization error: {0}")]
-    BsonDe(#[from] bson::de::Error),
-}
-
-pub type ReaderResult<T> = std::result::Result<T, ReaderError>;
+pub type ReaderResult<T> = std::result::Result<T, FtdcError>;
 
 /// Reader for FTDC files that supports async streaming
 pub struct FtdcReader {
@@ -97,7 +78,7 @@ impl FtdcReader {
         match self.reader.read_exact(&mut doc_data[4..]).await {
             Ok(_) => (),
             Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
-                return Err(ReaderError::InvalidFile(
+                return Err(FtdcError::Format(
                     "Unexpected EOF while reading document".to_string(),
                 ));
             }
@@ -107,7 +88,7 @@ impl FtdcReader {
         // Parse BSON document
         match bson::from_slice(&doc_data) {
             Ok(doc) => Ok(Some(doc)),
-            Err(e) => Err(ReaderError::BsonDe(e)),
+            Err(e) => Err(FtdcError::Bson(e)),
         }
     }
 
@@ -287,7 +268,7 @@ impl FtdcReader {
             // Skip string values - they don't represent numeric metrics
             Bson::String(_) => {}
             _ => {
-                return Err(ReaderError::InvalidFile(format!(
+                return Err(FtdcError::Format(format!(
                     "Unsupported BSON type: {:?}",
                     value
                 )))
@@ -306,13 +287,13 @@ impl FtdcReader {
         // Extract document type and _id
         let doc_type = doc
             .get_i32("type")
-            .map_err(|_| ReaderError::InvalidFile("Missing or invalid 'type' field".to_string()))?;
+            .map_err(|_| FtdcError::Format("Missing or invalid 'type' field".to_string()))?;
         let doc_type = FtdcDocType::try_from(doc_type)?;
 
         let timestamp = match doc.get("_id") {
             Some(Bson::DateTime(dt)) => dt.to_system_time(),
             _ => {
-                return Err(ReaderError::InvalidFile(
+                return Err(FtdcError::Format(
                     "Missing or invalid '_id' field".to_string(),
                 ))
             }
@@ -505,7 +486,7 @@ impl FtdcReader {
                         Ok(Some(FtdcDocument { timestamp, metrics }))
                     }
                 } else {
-                    Err(ReaderError::InvalidFile(
+                    Err(FtdcError::Format(
                         "No reference document available".to_string(),
                     ))
                 }

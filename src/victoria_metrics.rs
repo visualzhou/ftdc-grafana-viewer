@@ -1,25 +1,8 @@
-use crate::{FtdcDocument, MetricValue};
-use reqwest::{Client, StatusCode};
+use crate::{FtdcDocument, MetricValue, FtdcError};
+use reqwest::Client;
 use std::time::{SystemTime, UNIX_EPOCH};
-use thiserror::Error;
 
-/// Error types for Victoria Metrics operations
-#[derive(Error, Debug)]
-pub enum VictoriaMetricsError {
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
-
-    #[error("Server error: status={status}, message={message}")]
-    Server { status: StatusCode, message: String },
-
-    #[error("Conversion error: {0}")]
-    Conversion(String),
-
-    #[error("Invalid timestamp: {0}")]
-    InvalidTimestamp(String),
-}
-
-pub type VictoriaMetricsResult<T> = Result<T, VictoriaMetricsError>;
+pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
 
 /// Client for sending metrics to Victoria Metrics
 pub struct VictoriaMetricsClient {
@@ -42,7 +25,7 @@ impl VictoriaMetricsClient {
     fn system_time_to_nanos(time: SystemTime) -> VictoriaMetricsResult<u128> {
         time.duration_since(UNIX_EPOCH)
             .map(|d| d.as_nanos())
-            .map_err(|e| VictoriaMetricsError::InvalidTimestamp(e.to_string()))
+            .map_err(|e| FtdcError::Format(format!("Invalid timestamp: {}", e)))
     }
 
     /// Convert a metric value to InfluxDB Line Protocol format
@@ -100,7 +83,7 @@ impl VictoriaMetricsClient {
                     .text()
                     .await
                     .unwrap_or_else(|_| "Unknown error".to_string());
-                return Err(VictoriaMetricsError::Server { status, message });
+                return Err(FtdcError::Server { status, message });
             }
         }
 

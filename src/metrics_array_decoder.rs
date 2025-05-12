@@ -1,14 +1,7 @@
 use crate::varint;
-use thiserror::Error;
+use crate::FtdcError;
 
-/// Errors that can occur during metrics array decoding
-#[derive(Error, Debug)]
-pub enum MetricsDecoderError {
-    #[error("Decoding error: {0}")]
-    Decoding(String),
-}
-
-pub type Result<T> = std::result::Result<T, MetricsDecoderError>;
+pub type Result<T> = std::result::Result<T, FtdcError>;
 
 /// Layer 3: Decode the compressed metrics array
 pub struct MetricsArrayDecoder;
@@ -32,7 +25,7 @@ impl MetricsArrayDecoder {
 
         while offset < compressed_metrics.len() {
             let (value, bytes_read) = varint::decode_varint(&compressed_metrics[offset..])
-                .map_err(|e| MetricsDecoderError::Decoding(e.to_string()))?;
+                .map_err(|e| FtdcError::Compression(format!("Failed to decode varint: {}", e)))?;
             values.push(value);
             offset += bytes_read;
         }
@@ -58,7 +51,7 @@ impl MetricsArrayDecoder {
 
         // Return an error if the number of decoded values doesn't match the expected count
         if expanded_values.len() != expected_values {
-            return Err(MetricsDecoderError::Decoding(format!(
+            return Err(FtdcError::Compression(format!(
                 "Decoded values count mismatch: expected {}, got {}",
                 expected_values,
                 expanded_values.len()
