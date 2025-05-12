@@ -1,20 +1,23 @@
+use crate::{FtdcError, ReaderError};
 use crate::FtdcError;
 use crate::varint::{decode_varint_ftdc, encode_varint_ftdc};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Cursor;
 use std::io::{Read, Write};
+use bson::{Bson, Document};
 
 pub struct Compression;
 
 impl Compression {
     /// Decompresses FTDC data using the full decompression pipeline:
     /// 1. ZLIB decompression
+    /// 1.5 Parse reference BSON document
     /// 2. Varint decompression
     /// 3. Run-length decoding of zeros
     /// 4. Delta decoding (using reference doc values as baseline)
     pub fn decompress_metrics_chunk(
         data: &[u8],
-        reference_values: Option<&[u64]>,
+
     ) -> Result<Vec<u64>, FtdcError> {
         // Read the uncompressed size (first 4 bytes)
         let uncompressed_size = if data.len() >= 4 {
@@ -58,7 +61,127 @@ impl Compression {
         //     sample_count uint32_t
         //     metric_count uint32_t
         //     compressed_metrics_array uint8_t[] 
-        
+        // Extract numeric values from reference document to use for delta decoding
+        let mut reference_values = Vec::new();
+        let mut ref_keys = Vec::new();
+
+        let mut cursor = Cursor::new(&decompressed);
+
+        // Parse the BSON bytes into a Document
+        let ref_doc = &Document::from_reader(&mut cursor).map_err(|e| ReaderError::InvalidFile(format!("Failed to parse BSON document {}", e)))?;
+        fn extract_numeric_values_recursive(
+            doc: &Document,
+            prefix: &str,
+            keys: &mut Vec<String>,
+            values: &mut Vec<u64>,
+        ) {
+            for (key, value) in doc.iter() {
+                let field_name = if prefix.is_empty() {
+                    key.clone()
+                } else {
+                    format!("{}_{}", prefix, key)
+                };
+
+                match value {
+                    Bson::Double(v) => {
+                        keys.push(field_name);
+                        values.push(v.to_bits());
+                    }
+                    Bson::Int32(v) => {
+                        keys.push(field_name);
+                        values.push(*v as u64);
+                    }
+                    Bson::Int64(v) => {
+                        keys.push(field_name);
+                        values.push(*v as u64);
+                    }
+                    Bson::Boolean(v) => {
+                        keys.push(field_name);
+                        values.push(*v as u64);
+                    }
+                    Bson::Document(subdoc) => {
+                        extract_numeric_values_recursive(
+                            subdoc,
+                            &field_name,
+                            keys,
+                            values,
+                        );
+                    }
+                    Bson::Array(arr) => {
+                        for (i, item) in arr.iter().enumerate() {
+                            let array_name = format!("{}_{}", field_name, i);
+                            match item {
+                                Bson::Document(subdoc) => {
+                                    extract_numeric_values_recursive(
+                                        subdoc,
+                                        &array_name,
+                                        keys,
+                                        values,
+                                    );
+                                }
+                                Bson::Double(v) => {
+                                    keys.push(array_name);
+                                    values.push(v.to_bits());
+                                }
+                                Bson::Int32(v) => {
+                                    keys.push(array_name);
+                                    values.push(*v as u64);
+                                }
+                                Bson::Int64(v) => {
+                                    keys.push(array_name);
+                                    values.push(*v as u64);
+                                }
+                                Bson::Boolean(v) => {
+                                    keys.push(array_name);
+                                    values.push(*v as u64);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        extract_numeric_values_recursive(
+            ref_doc,
+            "",
+            &mut ref_keys,
+            &mut reference_values,
+        );
+
+        println!(
+            "\tReference document has {} key/value pairs",
+            reference_values.len()
+        );
+
+        // parse out sample_count and metric_count
+        let sample_count = cursor
+            .read_u32::<LittleEndian>()
+            .map_err(|e| FtdcError::Compression(format!("Failed to read sample count: {}", e)))?;
+        let metric_count = cursor
+            .read_u32::<LittleEndian>()
+            .map_err(|e| FtdcError::Compression(format!("Failed to read metric count: {}", e)))?;
+        println!("\tSample count: {}", sample_count);
+        println!("\tMetric count: {}", metric_count);
+
+        // Safety check for reasonable sample and metric counts
+        if sample_count > 10_000_000 {
+            // 10 million samples max
+            return Err(FtdcError::Compression(format!(
+                "Unreasonable sample count: {}",
+                sample_count
+            )));
+        }
+        if metric_count > 10_000_000 {
+            // 10 million metrics max
+            return Err(FtdcError::Compression(format!(
+                "Unreasonable metric count: {}",
+                metric_count
+            )));
+        }
+        // 3. Varint decompression
         let mut decoded_values = Vec::new();
         let mut i = 0;
         let mut value_count = 0;
