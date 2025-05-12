@@ -1,6 +1,6 @@
 use bson::{doc, Bson, Document};
 use ftdc_importer::{
-    FtdcDecoder, FtdcDecoderError, MetricChunkDecompressor, MetricChunkExtractor,
+    FtdcDecoder, FtdcError, MetricChunkDecompressor, MetricChunkExtractor,
     MetricDocumentReconstructor, MetricSample, MetricsArrayDecoder,
 };
 use std::fs::File;
@@ -192,7 +192,7 @@ async fn test_decode_real_metric_document() -> io::Result<()> {
             println!("Failed to decode document: {:?}", e);
 
             // If it's a format error, print more details about the document
-            if let FtdcDecoderError::InvalidFormat(_) = e {
+            if let FtdcError::Format(_) = e {
                 println!("\nDocument details:");
                 println!("  Keys: {:?}", doc.keys().collect::<Vec<_>>());
 

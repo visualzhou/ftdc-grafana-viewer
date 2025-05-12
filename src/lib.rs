@@ -12,39 +12,36 @@ mod victoria_metrics;
 
 pub use compression::Compression;
 pub use ftdc_decoder::{
-    FtdcDecoder, FtdcDecoderError, MetricChunkDecompressor, MetricChunkExtractor,
+    FtdcDecoder, MetricChunkDecompressor, MetricChunkExtractor,
     MetricDocumentReconstructor, MetricSample,
 };
-pub use metrics_array_decoder::{MetricsArrayDecoder, MetricsDecoderError};
-pub use reader::{FtdcReader, ReaderError, ReaderResult};
+pub use metrics_array_decoder::MetricsArrayDecoder;
+pub use reader::{FtdcReader, ReaderResult};
 pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
-pub use victoria_metrics::{VictoriaMetricsClient, VictoriaMetricsError};
+pub use victoria_metrics::VictoriaMetricsClient;
 
 #[derive(Error, Debug)]
 pub enum FtdcError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("ZSTD decompression error: {0}")]
-    Zstd(String),
-
-    #[error("BSON parsing error: {0}")]
+    #[error("BSON error: {0}")]
     Bson(#[from] bson::de::Error),
 
-    #[error("Invalid FTDC format: {0}")]
-    InvalidFormat(String),
+    #[error("BSON serialization error: {0}")]
+    BsonSer(#[from] bson::ser::Error),
 
-    #[error("Missing required field: {0}")]
-    MissingField(String),
-
-    #[error("Unsupported metric type: {0}")]
-    UnsupportedType(String),
+    #[error("Format error: {0}")]
+    Format(String),
 
     #[error("Compression error: {0}")]
     Compression(String),
 
-    #[error("Decoder error: {0}")]
-    Decoder(#[from] ftdc_decoder::FtdcDecoderError),
+    #[error("Network error: {0}")]
+    Network(#[from] reqwest::Error),
+
+    #[error("Server error: status={status}, message={message}")]
+    Server { status: reqwest::StatusCode, message: String },
 }
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
@@ -109,7 +106,7 @@ impl FtdcParser {
         // Extract timestamp
         let timestamp = match doc.get("_id") {
             Some(Bson::DateTime(dt)) => dt.to_system_time(),
-            _ => return Err(FtdcError::MissingField("_id".to_string())),
+            _ => return Err(FtdcError::Format("_id".to_string())),
         };
 
         // Extract metrics
@@ -315,10 +312,7 @@ impl FtdcParser {
                 });
             }
             _ => {
-                return Err(FtdcError::UnsupportedType(format!(
-                    "Unsupported BSON type: {:?}",
-                    value
-                )))
+                return Err(FtdcError::Format(format!("Unsupported BSON type: {:?}", value)))
             }
         }
         Ok(())

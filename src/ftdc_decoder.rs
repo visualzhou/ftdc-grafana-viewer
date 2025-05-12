@@ -1,32 +1,10 @@
-use crate::metrics_array_decoder::{MetricsArrayDecoder, MetricsDecoderError};
+use crate::metrics_array_decoder::MetricsArrayDecoder;
+use crate::FtdcError;
 use bson::{Bson, Document};
 use flate2::read::ZlibDecoder;
-use std::io::{self, Read};
-use thiserror::Error;
+use std::io::Read;
 
-/// Errors that can occur during FTDC decoding
-#[derive(Error, Debug)]
-pub enum FtdcDecoderError {
-    #[error("IO error: {0}")]
-    Io(#[from] io::Error),
-
-    #[error("BSON error: {0}")]
-    Bson(#[from] bson::de::Error),
-
-    #[error("Invalid FTDC format: {0}")]
-    InvalidFormat(String),
-
-    #[error("Decompression error: {0}")]
-    Decompression(String),
-
-    #[error("Decoding error: {0}")]
-    Decoding(String),
-
-    #[error("Metrics decoder error: {0}")]
-    MetricsDecoder(#[from] MetricsDecoderError),
-}
-
-pub type Result<T> = std::result::Result<T, FtdcDecoderError>;
+pub type Result<T> = std::result::Result<T, FtdcError>;
 
 /// Represents a raw FTDC metric chunk
 #[derive(Debug, Clone)]
@@ -74,7 +52,7 @@ impl MetricChunkExtractor {
         match doc.get("type") {
             Some(Bson::Int32(1)) => {}
             _ => {
-                return Err(FtdcDecoderError::InvalidFormat(
+                return Err(FtdcError::Format(
                     "Not a metric document".to_string(),
                 ))
             }
@@ -84,7 +62,7 @@ impl MetricChunkExtractor {
         let bin = match doc.get("data") {
             Some(Bson::Binary(bin)) => bin,
             _ => {
-                return Err(FtdcDecoderError::InvalidFormat(
+                return Err(FtdcError::Format(
                     "No 'data' field found in the document".to_string(),
                 ))
             }
@@ -92,7 +70,7 @@ impl MetricChunkExtractor {
 
         // Extract the uncompressed size (first 4 bytes)
         if bin.bytes.len() < 4 {
-            return Err(FtdcDecoderError::InvalidFormat(
+            return Err(FtdcError::Format(
                 "Data field too small".to_string(),
             ));
         }
@@ -126,11 +104,11 @@ impl MetricChunkDecompressor {
         let mut decompressed = Vec::new();
         decoder
             .read_to_end(&mut decompressed)
-            .map_err(|e| FtdcDecoderError::Decompression(e.to_string()))?;
+            .map_err(|e| FtdcError::Compression(format!("ZLIB decompression error: {}", e)))?;
 
         // Verify the decompressed size
         if decompressed.len() != chunk.uncompressed_size as usize {
-            return Err(FtdcDecoderError::Decompression(format!(
+            return Err(FtdcError::Compression(format!(
                 "Decompressed size mismatch: expected {}, got {}",
                 chunk.uncompressed_size,
                 decompressed.len()
@@ -146,7 +124,7 @@ impl MetricChunkDecompressor {
         ]) as usize;
 
         if doc_size > decompressed.len() {
-            return Err(FtdcDecoderError::InvalidFormat(
+            return Err(FtdcError::Format(
                 "Reference document size exceeds decompressed data size".to_string(),
             ));
         }
@@ -156,7 +134,7 @@ impl MetricChunkDecompressor {
         // Extract sample count and metric count
         let offset = doc_size;
         if decompressed.len() < offset + 8 {
-            return Err(FtdcDecoderError::InvalidFormat(
+            return Err(FtdcError::Format(
                 "Decompressed data too small to contain sample and metric counts".to_string(),
             ));
         }
@@ -381,7 +359,7 @@ impl FtdcDecoder {
         let timestamp = match doc.get("_id") {
             Some(Bson::DateTime(dt)) => *dt,
             _ => {
-                return Err(FtdcDecoderError::InvalidFormat(
+                return Err(FtdcError::Format(
                     "Missing _id field or not a DateTime".to_string(),
                 ))
             }
@@ -411,7 +389,7 @@ impl FtdcDecoder {
                 decompressed_chunk.metric_count
             );
 
-            return Err(FtdcDecoderError::InvalidFormat(
+            return Err(FtdcError::Format(
                 "Metric count mismatch".to_string(),
             ));
         }
