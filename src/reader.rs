@@ -7,6 +7,7 @@ use tokio::{
     fs::File,
     io::{AsyncReadExt, BufReader},
 };
+use std::io::Cursor;
 
 use crate::{Compression, FtdcDocument, FtdcError, MetricType, MetricValue};
 
@@ -327,6 +328,10 @@ impl FtdcReader {
                     let mut reference_values = Vec::new();
                     let mut ref_keys = Vec::new();
 
+                    let mut cursor = Cursor::new(&bin.bytes);
+
+                    // Parse the BSON bytes into a Document
+                    let ref_doc = &Document::from_reader(&mut cursor).map_err(|e| ReaderError::InvalidFile(format!("Failed to parse BSON document {}", e)))?;
                     fn extract_numeric_values_recursive(
                         doc: &Document,
                         prefix: &str,
@@ -482,16 +487,11 @@ impl FtdcReader {
                         return Ok(Some(FtdcDocument { timestamp, metrics }));
                     }
 
-                        Ok(Some(FtdcDocument { timestamp, metrics }))
-                    } else {
-                        // Fallback to using reference document if no compressed data
-                        let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                        Ok(Some(FtdcDocument { timestamp, metrics }))
-                    }
+                    Ok(Some(FtdcDocument { timestamp, metrics }))
                 } else {
-                    Err(FtdcError::Format(
-                        "No reference document available".to_string(),
-                    ))
+
+                    //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
+                    Ok(None)
                 }
             }
             FtdcDocType::MetadataDelta => {
