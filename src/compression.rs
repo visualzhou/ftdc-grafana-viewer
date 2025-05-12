@@ -38,7 +38,7 @@ impl Compression {
             ));
         };
 
-        println!("Uncompressed size: {} bytes", uncompressed_size);
+        println!("\t\tUncompressed size: {} bytes", uncompressed_size);
 
         // 1. ZLIB decompression
         let mut decoder = libflate::zlib::Decoder::new(&data[4..])
@@ -49,7 +49,7 @@ impl Compression {
             .read_to_end(&mut decompressed)
             .map_err(|e| FtdcError::Compression(format!("ZLIB read error: {}", e)))?;
 
-        println!("Decompressed ZLIB data: {} bytes", decompressed.len());
+        println!("\t\tDecompressed ZLIB data: {} bytes", decompressed.len());
 
         // 2. Varint decompression (S2-style)
         let mut decoded_values = Vec::new();
@@ -71,7 +71,7 @@ impl Compression {
             }
         }
 
-        println!("Decoded {} varint values", decoded_values.len());
+        println!("\t\tDecoded {} varint values", decoded_values.len());
 
         // 3. Run-length decoding of zeros
         let mut expanded_values = Vec::new();
@@ -110,7 +110,7 @@ impl Compression {
         }
 
         println!(
-            "Expanded to {} values after RLE decoding",
+            "\t\tExpanded to {} values after RLE decoding",
             expanded_values.len()
         );
 
@@ -132,7 +132,7 @@ impl Compression {
             prev_value = value;
         }
 
-        println!("Final decompressed values: {}", final_values.len());
+        println!("\t\tFinal decompressed values: {}", final_values.len());
 
         Ok(final_values)
     }
