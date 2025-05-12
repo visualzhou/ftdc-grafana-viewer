@@ -3,6 +3,7 @@
 // See https://developers.google.com/protocol-buffers/docs/encoding#varints
 
 use std::io::{self, Error, ErrorKind};
+use crate::FtdcError;
 
 /// Maximum number of bytes a 64-bit integer can take when varint-encoded
 pub const MAX_VARINT_SIZE_64: usize = 10;
@@ -70,6 +71,13 @@ pub fn encode_varint_vec(value: u64, output: &mut Vec<u8>) -> io::Result<usize> 
     Ok(output.len() - initial_len)
 }
 
+/// Similar to encode_varint_vec but uses FtdcError instead of io::Error
+pub fn encode_varint_ftdc(value: u64, output: &mut Vec<u8>) -> Result<(), FtdcError> {
+    encode_varint_vec(value, output)
+        .map(|_| ())
+        .map_err(|e| FtdcError::Compression(format!("Varint encoding error: {}", e)))
+}
+
 /// Decodes a varint from the provided input buffer.
 ///
 /// Returns a tuple containing the decoded value and the number of bytes read.
@@ -109,6 +117,17 @@ pub fn decode_varint(input: &[u8]) -> io::Result<(u64, usize)> {
         io::ErrorKind::UnexpectedEof,
         "Unexpected end of input while decoding varint",
     ))
+}
+
+/// Similar to decode_varint but uses FtdcError instead of io::Error
+pub fn decode_varint_ftdc(input: &[u8]) -> Result<(u64, usize), FtdcError> {
+    decode_varint(input).map_err(|e| {
+        match e.kind() {
+            ErrorKind::UnexpectedEof => FtdcError::Compression("Incomplete varint".to_string()),
+            ErrorKind::InvalidData => FtdcError::Compression("Varint too large".to_string()),
+            _ => FtdcError::Compression(format!("Varint decoding error: {}", e)),
+        }
+    })
 }
 
 #[cfg(test)]

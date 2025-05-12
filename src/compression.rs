@@ -1,4 +1,5 @@
 use crate::FtdcError;
+use crate::varint::{decode_varint_ftdc, encode_varint_ftdc};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Cursor;
 use std::io::{Read, Write};
@@ -56,7 +57,7 @@ impl Compression {
         let mut i = 0;
         let mut value_count = 0;
         while i < decompressed.len() {
-            let (value, bytes_read) = Self::decode_varint_s2(&decompressed[i..])?;
+            let (value, bytes_read) = decode_varint_ftdc(&decompressed[i..])?;
             decoded_values.push(value);
             i += bytes_read;
             value_count += 1;
@@ -137,34 +138,6 @@ impl Compression {
         Ok(final_values)
     }
 
-    /// Decodes a single varint using S2-style encoding
-    /// Returns (value, bytes_read)
-    fn decode_varint_s2(data: &[u8]) -> Result<(u64, usize), FtdcError> {
-        let mut value = 0u64;
-        let mut shift = 0;
-        let mut bytes_read = 0;
-
-        loop {
-            if bytes_read >= data.len() {
-                return Err(FtdcError::Compression("Incomplete varint".to_string()));
-            }
-
-            let byte = data[bytes_read];
-            bytes_read += 1;
-
-            value |= ((byte & 0x7F) as u64) << shift;
-            if byte & 0x80 == 0 {
-                break;
-            }
-            shift += 7;
-            if shift > 63 {
-                return Err(FtdcError::Compression("Varint too large".to_string()));
-            }
-        }
-
-        Ok((value, bytes_read))
-    }
-
     /// Compresses FTDC data using the full compression pipeline
     pub fn compress_ftdc(values: &[u64]) -> Result<Vec<u8>, FtdcError> {
         // 1. Delta encoding
@@ -201,7 +174,7 @@ impl Compression {
         // 3. Varint encoding
         let mut varint_data = Vec::new();
         for value in rle_values {
-            Self::encode_varint_s2(value, &mut varint_data)?;
+            encode_varint_ftdc(value, &mut varint_data)?;
         }
 
         // 4. ZLIB compression
@@ -223,16 +196,6 @@ impl Compression {
         final_data.extend_from_slice(&compressed);
 
         Ok(final_data)
-    }
-
-    /// Encodes a single value using S2-style varint encoding
-    fn encode_varint_s2(mut value: u64, output: &mut Vec<u8>) -> Result<(), FtdcError> {
-        while value >= 0x80 {
-            output.push((value as u8) | 0x80);
-            value >>= 7;
-        }
-        output.push(value as u8);
-        Ok(())
     }
 }
 
