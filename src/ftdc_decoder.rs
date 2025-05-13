@@ -13,7 +13,7 @@ pub struct Chunk {
     pub n_deltas: u32,
     pub deltas: Vec<u8>,
     // Decoded
-    pub keys: Vec<(String, MetricType)>,
+    pub keys: Vec<(String, MetricType, Bson)>,
     pub timestamp: SystemTime,
     //pub next_keys_idx: u32,
     // Each metric (key) is a vector.
@@ -145,7 +145,7 @@ impl ChunkParser {
         &self,
         doc: &Document,
         prefix: &str,
-        keys: &mut Vec<(String, MetricType)>,
+        keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
         for (key, value) in doc.iter() {
             let current_path = if prefix.is_empty() {
@@ -164,7 +164,7 @@ impl ChunkParser {
         &self,
         value: &Bson,
         path: &str,
-        keys: &mut Vec<(String, MetricType)>,
+        keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
         let keylen = keys.len();
         match value {
@@ -175,27 +175,27 @@ impl ChunkParser {
             }
             // For numeric types, add the key to the list
             Bson::Double(_) => {
-                keys.push((path.to_string(), MetricType::Double));
+                keys.push((path.to_string(), MetricType::Double, value.clone()));
                 Ok(())
             }
             Bson::Int32(_) => {
-                keys.push((path.to_string(), MetricType::Int32));
+                keys.push((path.to_string(), MetricType::Int32, value.clone()));
                 Ok(())
             }
             Bson::Int64(_) => {
-                keys.push((path.to_string(), MetricType::Int64));
+                keys.push((path.to_string(), MetricType::Int64, value.clone()));
                 Ok(())
             }
             Bson::Decimal128(_) => {
-                keys.push((path.to_string(), MetricType::Decimal128));
+                keys.push((path.to_string(), MetricType::Decimal128, value.clone()));
                 Ok(())
             }
             Bson::Boolean(_) => {
-                keys.push((path.to_string(), MetricType::Boolean));
+                keys.push((path.to_string(), MetricType::Boolean, value.clone()));
                 Ok(())
             }
             Bson::DateTime(_) => {
-                keys.push((path.to_string(), MetricType::DateTime));
+                keys.push((path.to_string(), MetricType::DateTime, value.clone()));
                 Ok(())
             }
             // Timestamp counts as two fields
@@ -203,15 +203,13 @@ impl ChunkParser {
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "t"),
                     MetricType::Timestamp,
+                    value.clone(), // todo: fix timestamp
                 )); // time component
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "i"),
                     MetricType::Timestamp,
+                    value.clone(),
                 )); // increment component
-                    //println!("Adding 2 keys: {} {}", path, value);
-                if keys.len() == keylen {
-                    return Err(FtdcError::Format(format!("Key already exists: {}", path)));
-                }
                 Ok(())
             }
             // Recursively process nested documents
@@ -239,8 +237,13 @@ impl ChunkParser {
         let mut final_values: Vec<MetricValue> = Vec::new();
         // For each metric vector
         for key in chunk.keys.iter() {
-            println!("Working on metric {}", key.0);
             let current_timestamp = chunk.timestamp;
+            let mut prev_value = key.2.as_i64().unwrap_or_default();
+            println!(
+                "Working on metric {} with reference value {}",
+                key.0, prev_value
+            );
+
             // Keep going until we have decoded all the samples for this metric.
             while final_values.len() < chunk.n_deltas.try_into().unwrap() {
                 let (value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
@@ -270,19 +273,8 @@ impl ChunkParser {
                 }
 
                 // 4. Delta decoding
-                let mut prev_value = 0u64;
-
-                /*
-                        // If we have reference values, use them as baseline for the first sample
-                        let ref_vals = reference_values;
-                        if !ref_vals.is_empty() {
-                            prev_value = ref_vals[0];
-                            final_values.push(prev_value);
-                        }
-                */
-
                 for delta in expanded_values {
-                    let value = prev_value.checked_add(delta);
+                    let value = prev_value.checked_add(delta as i64);
                     let metric_value = MetricValue {
                         name: key.0.clone(),
                         timestamp: current_timestamp,
