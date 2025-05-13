@@ -1,5 +1,5 @@
-use bson::doc;
 use bson::Document;
+use bson::{doc, Bson};
 use ftdc_importer::ChunkParser;
 use ftdc_importer::{Chunk, MetricType};
 use std::fs::File;
@@ -45,8 +45,8 @@ async fn test_decode_chunk() -> io::Result<()> {
         n_deltas: 3,            // 3 samples per metric
         deltas: varint_deltas,  // The varint-encoded deltas
         keys: vec![
-            ("a".to_string(), MetricType::Int64),
-            ("x".to_string(), MetricType::Int64),
+            ("a".to_string(), MetricType::Int64, Bson::Int64(1)),
+            ("x".to_string(), MetricType::Int64, Bson::Int64(2)),
         ],
         timestamp,
     };
