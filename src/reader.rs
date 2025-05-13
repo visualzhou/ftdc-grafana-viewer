@@ -7,7 +7,7 @@ use tokio::{
     fs::File,
     io::{AsyncReadExt, BufReader},
 };
-use std::io::Cursor;
+
 
 use crate::{Compression, FtdcDocument, FtdcError, MetricType, MetricValue};
 
@@ -341,9 +341,11 @@ impl FtdcReader {
                     let mut metrics = Vec::new();
 
                     // Skip the first value which is the timestamp in seconds
-                    let metric_count = ref_keys.len();
-                    if decompressed.len() >= metric_count && !ref_keys.is_empty() {
-                        for (i, key) in ref_keys.iter().enumerate() {
+                    let metric_count = 0;
+                    if decompressed.len() >= metric_count /*&& !ref_keys.is_empty()*/ {
+                        //for (i, key) in ref_keys.iter().enumerate() {
+                        let i = 0;
+                        let key = String::from(":");
                             if i < decompressed.len() {
                                 let value = decompressed[i];
 
@@ -380,13 +382,13 @@ impl FtdcReader {
                                     metric_type,
                                 });
                             }
-                        }
+                        //}
                     } else {
                         println!("WARNING: Decompressed data size ({}) doesn't match reference keys count ({})",
                                 decompressed.len(), metric_count);
                         // Fallback to using reference document
-                        let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                        return Ok(Some(FtdcDocument { timestamp, metrics }));
+                        //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
+                        return Ok(None)
                     }
 
                     Ok(Some(FtdcDocument { timestamp, metrics }))
