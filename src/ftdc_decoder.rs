@@ -13,7 +13,7 @@ pub struct Chunk {
     pub n_deltas: u32,
     pub deltas: Vec<u8>,
     // Decoded
-    pub key_names: Vec<String>,
+    pub keys: Vec<(String, MetricType)>,
     pub timestamp: SystemTime,
     //pub next_keys_idx: u32,
     // Each metric (key) is a vector.
@@ -74,7 +74,7 @@ impl ChunkParser {
             n_keys: 0,
             n_deltas: 0,
             deltas: Vec::new(),
-            key_names: Vec::new(),
+            keys: Vec::new(),
             timestamp: timestamp.to_system_time(),
         };
 
@@ -124,9 +124,9 @@ impl ChunkParser {
         chunk.deltas = decompressed_chunk[offset + 8..].to_vec();
 
         // Extract keys directly
-        chunk.key_names.clear();
-        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.key_names)?;
-        println!("new chunk refdoc n_keys {} n_deltas {} actual keys {}", chunk.n_keys, chunk.n_deltas, chunk.key_names.len());
+        chunk.keys.clear();
+        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys)?;
+        println!("new chunk refdoc n_keys {} n_deltas {} actual keys {}", chunk.n_keys, chunk.n_deltas, chunk.keys.len());
         Ok(chunk)
     }
 
@@ -138,7 +138,7 @@ impl ChunkParser {
         &self,
         doc: &Document,
         prefix: &str,
-        keys: &mut Vec<String>,
+        keys: &mut Vec<(String, MetricType)>,
     ) -> Result<()> {
         for (key, value) in doc.iter() {
             let current_path = if prefix.is_empty() {
@@ -157,7 +157,7 @@ impl ChunkParser {
         &self,
         value: &Bson,
         path: &str,
-        keys: &mut Vec<String>,
+        keys: &mut Vec<(String, MetricType)>,
     ) -> Result<()> {
         let keylen = keys.len();
         match value {
@@ -167,26 +167,34 @@ impl ChunkParser {
                 Ok(())
             }
             // For numeric types, add the key to the list
-            Bson::Double(_)
-            | Bson::Int32(_)
-            | Bson::Int64(_)
-            | Bson::Decimal128(_)
-            | Bson::Boolean(_)
-            | Bson::DateTime(_) => {
-                keys.push(path.to_string());
-                //println!("Adding key: {} {}", path.to_string(), value.to_string());
-                if keys.len() == keylen {
-                    return Err(FtdcError::Format(format!(
-                        "Key already exists: {}",
-                        path
-                    )));
-                }
+            Bson::Double(_) => {
+                keys.push((path.to_string(), MetricType::Double));
+                Ok(())
+            }
+            Bson::Int32(_) => {
+                keys.push((path.to_string(), MetricType::Int32));
+                Ok(())
+            }
+            Bson::Int64(_) => {
+                keys.push((path.to_string(), MetricType::Int64));
+                Ok(())
+            }
+            Bson::Decimal128(_) => {
+                keys.push((path.to_string(), MetricType::Decimal128));
+                Ok(())
+            }
+            Bson::Boolean(_) => {
+                keys.push((path.to_string(), MetricType::Boolean));
+                Ok(())
+            }
+            Bson::DateTime(_) => {
+                keys.push((path.to_string(), MetricType::DateTime));
                 Ok(())
             }
             // Timestamp counts as two fields
             Bson::Timestamp(_) => {
-                keys.push(format!("{}{}{}", path, Self::PATH_SEP, "t")); // time component
-                keys.push(format!("{}{}{}", path, Self::PATH_SEP, "i")); // increment component
+                keys.push((format!("{}{}{}", path, Self::PATH_SEP, "t"), MetricType::Timestamp)); // time component
+                keys.push((format!("{}{}{}", path, Self::PATH_SEP, "i"), MetricType::Timestamp)); // increment component
                 //println!("Adding 2 keys: {} {}", path, value);
                 if keys.len() == keylen {
                     return Err(FtdcError::Format(format!(
@@ -222,8 +230,8 @@ impl ChunkParser {
         let mut delta_index = 0;
         let mut final_values: Vec<MetricValue> = Vec::new();
         // For each metric vector
-        for key_name in chunk.key_names.iter() {
-            println!("Working on metric {}", key_name);
+        for key in chunk.keys.iter() {
+            println!("Working on metric {}", key.0);
 
             // Varint decompression
             let mut decoded_values = Vec::new();
@@ -242,7 +250,7 @@ impl ChunkParser {
                         "Too many values decoded: {}", value_count)));
                 }
             }
-            println!("\t\tDecoded {} varint values for {}", decoded_values.len(), key_name);
+            println!("\t\tDecoded {} varint values for {}", decoded_values.len(), key.0);
 
             // 3. Run-length decoding of zeros
             let mut expanded_values = Vec::new();
@@ -300,10 +308,10 @@ impl ChunkParser {
             for delta in expanded_values {
                 let value = prev_value.checked_add(delta);
                 let metric_value = MetricValue {
-                    name: key_name.clone(),
+                    name: key.0.clone(),
                     timestamp: current_timestamp,
                     value: value.unwrap_or_default() as f64,
-                    metric_type: MetricType::Int64,
+                    metric_type: key.1.clone(),
                 };
                 final_values.push(metric_value);
                 prev_value = value.unwrap_or_default();
