@@ -27,6 +27,6 @@ async fn test_parse_chunk() -> io::Result<()> {
     assert!(!chunk.deltas.is_empty());
 
     // TODO(XXX): fix this: assertion failed. left: 3476 right: 3479
-    assert_eq!(chunk.key_names.len(), chunk.n_keys as usize);
+    assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
     Ok(())
 }
