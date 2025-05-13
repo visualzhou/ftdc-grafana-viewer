@@ -263,7 +263,7 @@ impl ChunkParser {
                 delta_index += bytes_read;
 
                 let mut expanded_values: Vec<u64> = Vec::new();
-                // 3. Run-length decoding of zeros
+                // Run-length decoding of zeros
                 if value == 0 {
                     // Found a zero, next value is the count
                     let (zero_count, bytes_read) =
@@ -285,7 +285,7 @@ impl ChunkParser {
                     expanded_values.push(value);
                 }
 
-                // 4. Delta decoding
+                // Delta decoding
                 for delta in expanded_values {
                     let value = prev_value.checked_add(delta as i64);
                     let metric_value = MetricValue {
