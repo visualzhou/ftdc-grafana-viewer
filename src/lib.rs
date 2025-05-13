@@ -3,13 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use thiserror::Error;
 
-mod compression;
 pub mod ftdc_decoder;
 mod reader;
 mod varint;
 mod victoria_metrics;
 
-pub use compression::Compression;
 pub use ftdc_decoder::{Chunk, ChunkParser};
 pub use reader::{FtdcReader, ReaderResult};
 pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
