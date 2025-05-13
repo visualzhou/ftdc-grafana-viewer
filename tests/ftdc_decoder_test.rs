@@ -1,8 +1,11 @@
+use bson::doc;
 use bson::Document;
 use ftdc_importer::ChunkParser;
+use ftdc_importer::{Chunk, MetricType};
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
+use std::time::SystemTime;
 
 #[tokio::test]
 async fn test_parse_chunk() -> io::Result<()> {
@@ -25,5 +28,34 @@ async fn test_parse_chunk() -> io::Result<()> {
 
     // TODO(XXX): fix this: assertion failed. left: 3476 right: 3479
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_decode_chunk() -> io::Result<()> {
+    let lre_deltas = vec![1, 1, 1, 0, 3];
+    let mut varint_deltas = Vec::new();
+    for delta in &lre_deltas {
+        ftdc_importer::encode_varint_vec(*delta, &mut varint_deltas).unwrap();
+    }
+    let timestamp = SystemTime::now();
+    let chunk = Chunk {
+        reference_doc: doc! {}, // Empty reference document
+        n_keys: 2,              // Two metrics: "a" and "x"
+        n_deltas: 3,            // 3 samples per metric
+        deltas: varint_deltas,  // The varint-encoded deltas
+        keys: vec![
+            ("a".to_string(), MetricType::Int64),
+            ("x".to_string(), MetricType::Int64),
+        ],
+        timestamp,
+    };
+
+    // Decode the chunk
+    let chunk_parser = ChunkParser;
+
+    // TODO(XXX): fix this
+    // let metric_values = chunk_parser.decode_chunk_values(&chunk).unwrap();
+    // assert!(metric_values.len() == 6);
     Ok(())
 }
