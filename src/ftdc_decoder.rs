@@ -1,8 +1,8 @@
-use crate::metrics_array_decoder::MetricsArrayDecoder;
-use crate::FtdcError;
+use crate::{FtdcError, MetricType, MetricValue};
 use bson::{Bson, Document};
-use flate2::read::ZlibDecoder;
 use std::io::Read;
+use std::time::{SystemTime, Duration};
+use crate::varint::decode_varint_ftdc;
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
 
@@ -36,10 +36,10 @@ pub struct Chunk {
     pub deltas: Vec<u8>,
     // Decoded
     pub key_names: Vec<String>,
-    pub next_keys_idx: u32,
+    pub timestamp: SystemTime,
+    //pub next_keys_idx: u32,
     // Each metric (key) is a vector.
     // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
-    pub values: Vec<Vec<u64>>,
 }
 
 /// Represents a decoded FTDC metric sample
@@ -55,7 +55,7 @@ pub struct MetricSample {
 pub struct ChunkParser;
 
 impl ChunkParser {
-    pub fn parse_chunk(&self, doc: &Document) -> Result<Chunk> {
+    pub fn parse_chunk_header(&self, doc: &Document) -> Result<Chunk> {
         // metric =
         //     _id : DateTime
         //     type: 1
@@ -68,7 +68,7 @@ impl ChunkParser {
         }
 
         // Get timestamp from _id
-        let _timestamp = match doc.get("_id") {
+        let timestamp = match doc.get("_id") {
             Some(Bson::DateTime(dt)) => *dt,
             _ => {
                 return Err(FtdcError::Format(
@@ -104,8 +104,9 @@ impl ChunkParser {
             n_deltas: 0,
             deltas: Vec::new(),
             key_names: Vec::new(),
-            next_keys_idx: 0,
-            values: Vec::new(),
+            timestamp: timestamp.to_system_time(),
+            //next_keys_idx: 0,
+            //values: Vec::new(),
         };
 
         // Extract the compressed data
@@ -244,15 +245,111 @@ impl ChunkParser {
         }
     }
 
-    // // Decodes a chunk into a vector of vectors of metrics.
-    // // Each sub-vector contains the metrics for a single sample.
-    // TODO (XXX): implement this
-    // fn decode_chunk(&self, chunk: &Chunk) {
+    // Decodes a chunk into a vector of "metric values" (timestamp / value pairs)
+    // Each sub-vector contains the metrics for a single sample.
+    pub fn decode_chunk_values(&self, chunk: &Chunk) -> Result<Vec<MetricValue>> {
 
-    // }
+
+        let mut delta_index = 0;
+        let mut final_values: Vec<MetricValue> = Vec::new();
+        // For each metric vector
+        for key_name in chunk.key_names.iter() {
+            println!("Working on metric {}", key_name);
+
+            // Varint decompression
+            let mut decoded_values = Vec::new();
+            let mut value_count = 0;
+
+            while value_count < chunk.n_deltas {
+                let (value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
+                decoded_values.push(value);
+                delta_index += bytes_read;
+                value_count += 1;
+
+                // Safety check to prevent excessive memory usage
+                if value_count > 10_000_000 {
+                    // 10 million values max
+                    return Err(FtdcError::Compression(format!(
+                        "Too many values decoded: {}", value_count)));
+                }
+                println!("\t\tDecoded {} varint values for {}", decoded_values.len(), key_name);
+
+                // 3. Run-length decoding of zeros
+                let mut expanded_values = Vec::new();
+                let mut j = 0;
+                while j < decoded_values.len() {
+                    let value = decoded_values[delta_index];
+                    if value == 0 && j + 1 < decoded_values.len() {
+                        // Found a zero, next value is the count
+                        let count = decoded_values[j + 1] as usize;
+
+                        // Safety check
+                        if count > 10_000_000 {
+                            // Max 10 million consecutive zeros
+                            println!("WARNING: Unreasonable zero count: {}. This may indicate corrupt FTDC data.", count);
+                            // Instead of failing, just push a single zero and continue
+                            expanded_values.push(0);
+                            j += 2;
+                            continue;
+                        }
+
+                        expanded_values.extend(std::iter::repeat(0u64).take(count));
+                        j += 2;
+                    } else {
+                        expanded_values.push(value);
+                        j += 1;
+                    }
+
+                    // Safety check
+                    if expanded_values.len() > 100_000_000 {
+                        // 100 million expanded values max
+                        return Err(FtdcError::Compression(format!(
+                            "Too many expanded values: {}",
+                            expanded_values.len()
+                        )));
+                    }
+                }
+
+                println!(
+                    "\t\tExpanded to {} values after RLE decoding",
+                    expanded_values.len()
+                );
+
+                // 4. Delta decoding
+                let mut prev_value = 0u64;
+
+                /*
+                // If we have reference values, use them as baseline for the first sample
+                let ref_vals = reference_values;
+                if !ref_vals.is_empty() {
+                    prev_value = ref_vals[0];
+                    final_values.push(prev_value);
+                }
+        */
+                let current_timestamp = chunk.timestamp;
+                for delta in expanded_values {
+                    let value = prev_value + delta;
+                    let metric_value = MetricValue {
+                        name: key_name.clone(),
+                        timestamp: current_timestamp,
+                        value: value as f64,
+                        metric_type: MetricType::Int64,
+                    };
+                    final_values.push(metric_value);
+                    prev_value = value;
+                    current_timestamp.checked_add(Duration::from_secs(1));
+                }
+
+                println!("\t\tFinal decompressed values: {}", final_values.len());
+            }
+        }
+
+
+        Ok(final_values)
+     }
 }
 
-/// Layer 1: Extract raw metric chunks from BSON documents
+/*/// Layer 1: Extract raw metric chunks from BSON documents
 pub struct MetricChunkExtractor;
 
 impl MetricChunkExtractor {
@@ -807,3 +904,4 @@ mod tests {
         assert_eq!(ts.increment, 2500);
     }
 }
+*/

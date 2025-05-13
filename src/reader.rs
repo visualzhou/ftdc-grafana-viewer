@@ -40,8 +40,7 @@ pub type ReaderResult<T> = std::result::Result<T, FtdcError>;
 
 /// Reader for FTDC files that supports async streaming
 pub struct FtdcReader {
-    reader: BufReader<File>,
-    reference_doc: Option<Document>,
+    reader: BufReader<File>
 }
 
 impl FtdcReader {
@@ -51,8 +50,7 @@ impl FtdcReader {
         let reader = BufReader::with_capacity(BUFFER_SIZE, file);
 
         Ok(Self {
-            reader,
-            reference_doc: None,
+            reader
         })
     }
 
@@ -94,6 +92,7 @@ impl FtdcReader {
     }
 
     /// Extracts metrics from a BSON document
+    /// Only useful for reference documents.
     fn extract_metrics(
         &self,
         doc: &Document,
@@ -308,7 +307,6 @@ impl FtdcReader {
                         "Found reference document (type 0) with {} fields",
                         ref_doc.len()
                     );
-                    self.reference_doc = Some(ref_doc.clone());
                     let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
                     Ok(Some(FtdcDocument { timestamp, metrics }))
                 } else {
@@ -323,91 +321,10 @@ impl FtdcReader {
                     "Processing metric document (type 1) with chunk of binary data: {} bytes",
                     doc.len()
                 );
-                let _chunk = chunk_parser.parse_chunk(&doc).unwrap();
-                Ok(None)
-                //Ok(Some(FtdcDocument { timestamp, metrics }))
-                /*
-                if let Some(Bson::Binary(bin)) = doc.get("data") {
-                    println!(
-                        "Processing metric document (type 1) with chunk of binary data: {} bytes",
-                        bin.bytes.len()
-                    );
-                    // Decompress using reference values
-                    let decompressed = match Compression::decompress_metrics_chunk(
-                        &bin.bytes                    ) {
-                        Ok(values) => values,
-                        Err(e) => {
-                            println!("Decompression error: {:?}", e);
-                            // Fallback to using reference document if decompression fails
-                            //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                            return Ok(None);
-                        }
-                    };
-
-                    println!("\tSuccessfully decompressed {} values", decompressed.len());
-
-                    // Create metrics directly from the column-oriented data
-                    let mut metrics = Vec::new();
-
-                    // Skip the first value which is the timestamp in seconds
-                    let metric_count = 0;
-                    if decompressed.len() >= metric_count /*&& !ref_keys.is_empty()*/ {
-                        //for (i, key) in ref_keys.iter().enumerate() {
-                        let i = 0;
-                        let key = String::from("");
-                            if i < decompressed.len() {
-                                let value = decompressed[i];
-
-                                // Determine metric type from key naming convention
-                                // (This would be better done with a proper schema)
-                                let metric_type =
-                                    if key.contains("_timestamp_") || key.contains("Time") {
-                                        MetricType::DateTime
-                                    } else if key.contains("_ismaster_")
-                                        || key.contains("Enabled")
-                                        || key.contains("_ok")
-                                    {
-                                        MetricType::Boolean
-                                    } else if value > 0x7FFFFFFF {
-                                        MetricType::Int64
-                                    } else {
-                                        MetricType::Int32
-                                    };
-
-                                // Convert value based on type
-                                let f64_value = match metric_type {
-                                    MetricType::Double => f64::from_bits(value),
-                                    MetricType::Int32 => value as i32 as f64,
-                                    MetricType::Int64 => value as i64 as f64,
-                                    MetricType::Boolean => (value != 0) as i32 as f64,
-                                    MetricType::DateTime => value as f64,
-                                    _ => value as f64,
-                                };
-
-                                metrics.push(MetricValue {
-                                    name: key.clone(),
-                                    value: f64_value,
-                                    timestamp,
-                                    metric_type,
-                                });
-                            }
-                        //}
-                    } else {
-                        println!("WARNING: Decompressed data size ({}) doesn't match reference keys count ({})",
-                                decompressed.len(), metric_count);
-                        // Fallback to using reference document
-                        //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                        return Ok(None)
-                    }
-
-                    Ok(Some(FtdcDocument { timestamp, metrics }))
-                } else {
-
-                    //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                    Ok(None)
-                }
-
-                 */
+                let chunk = chunk_parser.parse_chunk_header(&doc)?;
+                let metrics = chunk_parser.decode_chunk_values(&chunk)?;
+                
+                Ok(Some(FtdcDocument { timestamp, metrics }))
             }
             FtdcDocType::MetadataDelta => {
                 // Skip metadata delta documents in the stream
