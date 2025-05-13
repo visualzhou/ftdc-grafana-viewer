@@ -122,11 +122,7 @@ pub fn decode_varint(input: &[u8]) -> io::Result<(u64, usize)> {
 /// Similar to decode_varint but uses FtdcError instead of io::Error
 pub fn decode_varint_ftdc(input: &[u8]) -> Result<(u64, usize), FtdcError> {
     decode_varint(input).map_err(|e| {
-        match e.kind() {
-            ErrorKind::UnexpectedEof => FtdcError::Compression("Incomplete varint".to_string()),
-            ErrorKind::InvalidData => FtdcError::Compression("Varint too large".to_string()),
-            _ => FtdcError::Compression(format!("Varint decoding error: {}", e)),
-        }
+        FtdcError::Compression(format!("Varint decoding error: {}", e))
     })
 }
 

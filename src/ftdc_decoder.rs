@@ -37,6 +37,8 @@ pub struct Chunk {
     // Decoded
     pub keys: Vec<String>,
     pub next_keys_idx: u32,
+    // Each metric (key) is a vector.
+    // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
     pub values: Vec<Vec<u64>>,
 }
 
