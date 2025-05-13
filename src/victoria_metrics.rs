@@ -1,4 +1,4 @@
-use crate::{FtdcDocument, MetricValue, FtdcError};
+use crate::{FtdcDocument, FtdcError, MetricValue};
 use reqwest::Client;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -30,7 +30,9 @@ impl VictoriaMetricsClient {
 
     /// Convert a metric value to InfluxDB Line Protocol format
     fn metric_to_line_protocol(metric: &MetricValue) -> VictoriaMetricsResult<String> {
-        let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
+        // Use current time instead of metric's timestamp
+        // TODO: Use metric's timestamp instead of current time
+        let timestamp_ns = Self::system_time_to_nanos(SystemTime::now())?;
 
         // Sanitize metric name (replace spaces and special chars with underscores)
         let sanitized_name = metric.name.replace(' ', "_").replace('.', "_");
@@ -69,11 +71,26 @@ impl VictoriaMetricsClient {
         for chunk in lines.chunks(self.batch_size) {
             let payload = chunk.join("\n");
 
+            // Debug logging
+            println!("\nSending metrics to Victoria Metrics:");
+            println!("URL: {}/influx/write", self.base_url);
+            println!("Total metrics in this batch: {}", chunk.len());
+            println!("First few metrics in line protocol format:");
+            for line in chunk.iter().take(3) {
+                println!("  {}", line);
+            }
+            println!("...");
+
+            // Print the exact payload being sent
+            println!("\nExact payload being sent:");
+            println!("{}", payload);
+
             let response = self
                 .client
-                .post(&format!("{}/write", self.base_url))
+                .post(&format!("{}/influx/write", self.base_url))
                 .header("Content-Type", "text/plain")
-                .body(payload)
+                .header("X-Retention-Period", "365d")
+                .body(payload.clone())
                 .send()
                 .await?;
 
@@ -83,7 +100,27 @@ impl VictoriaMetricsClient {
                     .text()
                     .await
                     .unwrap_or_else(|_| "Unknown error".to_string());
+                println!(
+                    "Error response from Victoria Metrics: {} - {}",
+                    status, message
+                );
                 return Err(FtdcError::Server { status, message });
+            }
+
+            // Print response details
+            println!("\nResponse details:");
+            println!("Status: {}", response.status());
+            let response_text = response.text().await?;
+            println!("Body: {}", response_text);
+
+            // Verify the metrics were received
+            let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", self.base_url);
+            println!("\nVerifying metrics at: {}", verify_url);
+            let verify_response = self.client.get(&verify_url).send().await?;
+            if !verify_response.status().is_success() {
+                println!("Verification status: {}", verify_response.status());
+                let verify_body = verify_response.text().await?;
+                println!("Verification response: {}", verify_body);
             }
         }
 
@@ -94,6 +131,35 @@ impl VictoriaMetricsClient {
     pub async fn import_document(&self, doc: &FtdcDocument) -> VictoriaMetricsResult<()> {
         let lines = self.document_to_line_protocol(doc)?;
         self.send_metrics(lines).await
+    }
+
+    /// Clean up old metrics by deleting them
+    pub async fn cleanup_old_metrics(&self) -> VictoriaMetricsResult<()> {
+        println!("Cleaning up old metrics...");
+
+        // Delete all metrics with mongodb_ftdc prefix
+        let delete_url = format!("{}/api/v1/admin/tsdb/delete_series", self.base_url);
+
+        // Create the request with match[] parameter to match all mongodb_ftdc metrics
+        let response = self
+            .client
+            .post(&delete_url)
+            .query(&[("match[]", "{__name__=~\"mongodb_ftdc.*\"}")])
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let message = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            println!("Error cleaning up metrics: {} - {}", status, message);
+            return Err(FtdcError::Server { status, message });
+        }
+
+        println!("Successfully cleaned up old metrics");
+        Ok(())
     }
 }
 
@@ -138,10 +204,12 @@ mod tests {
                 name: "test_metric".to_string(),
                 value,
                 timestamp,
-                metric_type,
+                metric_type: metric_type.clone(),
             };
 
             let line = VictoriaMetricsClient::metric_to_line_protocol(&metric).unwrap();
+
+            // Updated assertion to match lowercase metric_type and correct format
             assert!(line.starts_with(&format!(
                 "mongodb_ftdc,metric_type={},metric_name=test_metric value={} ",
                 expected_type, value

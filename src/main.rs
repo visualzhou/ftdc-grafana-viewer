@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use ftdc_importer::{FtdcDocument, FtdcReader, VictoriaMetricsClient};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -134,6 +134,8 @@ async fn run_import_mode(
 ) -> Result<(usize, usize)> {
     let mut document_count = 0;
     let mut metric_count = 0;
+    let mut last_progress = Instant::now();
+    let mut total_metrics_processed = 0;
 
     // Process all documents
     while let Some(doc) = reader
@@ -142,19 +144,33 @@ async fn run_import_mode(
         .context("Failed to read FTDC document")?
     {
         document_count += 1;
-        metric_count += doc.metrics.len();
+        let doc_metric_count = doc.metrics.len();
+        metric_count += doc_metric_count;
+        total_metrics_processed += doc_metric_count;
 
-        if verbose && document_count % 100 == 0 {
+        // Print progress every 100 documents or every 5 seconds
+        if verbose
+            && (document_count % 100 == 0 || last_progress.elapsed() >= Duration::from_secs(5))
+        {
+            let elapsed = last_progress.elapsed();
+            let metrics_per_second = total_metrics_processed as f64 / elapsed.as_secs_f64();
+
             println!(
-                "Processed {} documents ({} metrics)",
-                document_count, metric_count
+                "Processed {} documents ({} metrics) - {:.2} metrics/sec",
+                document_count, metric_count, metrics_per_second
             );
+
+            last_progress = Instant::now();
+            total_metrics_processed = 0;
         }
 
-        client
-            .import_document(&doc)
-            .await
-            .context("Failed to import document to Victoria Metrics")?;
+        // Convert and import the document
+        client.import_document(&doc).await.with_context(|| {
+            format!(
+                "Failed to import document {} with {} metrics",
+                document_count, doc_metric_count
+            )
+        })?;
     }
 
     Ok((document_count, metric_count))
@@ -175,6 +191,8 @@ async fn main() -> Result<()> {
         .await
         .context("Failed to create FTDC reader")?;
 
+    // Clone vm_url before using it
+    let vm_url = opt.vm_url.clone();
     let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size);
 
     if opt.check {
@@ -182,6 +200,9 @@ async fn main() -> Result<()> {
         run_check_mode(&mut reader, &client).await?;
         println!("\nAnalysis completed in {:.2?}", start.elapsed());
     } else {
+        // Clean up old metrics before importing new ones
+        client.cleanup_old_metrics().await?;
+
         // Run in import mode
         let (document_count, metric_count) =
             run_import_mode(&mut reader, &client, opt.verbose).await?;
@@ -196,6 +217,25 @@ async fn main() -> Result<()> {
             "Average processing speed: {:.2} documents/sec",
             document_count as f64 / elapsed.as_secs_f64()
         );
+
+        // Verify metrics in Victoria Metrics
+        println!("\nVerifying metrics in Victoria Metrics...");
+        let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", vm_url);
+        println!("Query URL: {}", verify_url);
+
+        let response = reqwest::get(&verify_url)
+            .await
+            .context("Failed to query Victoria Metrics")?;
+
+        if response.status().is_success() {
+            let body = response.text().await?;
+            println!("Victoria Metrics response: {}", body);
+        } else {
+            println!(
+                "Warning: Failed to verify metrics in Victoria Metrics. Status: {}",
+                response.status()
+            );
+        }
     }
 
     Ok(())

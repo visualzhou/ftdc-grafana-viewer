@@ -36,7 +36,7 @@ async fn test_victoria_metrics_client() {
 
     // Setup the mock to expect a POST request to /write
     Mock::given(method("POST"))
-        .and(path("/write"))
+        .and(path("/influx/write"))
         .respond_with(ResponseTemplate::new(200))
         .expect(1)
         .mount(&mock_server)
@@ -69,7 +69,7 @@ async fn test_victoria_metrics_client_error() {
 
     // Setup the mock to return a 500 error
     Mock::given(method("POST"))
-        .and(path("/write"))
+        .and(path("/influx/write"))
         .respond_with(ResponseTemplate::new(500).set_body_string("Internal server error"))
         .expect(1)
         .mount(&mock_server)
