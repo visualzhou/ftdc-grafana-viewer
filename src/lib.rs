@@ -1,4 +1,4 @@
-use bson::{doc, };
+use bson::doc;
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use thiserror::Error;
@@ -11,13 +11,7 @@ mod varint;
 mod victoria_metrics;
 
 pub use compression::Compression;
-pub use ftdc_decoder::{
-    Chunk,
-    ChunkParser,
-    
-    
-    
-};
+pub use ftdc_decoder::{Chunk, ChunkParser};
 pub use metrics_array_decoder::MetricsArrayDecoder;
 pub use reader::{FtdcReader, ReaderResult};
 pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
@@ -44,7 +38,10 @@ pub enum FtdcError {
     Network(#[from] reqwest::Error),
 
     #[error("Server error: status={status}, message={message}")]
-    Server { status: reqwest::StatusCode, message: String },
+    Server {
+        status: reqwest::StatusCode,
+        message: String,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
