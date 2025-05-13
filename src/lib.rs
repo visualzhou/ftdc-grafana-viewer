@@ -1,4 +1,4 @@
-use bson::{doc, Bson, Document};
+use bson::{doc, };
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use thiserror::Error;
@@ -15,10 +15,6 @@ pub use ftdc_decoder::{
     Chunk,
     ChunkParser,
     DecompressedMetricChunk,
-    FtdcDecoder,
-    MetricChunkDecompressor,
-    MetricChunkExtractor,
-    MetricDocumentReconstructor,
     MetricSample,
     RawMetricChunk
 };
@@ -81,6 +77,7 @@ pub struct FtdcDocument {
     pub metrics: Vec<MetricValue>,
 }
 
+/*
 /// Main parser for FTDC files
 pub struct FtdcParser {
     decoder: FtdcDecoder,
@@ -461,3 +458,4 @@ mod tests {
         Ok(())
     }
 }
+*/
