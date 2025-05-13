@@ -28,6 +28,18 @@ pub struct DecompressedMetricChunk {
     pub compressed_metrics: Vec<u8>,
 }
 
+pub struct Chunk {
+    // Original
+    pub reference_doc: Document,
+    pub n_keys: u32,
+    pub n_deltas: u32,
+    pub deltas: Vec<u8>,
+    // Decoded
+    pub keys: Vec<String>,
+    pub next_keys_idx: u32,
+    pub values: Vec<Vec<u64>>,
+}
+
 /// Represents a decoded FTDC metric sample
 #[derive(Debug, Clone)]
 pub struct MetricSample {
@@ -44,6 +56,113 @@ impl MetricChunkExtractor {
     /// Creates a new MetricChunkExtractor
     pub fn new() -> Self {
         Self {}
+    }
+
+    pub fn parse_chunk(&self, doc: &Document) -> Result<Chunk> {
+        // Verify this is a metric document (type: 1)
+        match doc.get("type") {
+            Some(Bson::Int32(1)) => {}
+            _ => {
+                return Err(FtdcError::Format(
+                    "Not a metric document".to_string(),
+                ))
+            }
+        }
+
+        // Extract the binary data
+        let bin = match doc.get("data") {
+            Some(Bson::Binary(bin)) => bin,
+            _ => {
+                return Err(FtdcError::Format(
+                    "No 'data' field found in the document".to_string(),
+                ))
+            }
+        };
+
+        // Extract the uncompressed size (first 4 bytes)
+        if bin.bytes.len() < 4 {
+            return Err(FtdcError::Format(
+                "Data field too small".to_string(),
+            ));
+        }
+
+        // Get timestamp from _id
+        let _timestamp = match doc.get("_id") {
+            Some(Bson::DateTime(dt)) => *dt,
+            _ => {
+                return Err(FtdcError::Format(
+                    "Missing _id field or not a DateTime".to_string(),
+                ))
+            }
+        };
+
+        // Create a new chunk
+        let mut chunk = Chunk {
+            reference_doc: Document::new(),
+            n_keys: 0,
+            n_deltas: 0,
+            deltas: Vec::new(),
+            keys: Vec::new(),
+            next_keys_idx: 0,
+            values: Vec::new(),
+        };
+
+        // Extract the compressed data
+        let compressed_data = bin.bytes.to_vec();
+
+        // Decompress the data
+        let mut decoder = flate2::read::ZlibDecoder::new(&compressed_data[4..]);
+        let mut decompressed = Vec::new();
+        decoder
+            .read_to_end(&mut decompressed)
+            .map_err(|e| FtdcError::Compression(format!("ZLIB decompression error: {}", e)))?;
+
+        // Parse the reference document
+        let doc_size = u32::from_le_bytes([
+            decompressed[0],
+            decompressed[1],
+            decompressed[2],
+            decompressed[3],
+        ]) as usize;
+
+        if doc_size > decompressed.len() {
+            return Err(FtdcError::Format(
+                "Reference document size exceeds decompressed data size".to_string(),
+            ));
+        }
+
+        // Parse the reference document
+        chunk.reference_doc = bson::from_slice::<Document>(&decompressed[..doc_size])
+            .map_err(|e| FtdcError::Format(format!("Failed to parse reference document: {}", e)))?;
+
+        // Extract key count and delta count
+        let offset = doc_size;
+        if decompressed.len() < offset + 8 {
+            return Err(FtdcError::Format(
+                "Decompressed data too small to contain sample and metric counts".to_string(),
+            ));
+        }
+
+        // Read n_keys (metric count) - first 4 bytes
+        chunk.n_keys = u32::from_le_bytes([
+            decompressed[offset],
+            decompressed[offset + 1],
+            decompressed[offset + 2],
+            decompressed[offset + 3],
+        ]);
+
+        // Read n_deltas (sample count) - next 4 bytes
+        chunk.n_deltas = u32::from_le_bytes([
+            decompressed[offset + 4],
+            decompressed[offset + 5],
+            decompressed[offset + 6],
+            decompressed[offset + 7],
+        ]);
+
+        // Extract the deltas array
+        chunk.deltas = decompressed[offset + 8..].to_vec();
+
+        Ok(chunk)
     }
 
     /// Extracts a raw metric chunk from a BSON document
