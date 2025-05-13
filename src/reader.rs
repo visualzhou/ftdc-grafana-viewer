@@ -330,8 +330,8 @@ impl FtdcReader {
                         Err(e) => {
                             println!("Decompression error: {:?}", e);
                             // Fallback to using reference document if decompression fails
-                            let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                            return Ok(Some(FtdcDocument { timestamp, metrics }));
+                            //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
+                            return Ok(None);
                         }
                     };
 
