@@ -105,8 +105,6 @@ impl ChunkParser {
             deltas: Vec::new(),
             key_names: Vec::new(),
             timestamp: timestamp.to_system_time(),
-            //next_keys_idx: 0,
-            //values: Vec::new(),
         };
 
         // Extract the compressed data

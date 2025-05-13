@@ -15,8 +15,8 @@ pub use ftdc_decoder::{
     Chunk,
     ChunkParser,
     DecompressedMetricChunk,
-    MetricSample,
-    RawMetricChunk
+    
+    
 };
 pub use metrics_array_decoder::MetricsArrayDecoder;
 pub use reader::{FtdcReader, ReaderResult};
