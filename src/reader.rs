@@ -9,7 +9,7 @@ use tokio::{
 };
 
 
-use crate::{Compression, FtdcDocument, FtdcError, MetricType, MetricValue};
+use crate::{ChunkParser,  FtdcDocument, FtdcError, MetricType, MetricValue};
 
 const BUFFER_SIZE: usize = 64 * 1024; // 64KB buffer
 
@@ -318,6 +318,15 @@ impl FtdcReader {
             }
             FtdcDocType::Metric => {
                 // Extract and decompress metric data
+                let chunk_parser = ChunkParser;
+                println!(
+                    "Processing metric document (type 1) with chunk of binary data: {} bytes",
+                    doc.len()
+                );
+                let _chunk = chunk_parser.parse_chunk(&doc).unwrap();
+                Ok(None)
+                //Ok(Some(FtdcDocument { timestamp, metrics }))
+                /*
                 if let Some(Bson::Binary(bin)) = doc.get("data") {
                     println!(
                         "Processing metric document (type 1) with chunk of binary data: {} bytes",
@@ -345,7 +354,7 @@ impl FtdcReader {
                     if decompressed.len() >= metric_count /*&& !ref_keys.is_empty()*/ {
                         //for (i, key) in ref_keys.iter().enumerate() {
                         let i = 0;
-                        let key = String::from(":");
+                        let key = String::from("");
                             if i < decompressed.len() {
                                 let value = decompressed[i];
 
@@ -397,6 +406,8 @@ impl FtdcReader {
                     //let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
                     Ok(None)
                 }
+
+                 */
             }
             FtdcDocType::MetadataDelta => {
                 // Skip metadata delta documents in the stream

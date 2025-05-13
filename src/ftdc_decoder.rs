@@ -35,7 +35,7 @@ pub struct Chunk {
     pub n_deltas: u32,
     pub deltas: Vec<u8>,
     // Decoded
-    pub keys: Vec<String>,
+    pub key_names: Vec<String>,
     pub next_keys_idx: u32,
     // Each metric (key) is a vector.
     // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
@@ -51,7 +51,7 @@ pub struct MetricSample {
     pub metrics: Document,
 }
 
-/// Parses BSON documents into chunks
+/// Parses one BSON document containing a type 1 FTDC metric chunk
 pub struct ChunkParser;
 
 impl ChunkParser {
@@ -60,7 +60,7 @@ impl ChunkParser {
         //     _id : DateTime
         //     type: 1
         //     data : BinData(0) // metrics_chunk
-                
+
         // Verify this is a metric document (type: 1)
         match doc.get("type") {
             Some(Bson::Int32(1)) => {}
@@ -76,7 +76,7 @@ impl ChunkParser {
                 ))
             }
         };
-        
+
         // Extract the binary data
         let metrics_chunk = match doc.get("data") {
             Some(Bson::Binary(bin)) => bin,
@@ -90,7 +90,7 @@ impl ChunkParser {
         // metrics_chunk = // Not a BSON document, raw bytes
         //     uncompressed_size : uint32_t
         //     compressed_chunk: uint8_t[] // zlib compressed
-                
+
         // Extract the uncompressed size (first 4 bytes)
         if metrics_chunk.bytes.len() < 4 {
             return Err(FtdcError::Format("Data field too small".to_string()));
@@ -103,7 +103,7 @@ impl ChunkParser {
             n_keys: 0,
             n_deltas: 0,
             deltas: Vec::new(),
-            keys: Vec::new(),
+            key_names: Vec::new(),
             next_keys_idx: 0,
             values: Vec::new(),
         };
@@ -123,7 +123,7 @@ impl ChunkParser {
         //     metric_count uint32_t
         //     sample_count uint32_t
         //     compressed_metrics_array uint8_t[]
-        
+
         let ref_doc_size = u32::from_le_bytes(decompressed_chunk[0..4].try_into().unwrap()) as usize;
 
         if ref_doc_size > decompressed_chunk.len() {
@@ -142,7 +142,7 @@ impl ChunkParser {
                 "Decompressed data too small to contain sample and metric counts".to_string(),
             ));
         }
-        
+
         // Read n_keys (metric count) - first 4 bytes
         chunk.n_keys = u32::from_le_bytes(decompressed_chunk[offset..offset + 4].try_into().unwrap());
 
@@ -154,9 +154,9 @@ impl ChunkParser {
         chunk.deltas = decompressed_chunk[offset + 8..].to_vec();
 
         // Extract keys directly
-        chunk.keys.clear();
-        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys)?;
-
+        chunk.key_names.clear();
+        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.key_names)?;
+        println!("new chunk refdoc n_keys {} n_deltas {} actual keys {}", chunk.n_keys, chunk.n_deltas, chunk.key_names.len());
         Ok(chunk)
     }
 
@@ -164,7 +164,6 @@ impl ChunkParser {
     // This avoids conflicts with field names that might contain dots
     const PATH_SEP: &str = "\x00";
 
-    // Helper method to recursively extract keys from the document
     fn extract_keys_recursive(
         &self,
         doc: &Document,
@@ -178,20 +177,21 @@ impl ChunkParser {
                 format!("{}{}{}", prefix, Self::PATH_SEP, key)
             };
 
-            self.extract_key_from_value(value, &current_path, keys)?;
+            self.extract_keys_from_value(value, &current_path, keys)?;
         }
         Ok(())
     }
 
     // Helper method to extract keys from a single BSON value
-    fn extract_key_from_value(
+    fn extract_keys_from_value(
         &self,
         value: &Bson,
         path: &str,
         keys: &mut Vec<String>,
     ) -> Result<()> {
+        let keylen = keys.len();
         match value {
-            Bson::String(_) | Bson::ObjectId(_) | Bson::Null => {
+            Bson::String(_) | Bson::ObjectId(_)  => {
                 // log
                 println!("Skipping key: {} {}", path, value);
                 Ok(())
@@ -204,12 +204,26 @@ impl ChunkParser {
             | Bson::Boolean(_)
             | Bson::DateTime(_) => {
                 keys.push(path.to_string());
+                //println!("Adding key: {} {}", path.to_string(), value.to_string());
+                if keys.len() == keylen {
+                    return Err(FtdcError::Format(format!(
+                        "Key already exists: {}",
+                        path
+                    )));
+                }
                 Ok(())
             }
             // Timestamp counts as two fields
             Bson::Timestamp(_) => {
                 keys.push(format!("{}{}{}", path, Self::PATH_SEP, "t")); // time component
                 keys.push(format!("{}{}{}", path, Self::PATH_SEP, "i")); // increment component
+                //println!("Adding 2 keys: {} {}", path, value);
+                if keys.len() == keylen {
+                    return Err(FtdcError::Format(format!(
+                        "Key already exists: {}",
+                        path
+                    )));
+                }
                 Ok(())
             }
             // Recursively process nested documents
@@ -218,7 +232,7 @@ impl ChunkParser {
             Bson::Array(arr) => {
                 for (i, item) in arr.iter().enumerate() {
                     let array_path = format!("{}{}{}", path, Self::PATH_SEP, i);
-                    self.extract_key_from_value(item, &array_path, keys)?;
+                    self.extract_keys_from_value(item, &array_path, keys)?;
                 }
                 Ok(())
             }
