@@ -317,13 +317,10 @@ impl FtdcReader {
             FtdcDocType::Metric => {
                 // Extract and decompress metric data
                 let chunk_parser = ChunkParser;
-                println!(
-                    "Processing metric document (type 1) with chunk of binary data: {} bytes",
-                    doc.len()
-                );
+                println!("Processing metric document (type 1)  {} bytes", doc.len());
                 let chunk = chunk_parser.parse_chunk_header(&doc)?;
                 let metrics = chunk_parser.decode_chunk_values(&chunk)?;
-                
+
                 Ok(Some(FtdcDocument { timestamp, metrics }))
             }
             FtdcDocType::MetadataDelta => {

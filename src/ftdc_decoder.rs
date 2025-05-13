@@ -272,76 +272,77 @@ impl ChunkParser {
                     return Err(FtdcError::Compression(format!(
                         "Too many values decoded: {}", value_count)));
                 }
-                println!("\t\tDecoded {} varint values for {}", decoded_values.len(), key_name);
+            }
+            println!("\t\tDecoded {} varint values for {}", decoded_values.len(), key_name);
 
-                // 3. Run-length decoding of zeros
-                let mut expanded_values = Vec::new();
-                let mut j = 0;
-                while j < decoded_values.len() {
-                    let value = decoded_values[delta_index];
-                    if value == 0 && j + 1 < decoded_values.len() {
-                        // Found a zero, next value is the count
-                        let count = decoded_values[j + 1] as usize;
-
-                        // Safety check
-                        if count > 10_000_000 {
-                            // Max 10 million consecutive zeros
-                            println!("WARNING: Unreasonable zero count: {}. This may indicate corrupt FTDC data.", count);
-                            // Instead of failing, just push a single zero and continue
-                            expanded_values.push(0);
-                            j += 2;
-                            continue;
-                        }
-
-                        expanded_values.extend(std::iter::repeat(0u64).take(count));
-                        j += 2;
-                    } else {
-                        expanded_values.push(value);
-                        j += 1;
-                    }
+            // 3. Run-length decoding of zeros
+            let mut expanded_values = Vec::new();
+            let mut j = 0;
+            while j < decoded_values.len() {
+                let value = decoded_values[j];
+                if value == 0 && j + 1 < decoded_values.len() {
+                    // Found a zero, next value is the count
+                    let count = decoded_values[j + 1] as usize;
 
                     // Safety check
-                    if expanded_values.len() > 100_000_000 {
-                        // 100 million expanded values max
-                        return Err(FtdcError::Compression(format!(
-                            "Too many expanded values: {}",
-                            expanded_values.len()
-                        )));
+                    if count > 1_000_000 {
+                        // Max 1 million consecutive zeros
+                        println!("WARNING: Unreasonable zero count: {}. This may indicate corrupt FTDC data.", count);
+                        // Instead of failing, just push a single zero and continue
+                        expanded_values.push(0);
+                        j += 2;
+                        continue;
                     }
+
+                    expanded_values.extend(std::iter::repeat(0u64).take(count));
+                    j += 2;
+                } else {
+                    expanded_values.push(value);
+                    j += 1;
                 }
 
-                println!(
-                    "\t\tExpanded to {} values after RLE decoding",
-                    expanded_values.len()
-                );
-
-                // 4. Delta decoding
-                let mut prev_value = 0u64;
-
-                /*
-                // If we have reference values, use them as baseline for the first sample
-                let ref_vals = reference_values;
-                if !ref_vals.is_empty() {
-                    prev_value = ref_vals[0];
-                    final_values.push(prev_value);
+                // Safety check
+                if expanded_values.len() > 100_000_000 {
+                    // 100 million expanded values max
+                    return Err(FtdcError::Compression(format!(
+                        "Too many expanded values: {}",
+                        expanded_values.len()
+                    )));
                 }
-        */
-                let current_timestamp = chunk.timestamp;
-                for delta in expanded_values {
-                    let value = prev_value + delta;
-                    let metric_value = MetricValue {
-                        name: key_name.clone(),
-                        timestamp: current_timestamp,
-                        value: value as f64,
-                        metric_type: MetricType::Int64,
-                    };
-                    final_values.push(metric_value);
-                    prev_value = value;
-                    current_timestamp.checked_add(Duration::from_secs(1));
-                }
-
-                println!("\t\tFinal decompressed values: {}", final_values.len());
             }
+
+            println!(
+                "\t\tExpanded to {} values after RLE decoding",
+                expanded_values.len()
+            );
+
+            // 4. Delta decoding
+            let mut prev_value = 0u64;
+
+            /*
+            // If we have reference values, use them as baseline for the first sample
+            let ref_vals = reference_values;
+            if !ref_vals.is_empty() {
+                prev_value = ref_vals[0];
+                final_values.push(prev_value);
+            }
+    */
+            let current_timestamp = chunk.timestamp;
+            for delta in expanded_values {
+                let value = prev_value.checked_add(delta);
+                let metric_value = MetricValue {
+                    name: key_name.clone(),
+                    timestamp: current_timestamp,
+                    value: value.unwrap_or_default() as f64,
+                    metric_type: MetricType::Int64,
+                };
+                final_values.push(metric_value);
+                prev_value = value.unwrap_or_default();
+                current_timestamp.checked_add(Duration::from_secs(1));
+            }
+
+            println!("\t\tFinal decompressed values: {}", final_values.len());
+
         }
 
 
