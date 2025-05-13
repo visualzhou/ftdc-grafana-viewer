@@ -1,10 +1,10 @@
 //use crate::{FtdcError, ReaderError};
-use crate::FtdcError;
 use crate::varint::{decode_varint_ftdc, encode_varint_ftdc};
+use crate::FtdcError;
+use bson::{Bson, Document};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Cursor;
 use std::io::{Read, Write};
-use bson::{Bson, Document};
 
 pub struct Compression;
 
@@ -15,10 +15,7 @@ impl Compression {
     /// 2. Varint decompression
     /// 3. Run-length decoding of zeros
     /// 4. Delta decoding (using reference doc values as baseline)
-    pub fn decompress_metrics_chunk(
-        data: &[u8],
-
-    ) -> Result<Vec<u64>, FtdcError> {
+    pub fn decompress_metrics_chunk(data: &[u8]) -> Result<Vec<u64>, FtdcError> {
         // Read the uncompressed size (first 4 bytes)
         let uncompressed_size = if data.len() >= 4 {
             let mut rdr = Cursor::new(&data[0..4]);
@@ -42,7 +39,10 @@ impl Compression {
             ));
         };
 
-        println!("\t\tUncompressed size of chunk: {} bytes", uncompressed_size);
+        println!(
+            "\t\tUncompressed size of chunk: {} bytes",
+            uncompressed_size
+        );
 
         // 1. ZLIB decompression
         let mut decoder = libflate::zlib::Decoder::new(&data[4..])
@@ -60,7 +60,7 @@ impl Compression {
         //     reference_document uint8_t[] // a BSON Document -see role_based_collectors_doc
         //     sample_count uint32_t
         //     metric_count uint32_t
-        //     compressed_metrics_array uint8_t[] 
+        //     compressed_metrics_array uint8_t[]
         // Extract numeric values from reference document to use for delta decoding
         let mut reference_values = Vec::new();
         let mut ref_keys = Vec::new();
@@ -68,7 +68,8 @@ impl Compression {
         let mut cursor = Cursor::new(&decompressed);
 
         // Parse the BSON bytes into a Document
-        let ref_doc = &Document::from_reader(&mut cursor).map_err(|e| FtdcError::Compression(format!("Failed to parse BSON document {}", e)))?;
+        let ref_doc = &Document::from_reader(&mut cursor)
+            .map_err(|e| FtdcError::Compression(format!("Failed to parse BSON document {}", e)))?;
         fn extract_numeric_values_recursive(
             doc: &Document,
             prefix: &str,
@@ -100,12 +101,7 @@ impl Compression {
                         values.push(*v as u64);
                     }
                     Bson::Document(subdoc) => {
-                        extract_numeric_values_recursive(
-                            subdoc,
-                            &field_name,
-                            keys,
-                            values,
-                        );
+                        extract_numeric_values_recursive(subdoc, &field_name, keys, values);
                     }
                     Bson::Array(arr) => {
                         for (i, item) in arr.iter().enumerate() {
@@ -144,12 +140,7 @@ impl Compression {
             }
         }
 
-        extract_numeric_values_recursive(
-            ref_doc,
-            "",
-            &mut ref_keys,
-            &mut reference_values,
-        );
+        extract_numeric_values_recursive(ref_doc, "", &mut ref_keys, &mut reference_values);
 
         println!(
             "\tReference document has {} key/value pairs",
@@ -250,11 +241,10 @@ impl Compression {
 
         // If we have reference values, use them as baseline for the first sample
         let ref_vals = reference_values;
-            if !ref_vals.is_empty() {
-                prev_value = ref_vals[0];
-                final_values.push(prev_value);
-            }
-
+        if !ref_vals.is_empty() {
+            prev_value = ref_vals[0];
+            final_values.push(prev_value);
+        }
 
         for delta in expanded_values {
             let value = prev_value.wrapping_add(delta);
@@ -347,7 +337,6 @@ mod tests {
 
     #[test]
     fn test_reference_values() {
-        
         let values = vec![105, 110, 115]; // Deltas will be 5, 5, 5
 
         // Compress the values
@@ -359,8 +348,7 @@ mod tests {
         println!("Decompressed without reference: {:?}", decompressed_no_ref);
 
         // Decompress with reference values
-        let decompressed =
-            Compression::decompress_metrics_chunk(&compressed).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed).unwrap();
         println!("Decompressed with reference: {:?}", decompressed);
 
         // The actual values we expect after decompression

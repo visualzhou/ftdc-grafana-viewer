@@ -8,8 +8,7 @@ use tokio::{
     io::{AsyncReadExt, BufReader},
 };
 
-
-use crate::{ChunkParser,  FtdcDocument, FtdcError, MetricType, MetricValue};
+use crate::{ChunkParser, FtdcDocument, FtdcError, MetricType, MetricValue};
 
 const BUFFER_SIZE: usize = 64 * 1024; // 64KB buffer
 
@@ -40,7 +39,7 @@ pub type ReaderResult<T> = std::result::Result<T, FtdcError>;
 
 /// Reader for FTDC files that supports async streaming
 pub struct FtdcReader {
-    reader: BufReader<File>
+    reader: BufReader<File>,
 }
 
 impl FtdcReader {
@@ -49,9 +48,7 @@ impl FtdcReader {
         let file = File::open(path).await?;
         let reader = BufReader::with_capacity(BUFFER_SIZE, file);
 
-        Ok(Self {
-            reader
-        })
+        Ok(Self { reader })
     }
 
     /// Reads the next BSON document from the file

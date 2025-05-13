@@ -1,8 +1,8 @@
+use crate::varint::decode_varint_ftdc;
 use crate::{FtdcError, MetricType, MetricValue};
 use bson::{Bson, Document};
 use std::io::Read;
-use std::time::{SystemTime, Duration};
-use crate::varint::decode_varint_ftdc;
+use std::time::{Duration, SystemTime};
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
 
@@ -19,8 +19,6 @@ pub struct Chunk {
     // Each metric (key) is a vector.
     // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
 }
-
-
 
 /// Parses one BSON document containing a type 1 FTDC metric chunk
 pub struct ChunkParser;
@@ -67,7 +65,6 @@ impl ChunkParser {
             return Err(FtdcError::Format("Data field too small".to_string()));
         }
 
-
         // Create a new chunk
         let mut chunk = Chunk {
             reference_doc: Document::new(),
@@ -94,7 +91,8 @@ impl ChunkParser {
         //     sample_count uint32_t
         //     compressed_metrics_array uint8_t[]
 
-        let ref_doc_size = u32::from_le_bytes(decompressed_chunk[0..4].try_into().unwrap()) as usize;
+        let ref_doc_size =
+            u32::from_le_bytes(decompressed_chunk[0..4].try_into().unwrap()) as usize;
 
         if ref_doc_size > decompressed_chunk.len() {
             return Err(FtdcError::Format(
@@ -114,11 +112,15 @@ impl ChunkParser {
         }
 
         // Read n_keys (metric count) - first 4 bytes
-        chunk.n_keys = u32::from_le_bytes(decompressed_chunk[offset..offset + 4].try_into().unwrap());
+        chunk.n_keys =
+            u32::from_le_bytes(decompressed_chunk[offset..offset + 4].try_into().unwrap());
 
         // Read n_deltas (sample count) - next 4 bytes
-        chunk.n_deltas =
-            u32::from_le_bytes(decompressed_chunk[offset + 4..offset + 8].try_into().unwrap());
+        chunk.n_deltas = u32::from_le_bytes(
+            decompressed_chunk[offset + 4..offset + 8]
+                .try_into()
+                .unwrap(),
+        );
 
         // Extract the deltas array
         chunk.deltas = decompressed_chunk[offset + 8..].to_vec();
@@ -126,7 +128,12 @@ impl ChunkParser {
         // Extract keys directly
         chunk.keys.clear();
         self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys)?;
-        println!("new chunk refdoc n_keys {} n_deltas {} actual keys {}", chunk.n_keys, chunk.n_deltas, chunk.keys.len());
+        println!(
+            "new chunk refdoc n_keys {} n_deltas {} actual keys {}",
+            chunk.n_keys,
+            chunk.n_deltas,
+            chunk.keys.len()
+        );
         Ok(chunk)
     }
 
@@ -161,7 +168,7 @@ impl ChunkParser {
     ) -> Result<()> {
         let keylen = keys.len();
         match value {
-            Bson::String(_) | Bson::ObjectId(_)  => {
+            Bson::String(_) | Bson::ObjectId(_) => {
                 // log
                 println!("Skipping key: {} {}", path, value);
                 Ok(())
@@ -193,14 +200,17 @@ impl ChunkParser {
             }
             // Timestamp counts as two fields
             Bson::Timestamp(_) => {
-                keys.push((format!("{}{}{}", path, Self::PATH_SEP, "t"), MetricType::Timestamp)); // time component
-                keys.push((format!("{}{}{}", path, Self::PATH_SEP, "i"), MetricType::Timestamp)); // increment component
-                //println!("Adding 2 keys: {} {}", path, value);
+                keys.push((
+                    format!("{}{}{}", path, Self::PATH_SEP, "t"),
+                    MetricType::Timestamp,
+                )); // time component
+                keys.push((
+                    format!("{}{}{}", path, Self::PATH_SEP, "i"),
+                    MetricType::Timestamp,
+                )); // increment component
+                    //println!("Adding 2 keys: {} {}", path, value);
                 if keys.len() == keylen {
-                    return Err(FtdcError::Format(format!(
-                        "Key already exists: {}",
-                        path
-                    )));
+                    return Err(FtdcError::Format(format!("Key already exists: {}", path)));
                 }
                 Ok(())
             }
@@ -225,8 +235,6 @@ impl ChunkParser {
     // Decodes a chunk into a vector of "metric values" (timestamp / value pairs)
     // Each sub-vector contains the metrics for a single sample.
     pub fn decode_chunk_values(&self, chunk: &Chunk) -> Result<Vec<MetricValue>> {
-
-
         let mut delta_index = 0;
         let mut final_values: Vec<MetricValue> = Vec::new();
         // For each metric vector
@@ -247,10 +255,16 @@ impl ChunkParser {
                 if value_count > 10_000_000 {
                     // 10 million values max
                     return Err(FtdcError::Compression(format!(
-                        "Too many values decoded: {}", value_count)));
+                        "Too many values decoded: {}",
+                        value_count
+                    )));
                 }
             }
-            println!("\t\tDecoded {} varint values for {}", decoded_values.len(), key.0);
+            println!(
+                "\t\tDecoded {} varint values for {}",
+                decoded_values.len(),
+                key.0
+            );
 
             // 3. Run-length decoding of zeros
             let mut expanded_values = Vec::new();
@@ -297,13 +311,13 @@ impl ChunkParser {
             let mut prev_value = 0u64;
 
             /*
-            // If we have reference values, use them as baseline for the first sample
-            let ref_vals = reference_values;
-            if !ref_vals.is_empty() {
-                prev_value = ref_vals[0];
-                final_values.push(prev_value);
-            }
-    */
+                    // If we have reference values, use them as baseline for the first sample
+                    let ref_vals = reference_values;
+                    if !ref_vals.is_empty() {
+                        prev_value = ref_vals[0];
+                        final_values.push(prev_value);
+                    }
+            */
             let current_timestamp = chunk.timestamp;
             for delta in expanded_values {
                 let value = prev_value.checked_add(delta);
@@ -319,12 +333,10 @@ impl ChunkParser {
             }
 
             println!("\t\tFinal decompressed values: {}", final_values.len());
-
         }
 
-
         Ok(final_values)
-     }
+    }
 }
 
 /*/// Layer 1: Extract raw metric chunks from BSON documents

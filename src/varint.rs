@@ -2,8 +2,8 @@
 // Based on MongoDB's FTDC format which follows Google's protocol buffer varint encoding
 // See https://developers.google.com/protocol-buffers/docs/encoding#varints
 
-use std::io::{self, Error, ErrorKind};
 use crate::FtdcError;
+use std::io::{self, Error, ErrorKind};
 
 /// Maximum number of bytes a 64-bit integer can take when varint-encoded
 pub const MAX_VARINT_SIZE_64: usize = 10;
@@ -121,9 +121,8 @@ pub fn decode_varint(input: &[u8]) -> io::Result<(u64, usize)> {
 
 /// Similar to decode_varint but uses FtdcError instead of io::Error
 pub fn decode_varint_ftdc(input: &[u8]) -> Result<(u64, usize), FtdcError> {
-    decode_varint(input).map_err(|e| {
-        FtdcError::Compression(format!("Varint decoding error: {}", e))
-    })
+    decode_varint(input)
+        .map_err(|e| FtdcError::Compression(format!("Varint decoding error: {}", e)))
 }
 
 #[cfg(test)]

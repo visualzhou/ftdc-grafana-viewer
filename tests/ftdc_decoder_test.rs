@@ -1,11 +1,8 @@
-use bson::{ Document};
-use ftdc_importer::{
-    ChunkParser,   
-};
+use bson::Document;
+use ftdc_importer::ChunkParser;
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
-
 
 #[tokio::test]
 async fn test_parse_chunk() -> io::Result<()> {
