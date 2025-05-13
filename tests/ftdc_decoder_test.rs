@@ -33,7 +33,7 @@ async fn test_parse_chunk() -> io::Result<()> {
 
 #[tokio::test]
 async fn test_decode_chunk() -> io::Result<()> {
-    let lre_deltas = vec![1, 1, 1, 0, 3];
+    let lre_deltas = vec![1, 1, 1, 0, 3, 11];
     let mut varint_deltas = Vec::new();
     for delta in &lre_deltas {
         ftdc_importer::encode_varint_vec(*delta, &mut varint_deltas).unwrap();
@@ -54,8 +54,7 @@ async fn test_decode_chunk() -> io::Result<()> {
     // Decode the chunk
     let chunk_parser = ChunkParser;
 
-    // TODO(XXX): fix this
-    // let metric_values = chunk_parser.decode_chunk_values(&chunk).unwrap();
-    // assert!(metric_values.len() == 6);
+    let metric_values = chunk_parser.decode_chunk_values(&chunk).unwrap();
+    assert_eq!(metric_values.len(), 8); // Note:  8 = 2 metrics(keys) * 4 samples(deltas).  The reference doc counts as a sample too.
     Ok(())
 }

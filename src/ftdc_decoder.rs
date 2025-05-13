@@ -239,13 +239,26 @@ impl ChunkParser {
         for key in chunk.keys.iter() {
             let current_timestamp = chunk.timestamp;
             let mut prev_value = key.2.as_i64().unwrap_or_default();
+            let starting_final_values_len = final_values.len();
             println!(
                 "Working on metric {} with reference value {}",
                 key.0, prev_value
             );
+            // First, insert the first sample from the reference doc
+            // 'key' is tuple of (string name, metric type, bson value)
+            let metric_value = MetricValue {
+                name: key.0.clone(),
+                timestamp: current_timestamp,
+                value: prev_value as f64,
+                metric_type: key.1.clone(),
+            };
+            final_values.push(metric_value);
 
             // Keep going until we have decoded all the samples for this metric.
-            while final_values.len() < chunk.n_deltas.try_into().unwrap() {
+            // Note <=, because n_deltas does not include the reference document (it's the first sample)
+            while final_values.len() - starting_final_values_len
+                <= chunk.n_deltas.try_into().unwrap()
+            {
                 let (value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
                 delta_index += bytes_read;
 
