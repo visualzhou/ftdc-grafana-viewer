@@ -4,7 +4,7 @@ use std::time::SystemTime;
 use thiserror::Error;
 
 mod compression;
-mod ftdc_decoder;
+pub mod ftdc_decoder;
 mod metrics_array_decoder;
 mod reader;
 mod varint;
@@ -12,8 +12,15 @@ mod victoria_metrics;
 
 pub use compression::Compression;
 pub use ftdc_decoder::{
-    FtdcDecoder, MetricChunkDecompressor, MetricChunkExtractor,
-    MetricDocumentReconstructor, MetricSample,
+    Chunk,
+    ChunkParser,
+    DecompressedMetricChunk,
+    FtdcDecoder,
+    MetricChunkDecompressor,
+    MetricChunkExtractor,
+    MetricDocumentReconstructor,
+    MetricSample,
+    RawMetricChunk
 };
 pub use metrics_array_decoder::MetricsArrayDecoder;
 pub use reader::{FtdcReader, ReaderResult};

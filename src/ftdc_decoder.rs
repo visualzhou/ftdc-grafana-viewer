@@ -49,24 +49,15 @@ pub struct MetricSample {
     pub metrics: Document,
 }
 
-/// Layer 1: Extract raw metric chunks from BSON documents
-pub struct MetricChunkExtractor;
+/// Parses BSON documents into chunks
+pub struct ChunkParser;
 
-impl MetricChunkExtractor {
-    /// Creates a new MetricChunkExtractor
-    pub fn new() -> Self {
-        Self {}
-    }
-
+impl ChunkParser {
     pub fn parse_chunk(&self, doc: &Document) -> Result<Chunk> {
         // Verify this is a metric document (type: 1)
         match doc.get("type") {
             Some(Bson::Int32(1)) => {}
-            _ => {
-                return Err(FtdcError::Format(
-                    "Not a metric document".to_string(),
-                ))
-            }
+            _ => return Err(FtdcError::Format("Not a metric document".to_string())),
         }
 
         // Extract the binary data
@@ -81,9 +72,7 @@ impl MetricChunkExtractor {
 
         // Extract the uncompressed size (first 4 bytes)
         if bin.bytes.len() < 4 {
-            return Err(FtdcError::Format(
-                "Data field too small".to_string(),
-            ));
+            return Err(FtdcError::Format("Data field too small".to_string()));
         }
 
         // Get timestamp from _id
@@ -162,7 +151,81 @@ impl MetricChunkExtractor {
         // Extract the deltas array
         chunk.deltas = decompressed[offset + 8..].to_vec();
 
+        self.get_keys(&mut chunk);
+
         Ok(chunk)
+    }
+
+    // Use ftdc.go as a reference to implement this. Fill chunk.keys with the
+    // keys from the reference document.
+    fn get_keys(&self, chunk: &mut Chunk) {
+        // Clear existing keys
+        chunk.keys.clear();
+
+        // Start with empty path and extract keys recursively
+        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys);
+    }
+
+    // Helper method to recursively extract keys from the document
+    fn extract_keys_recursive(&self, doc: &Document, prefix: &str, keys: &mut Vec<String>) {
+        // Use null byte as path separator to match the Go implementation
+        // This avoids conflicts with field names that might contain dots
+        const PATH_SEP: &str = "\x00";
+
+        for (key, value) in doc.iter() {
+            let current_path = if prefix.is_empty() {
+                key.to_string()
+            } else {
+                format!("{}{}{}", prefix, PATH_SEP, key)
+            };
+
+            match value {
+                // For numeric types, add the key to the list
+                Bson::Double(_)
+                | Bson::Int32(_)
+                | Bson::Int64(_)
+                | Bson::Decimal128(_)
+                | Bson::Boolean(_) => {
+                    keys.push(current_path);
+                }
+                // Timestamp counts as two fields
+                Bson::Timestamp(_) => {
+                    keys.push(format!("{}{}{}", current_path, PATH_SEP, "t")); // time component
+                    keys.push(format!("{}{}{}", current_path, PATH_SEP, "i")); // increment component
+                }
+                // Recursively process nested documents
+                Bson::Document(subdoc) => {
+                    self.extract_keys_recursive(subdoc, &current_path, keys);
+                }
+                // Handle arrays of documents
+                Bson::Array(arr) => {
+                    for (i, item) in arr.iter().enumerate() {
+                        if let Bson::Document(subdoc) = item {
+                            let array_path = format!("{}{}{}", current_path, PATH_SEP, i);
+                            self.extract_keys_recursive(subdoc, &array_path, keys);
+                        }
+                    }
+                }
+                // Skip other BSON types that aren't numeric
+                _ => {}
+            }
+        }
+    }
+
+    // // Decodes a chunk into a vector of vectors of metrics.
+    // // Each sub-vector contains the metrics for a single sample.
+    // fn decode_chunk(&self, chunk: &Chunk) {
+
+    // }
+}
+
+/// Layer 1: Extract raw metric chunks from BSON documents
+pub struct MetricChunkExtractor;
+
+impl MetricChunkExtractor {
+    /// Creates a new MetricChunkExtractor
+    pub fn new() -> Self {
+        Self {}
     }
 
     /// Extracts a raw metric chunk from a BSON document
@@ -170,11 +233,7 @@ impl MetricChunkExtractor {
         // Verify this is a metric document (type: 1)
         match doc.get("type") {
             Some(Bson::Int32(1)) => {}
-            _ => {
-                return Err(FtdcError::Format(
-                    "Not a metric document".to_string(),
-                ))
-            }
+            _ => return Err(FtdcError::Format("Not a metric document".to_string())),
         }
 
         // Extract the binary data
@@ -189,9 +248,7 @@ impl MetricChunkExtractor {
 
         // Extract the uncompressed size (first 4 bytes)
         if bin.bytes.len() < 4 {
-            return Err(FtdcError::Format(
-                "Data field too small".to_string(),
-            ));
+            return Err(FtdcError::Format("Data field too small".to_string()));
         }
 
         let uncompressed_size =
@@ -508,9 +565,7 @@ impl FtdcDecoder {
                 decompressed_chunk.metric_count
             );
 
-            return Err(FtdcError::Format(
-                "Metric count mismatch".to_string(),
-            ));
+            return Err(FtdcError::Format("Metric count mismatch".to_string()));
         }
 
         // Apply delta decoding
