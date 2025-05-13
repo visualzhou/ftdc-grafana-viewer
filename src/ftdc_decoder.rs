@@ -151,69 +151,75 @@ impl ChunkParser {
         // Extract the deltas array
         chunk.deltas = decompressed[offset + 8..].to_vec();
 
-        self.get_keys(&mut chunk);
+        // Extract keys directly
+        chunk.keys.clear();
+        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys)?;
 
         Ok(chunk)
     }
 
-    // Use ftdc.go as a reference to implement this. Fill chunk.keys with the
-    // keys from the reference document.
-    fn get_keys(&self, chunk: &mut Chunk) {
-        // Clear existing keys
-        chunk.keys.clear();
-
-        // Start with empty path and extract keys recursively
-        self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys);
-    }
+    // Use null byte as path separator.
+    // This avoids conflicts with field names that might contain dots
+    const PATH_SEP: &str = "\x00";
 
     // Helper method to recursively extract keys from the document
-    fn extract_keys_recursive(&self, doc: &Document, prefix: &str, keys: &mut Vec<String>) {
-        // Use null byte as path separator to match the Go implementation
-        // This avoids conflicts with field names that might contain dots
-        const PATH_SEP: &str = "\x00";
-
+    fn extract_keys_recursive(&self, doc: &Document, prefix: &str, keys: &mut Vec<String>) -> Result<()> {
         for (key, value) in doc.iter() {
             let current_path = if prefix.is_empty() {
                 key.to_string()
             } else {
-                format!("{}{}{}", prefix, PATH_SEP, key)
+                format!("{}{}{}", prefix, Self::PATH_SEP, key)
             };
 
-            match value {
-                // For numeric types, add the key to the list
-                Bson::Double(_)
-                | Bson::Int32(_)
-                | Bson::Int64(_)
-                | Bson::Decimal128(_)
-                | Bson::Boolean(_) => {
-                    keys.push(current_path);
-                }
-                // Timestamp counts as two fields
-                Bson::Timestamp(_) => {
-                    keys.push(format!("{}{}{}", current_path, PATH_SEP, "t")); // time component
-                    keys.push(format!("{}{}{}", current_path, PATH_SEP, "i")); // increment component
-                }
-                // Recursively process nested documents
-                Bson::Document(subdoc) => {
-                    self.extract_keys_recursive(subdoc, &current_path, keys);
-                }
-                // Handle arrays of documents
-                Bson::Array(arr) => {
-                    for (i, item) in arr.iter().enumerate() {
-                        if let Bson::Document(subdoc) = item {
-                            let array_path = format!("{}{}{}", current_path, PATH_SEP, i);
-                            self.extract_keys_recursive(subdoc, &array_path, keys);
-                        }
-                    }
-                }
-                // Skip other BSON types that aren't numeric
-                _ => {}
+            self.extract_key_from_value(value, &current_path, keys)?;
+        }
+        Ok(())
+    }
+
+    // Helper method to extract keys from a single BSON value
+    fn extract_key_from_value(&self, value: &Bson, path: &str, keys: &mut Vec<String>) -> Result<()> {
+        match value {
+            Bson::String(_) | Bson::ObjectId(_) | Bson::Null => {
+                // log
+                println!("Skipping key: {} {}", path, value);
+                Ok(())
             }
+            // For numeric types, add the key to the list
+            Bson::Double(_)
+            | Bson::Int32(_)
+            | Bson::Int64(_)
+            | Bson::Decimal128(_)
+            | Bson::Boolean(_)
+            | Bson::DateTime(_) => {
+                keys.push(path.to_string());
+                Ok(())
+            }
+            // Timestamp counts as two fields
+            Bson::Timestamp(_) => {
+                keys.push(format!("{}{}{}", path, Self::PATH_SEP, "t")); // time component
+                keys.push(format!("{}{}{}", path, Self::PATH_SEP, "i")); // increment component
+                Ok(())
+            }
+            // Recursively process nested documents
+            Bson::Document(subdoc) => {
+                self.extract_keys_recursive(subdoc, path, keys)
+            }
+            // Handle arrays
+            Bson::Array(arr) => {
+                for (i, item) in arr.iter().enumerate() {
+                    let array_path = format!("{}{}{}", path, Self::PATH_SEP, i);
+                    self.extract_key_from_value(item, &array_path, keys)?;
+                }
+                Ok(())
+            }
+            // Return error for other unhandled BSON types
+            _ => Err(FtdcError::Format(format!("Unhandled BSON type for key: {} {}", path, value))),
         }
     }
 
     // // Decodes a chunk into a vector of vectors of metrics.
     // // Each sub-vector contains the metrics for a single sample.
+    // TODO (XXX): implement this
     // fn decode_chunk(&self, chunk: &Chunk) {
 
     // }
