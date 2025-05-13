@@ -14,7 +14,7 @@ pub use compression::Compression;
 pub use ftdc_decoder::{
     Chunk,
     ChunkParser,
-    DecompressedMetricChunk,
+    
     
     
 };

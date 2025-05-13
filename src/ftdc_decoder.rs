@@ -6,28 +6,6 @@ use crate::varint::decode_varint_ftdc;
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
 
-/// Represents a raw FTDC metric chunk
-#[derive(Debug, Clone)]
-pub struct RawMetricChunk {
-    /// Uncompressed size of the chunk
-    pub uncompressed_size: u32,
-    /// Zlib compressed data
-    pub compressed_data: Vec<u8>,
-}
-
-/// Represents a decompressed FTDC metric chunk
-#[derive(Debug, Clone)]
-pub struct DecompressedMetricChunk {
-    /// Reference document containing the metric schema
-    pub reference_doc: Document,
-    /// Number of samples in the chunk
-    pub sample_count: u32,
-    /// Number of metrics per sample
-    pub metric_count: u32,
-    /// Compressed metrics array
-    pub compressed_metrics: Vec<u8>,
-}
-
 pub struct Chunk {
     // Original
     pub reference_doc: Document,
@@ -42,14 +20,7 @@ pub struct Chunk {
     // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
 }
 
-/// Represents a decoded FTDC metric sample
-#[derive(Debug, Clone)]
-pub struct MetricSample {
-    /// Timestamp of the sample
-    pub timestamp: bson::DateTime,
-    /// Metrics document
-    pub metrics: Document,
-}
+
 
 /// Parses one BSON document containing a type 1 FTDC metric chunk
 pub struct ChunkParser;
