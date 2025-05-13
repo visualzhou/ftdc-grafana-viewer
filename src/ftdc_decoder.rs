@@ -56,25 +56,15 @@ pub struct ChunkParser;
 
 impl ChunkParser {
     pub fn parse_chunk(&self, doc: &Document) -> Result<Chunk> {
+        // metric =
+        //     _id : DateTime
+        //     type: 1
+        //     data : BinData(0) // metrics_chunk
+                
         // Verify this is a metric document (type: 1)
         match doc.get("type") {
             Some(Bson::Int32(1)) => {}
             _ => return Err(FtdcError::Format("Not a metric document".to_string())),
-        }
-
-        // Extract the binary data
-        let bin = match doc.get("data") {
-            Some(Bson::Binary(bin)) => bin,
-            _ => {
-                return Err(FtdcError::Format(
-                    "No 'data' field found in the document".to_string(),
-                ))
-            }
-        };
-
-        // Extract the uncompressed size (first 4 bytes)
-        if bin.bytes.len() < 4 {
-            return Err(FtdcError::Format("Data field too small".to_string()));
         }
 
         // Get timestamp from _id
@@ -86,6 +76,26 @@ impl ChunkParser {
                 ))
             }
         };
+        
+        // Extract the binary data
+        let metrics_chunk = match doc.get("data") {
+            Some(Bson::Binary(bin)) => bin,
+            _ => {
+                return Err(FtdcError::Format(
+                    "No 'data' field found in the document".to_string(),
+                ))
+            }
+        };
+
+        // metrics_chunk = // Not a BSON document, raw bytes
+        //     uncompressed_size : uint32_t
+        //     compressed_chunk: uint8_t[] // zlib compressed
+                
+        // Extract the uncompressed size (first 4 bytes)
+        if metrics_chunk.bytes.len() < 4 {
+            return Err(FtdcError::Format("Data field too small".to_string()));
+        }
+
 
         // Create a new chunk
         let mut chunk = Chunk {
@@ -99,45 +109,49 @@ impl ChunkParser {
         };
 
         // Extract the compressed data
-        let compressed_data = bin.bytes.to_vec();
+        let compressed_chunk = metrics_chunk.bytes.to_vec();
 
         // Decompress the data
-        let mut decoder = flate2::read::ZlibDecoder::new(&compressed_data[4..]);
-        let mut decompressed = Vec::new();
+        let mut decoder = flate2::read::ZlibDecoder::new(&compressed_chunk[4..]);
+        let mut decompressed_chunk = Vec::new();
         decoder
-            .read_to_end(&mut decompressed)
+            .read_to_end(&mut decompressed_chunk)
             .map_err(|e| FtdcError::Compression(format!("ZLIB decompression error: {}", e)))?;
 
-        // Parse the reference document
-        let doc_size = u32::from_le_bytes(decompressed[0..4].try_into().unwrap()) as usize;
+        // decompressed_chunk = // Not a BSON document, raw bytes
+        //     reference_document uint8_t[] // a BSON Document -see role_based_collectors_doc
+        //     metric_count uint32_t
+        //     sample_count uint32_t
+        //     compressed_metrics_array uint8_t[]
+        
+        let ref_doc_size = u32::from_le_bytes(decompressed_chunk[0..4].try_into().unwrap()) as usize;
 
-        if doc_size > decompressed.len() {
+        if ref_doc_size > decompressed_chunk.len() {
             return Err(FtdcError::Format(
                 "Reference document size exceeds decompressed data size".to_string(),
             ));
         }
 
         // Parse the reference document
-        chunk.reference_doc = bson::from_slice::<Document>(&decompressed[..doc_size])
+        chunk.reference_doc = bson::from_slice::<Document>(&decompressed_chunk[..ref_doc_size])
             .map_err(|e| FtdcError::Format(format!("Failed to parse reference document: {}", e)))?;
 
-        // Extract key count and delta count
-        let offset = doc_size;
-        if decompressed.len() < offset + 8 {
+        let offset = ref_doc_size;
+        if decompressed_chunk.len() < offset + 8 {
             return Err(FtdcError::Format(
                 "Decompressed data too small to contain sample and metric counts".to_string(),
             ));
         }
-
+        
         // Read n_keys (metric count) - first 4 bytes
-        chunk.n_keys = u32::from_le_bytes(decompressed[offset..offset + 4].try_into().unwrap());
+        chunk.n_keys = u32::from_le_bytes(decompressed_chunk[offset..offset + 4].try_into().unwrap());
 
         // Read n_deltas (sample count) - next 4 bytes
         chunk.n_deltas =
-            u32::from_le_bytes(decompressed[offset + 4..offset + 8].try_into().unwrap());
+            u32::from_le_bytes(decompressed_chunk[offset + 4..offset + 8].try_into().unwrap());
 
         // Extract the deltas array
-        chunk.deltas = decompressed[offset + 8..].to_vec();
+        chunk.deltas = decompressed_chunk[offset + 8..].to_vec();
 
         // Extract keys directly
         chunk.keys.clear();

@@ -1,4 +1,4 @@
-use crate::{FtdcError, ReaderError};
+//use crate::{FtdcError, ReaderError};
 use crate::FtdcError;
 use crate::varint::{decode_varint_ftdc, encode_varint_ftdc};
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -68,7 +68,7 @@ impl Compression {
         let mut cursor = Cursor::new(&decompressed);
 
         // Parse the BSON bytes into a Document
-        let ref_doc = &Document::from_reader(&mut cursor).map_err(|e| ReaderError::InvalidFile(format!("Failed to parse BSON document {}", e)))?;
+        let ref_doc = &Document::from_reader(&mut cursor).map_err(|e| FtdcError::Compression(format!("Failed to parse BSON document {}", e)))?;
         fn extract_numeric_values_recursive(
             doc: &Document,
             prefix: &str,
@@ -249,12 +249,12 @@ impl Compression {
         let mut prev_value = 0u64;
 
         // If we have reference values, use them as baseline for the first sample
-        if let Some(ref_vals) = reference_values {
+        let ref_vals = reference_values;
             if !ref_vals.is_empty() {
                 prev_value = ref_vals[0];
                 final_values.push(prev_value);
             }
-        }
+
 
         for delta in expanded_values {
             let value = prev_value.wrapping_add(delta);
@@ -340,14 +340,14 @@ mod tests {
         let compressed = Compression::compress_ftdc(&original_values).unwrap();
 
         // Decompress
-        let decompressed = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed).unwrap();
 
         assert_eq!(decompressed, original_values);
     }
 
     #[test]
     fn test_reference_values() {
-        let reference_values = vec![100u64];
+        
         let values = vec![105, 110, 115]; // Deltas will be 5, 5, 5
 
         // Compress the values
@@ -355,12 +355,12 @@ mod tests {
         println!("Compressed size: {} bytes", compressed.len());
 
         // Decompress without reference values (for debugging)
-        let decompressed_no_ref = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
+        let decompressed_no_ref = Compression::decompress_metrics_chunk(&compressed).unwrap();
         println!("Decompressed without reference: {:?}", decompressed_no_ref);
 
         // Decompress with reference values
         let decompressed =
-            Compression::decompress_metrics_chunk(&compressed, Some(&reference_values)).unwrap();
+            Compression::decompress_metrics_chunk(&compressed).unwrap();
         println!("Decompressed with reference: {:?}", decompressed);
 
         // The actual values we expect after decompression
@@ -375,7 +375,7 @@ mod tests {
         let original_values = vec![1, 0, 0, 0, 0, 2];
 
         let compressed = Compression::compress_ftdc(&original_values).unwrap();
-        let decompressed = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed).unwrap();
 
         assert_eq!(decompressed, original_values);
     }
@@ -385,7 +385,7 @@ mod tests {
         let original_values = vec![u64::MAX, u64::MAX - 1, u64::MAX - 2];
 
         let compressed = Compression::compress_ftdc(&original_values).unwrap();
-        let decompressed = Compression::decompress_metrics_chunk(&compressed, None).unwrap();
+        let decompressed = Compression::decompress_metrics_chunk(&compressed).unwrap();
 
         assert_eq!(decompressed, original_values);
     }
