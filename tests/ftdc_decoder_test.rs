@@ -210,6 +210,56 @@ async fn test_decode_real_metric_document() -> io::Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn test_parse_chunk() -> io::Result<()> {
+    // Path to the extracted metric document
+    let path = Path::new("tests/fixtures/metric-example.bson");
+
+    // Open the file
+    let mut file = File::open(path)?;
+
+    // Read the entire document
+    let mut doc_data = Vec::new();
+    file.read_to_end(&mut doc_data)?;
+
+    // Parse the BSON document
+    let doc = bson::from_slice::<Document>(&doc_data).expect("Failed to parse BSON document");
+
+    println!("\n=== Testing parse_chunk method ===");
+
+    // Create a chunk extractor
+    let chunk_extractor = MetricChunkExtractor::new();
+
+    // Parse the chunk
+    match chunk_extractor.parse_chunk(&doc) {
+        Ok(chunk) => {
+            println!("Successfully parsed chunk");
+            println!("  Reference document fields: {}", chunk.reference_doc.len());
+            println!("  Number of keys: {}", chunk.n_keys);
+            println!("  Number of deltas: {}", chunk.n_deltas);
+            println!("  Deltas size: {} bytes", chunk.deltas.len());
+
+            // Essential assertions
+            assert!(!chunk.reference_doc.is_empty(), "Reference document should not be empty");
+            assert!(chunk.n_keys > 0, "Number of keys should be greater than 0");
+            assert!(chunk.n_deltas > 0, "Number of deltas should be greater than 0");
+            assert!(!chunk.deltas.is_empty(), "Deltas should not be empty");
+
+            // Assert expected values based on known test data
+            // These values should match what the Go implementation would produce
+            assert_eq!(chunk.reference_doc.len(), 9, "Reference document should have 9 fields");
+            assert_eq!(chunk.n_keys, 3479, "n_keys should be 299 (metric count)");
+            assert_eq!(chunk.n_deltas, 299, "n_deltas should be 3479 (sample count)");
+        }
+        Err(e) => {
+            println!("Failed to parse chunk: {:?}", e);
+            panic!("parse_chunk should succeed with valid document");
+        }
+    }
+
+    Ok(())
+}
+
 // Helper function to count metrics in a document (recursively)
 fn count_metrics(doc: &Document) -> usize {
     let mut count = 0;
