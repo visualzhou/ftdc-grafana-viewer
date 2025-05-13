@@ -107,12 +107,7 @@ impl ChunkParser {
             .map_err(|e| FtdcError::Compression(format!("ZLIB decompression error: {}", e)))?;
 
         // Parse the reference document
-        let doc_size = u32::from_le_bytes([
-            decompressed[0],
-            decompressed[1],
-            decompressed[2],
-            decompressed[3],
-        ]) as usize;
+        let doc_size = u32::from_le_bytes(decompressed[0..4].try_into().unwrap()) as usize;
 
         if doc_size > decompressed.len() {
             return Err(FtdcError::Format(
@@ -133,20 +128,11 @@ impl ChunkParser {
         }
 
         // Read n_keys (metric count) - first 4 bytes
-        chunk.n_keys = u32::from_le_bytes([
-            decompressed[offset],
-            decompressed[offset + 1],
-            decompressed[offset + 2],
-            decompressed[offset + 3],
-        ]);
+        chunk.n_keys = u32::from_le_bytes(decompressed[offset..offset + 4].try_into().unwrap());
 
         // Read n_deltas (sample count) - next 4 bytes
-        chunk.n_deltas = u32::from_le_bytes([
-            decompressed[offset + 4],
-            decompressed[offset + 5],
-            decompressed[offset + 6],
-            decompressed[offset + 7],
-        ]);
+        chunk.n_deltas =
+            u32::from_le_bytes(decompressed[offset + 4..offset + 8].try_into().unwrap());
 
         // Extract the deltas array
         chunk.deltas = decompressed[offset + 8..].to_vec();
@@ -163,7 +149,12 @@ impl ChunkParser {
     const PATH_SEP: &str = "\x00";
 
     // Helper method to recursively extract keys from the document
-    fn extract_keys_recursive(&self, doc: &Document, prefix: &str, keys: &mut Vec<String>) -> Result<()> {
+    fn extract_keys_recursive(
+        &self,
+        doc: &Document,
+        prefix: &str,
+        keys: &mut Vec<String>,
+    ) -> Result<()> {
         for (key, value) in doc.iter() {
             let current_path = if prefix.is_empty() {
                 key.to_string()
@@ -177,7 +168,12 @@ impl ChunkParser {
     }
 
     // Helper method to extract keys from a single BSON value
-    fn extract_key_from_value(&self, value: &Bson, path: &str, keys: &mut Vec<String>) -> Result<()> {
+    fn extract_key_from_value(
+        &self,
+        value: &Bson,
+        path: &str,
+        keys: &mut Vec<String>,
+    ) -> Result<()> {
         match value {
             Bson::String(_) | Bson::ObjectId(_) | Bson::Null => {
                 // log
@@ -201,9 +197,7 @@ impl ChunkParser {
                 Ok(())
             }
             // Recursively process nested documents
-            Bson::Document(subdoc) => {
-                self.extract_keys_recursive(subdoc, path, keys)
-            }
+            Bson::Document(subdoc) => self.extract_keys_recursive(subdoc, path, keys),
             // Handle arrays
             Bson::Array(arr) => {
                 for (i, item) in arr.iter().enumerate() {
@@ -213,7 +207,10 @@ impl ChunkParser {
                 Ok(())
             }
             // Return error for other unhandled BSON types
-            _ => Err(FtdcError::Format(format!("Unhandled BSON type for key: {} {}", path, value))),
+            _ => Err(FtdcError::Format(format!(
+                "Unhandled BSON type for key: {} {}",
+                path, value
+            ))),
         }
     }
 

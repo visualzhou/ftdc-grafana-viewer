@@ -176,7 +176,6 @@ async fn test_decode_real_metric_document() -> io::Result<()> {
             for (i, sample) in samples.iter().take(sample_count).enumerate() {
                 println!("\nSample {}", i);
                 println!("  Timestamp: {}", sample.timestamp);
-                println!("  Metrics count: {}", count_metrics(&sample.metrics));
 
                 // Print a few example metrics
                 print_sample_metrics(sample, 5);
@@ -232,32 +231,6 @@ async fn test_parse_chunk() -> io::Result<()> {
     // TODO(XXX): fix this: assertion failed. left: 3476 right: 3479
     // assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
     Ok(())
-}
-
-// Helper function to count metrics in a document (recursively)
-fn count_metrics(doc: &Document) -> usize {
-    let mut count = 0;
-
-    for (_, value) in doc.iter() {
-        match value {
-            Bson::Double(_) | Bson::Int32(_) | Bson::Int64(_) | Bson::Boolean(_) => {
-                count += 1;
-            }
-            Bson::Document(subdoc) => {
-                count += count_metrics(subdoc);
-            }
-            Bson::Array(arr) => {
-                for item in arr {
-                    if let Bson::Document(subdoc) = item {
-                        count += count_metrics(subdoc);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
-    count
 }
 
 // Helper function to print sample metrics
