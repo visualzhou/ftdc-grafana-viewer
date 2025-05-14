@@ -108,3 +108,27 @@ async fn test_decode_time_series() -> io::Result<()> {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn test_decode_time_series_with_example_file() -> io::Result<()> {
+    let path = Path::new("tests/fixtures/metric-example.bson");
+    let mut file = File::open(path)?;
+    let mut doc_data = Vec::new();
+    file.read_to_end(&mut doc_data)?;
+
+    let doc = bson::from_slice::<Document>(&doc_data).unwrap();
+    let chunk_parser = ChunkParser;
+    let chunk = chunk_parser.parse_chunk_header(&doc).unwrap();
+    let actual = chunk_parser.decode_time_series(&chunk).unwrap();
+    assert!(!chunk.reference_doc.is_empty());
+    assert_eq!(chunk.n_keys, 3479);
+    assert_eq!(chunk.n_deltas, 299);
+    assert!(!chunk.deltas.is_empty());
+
+    assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
+    assert_eq!(actual.len(), 3479);
+    for time_series in actual {
+        assert_eq!(time_series.values.len(), 299);
+    }
+    Ok(())
+}

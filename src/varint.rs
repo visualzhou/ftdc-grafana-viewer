@@ -126,6 +126,27 @@ pub fn decode_varint_ftdc(input: &[u8]) -> Result<(u64, usize), FtdcError> {
         .map_err(|e| FtdcError::Compression(format!("Varint decoding error: {}", e)))
 }
 
+// Varint reader that holds a reference to the input buffer
+pub struct VarintReader<'a> {
+    input: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> VarintReader<'a> {
+    pub fn new(input: &'a [u8]) -> Self {
+        Self { input, pos: 0 }
+    }
+
+    pub fn read(&mut self) -> Result<u64, FtdcError> {
+        decode_varint(&self.input[self.pos..])
+            .map(|(value, bytes_read)| {
+                self.pos += bytes_read;
+                value
+            })
+            .map_err(|e| FtdcError::Compression(format!("Varint decoding error: {}", e)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -368,5 +389,44 @@ mod tests {
 
         // Verify we decoded 16 zeros
         assert_eq!(count, 16, "Expected to decode 16 zeros");
+    }
+
+    #[test]
+    fn test_varint_reader() {
+        // Test case 1: Read multiple sequential values
+        let test_values = vec![42u64, 127, 128, (1 << 16) - 1, 1 << 20, 0xFFFFFFFFFFFFFFFF];
+        let mut buffer = Vec::new();
+
+        // Encode all values into a single buffer
+        for &value in &test_values {
+            encode_varint_vec(value, &mut buffer).unwrap();
+        }
+
+        // Use VarintReader to read them back
+        let mut reader = VarintReader::new(&buffer);
+
+        for &expected in &test_values {
+            let actual = reader.read().unwrap();
+            assert_eq!(
+                expected, actual,
+                "Value mismatch: expected {}, got {}",
+                expected, actual
+            );
+        }
+
+        // Test case 2: Error on reading past the end
+        let result = reader.read();
+        assert!(
+            result.is_err(),
+            "Expected error when reading past the end of data"
+        );
+
+        // Test case 3: Reading a single value
+        let mut single_val_buf = Vec::new();
+        encode_varint_vec(0xDEADBEEF, &mut single_val_buf).unwrap();
+
+        let mut single_reader = VarintReader::new(&single_val_buf);
+        assert_eq!(single_reader.read().unwrap(), 0xDEADBEEF);
+        assert!(single_reader.read().is_err());
     }
 }
