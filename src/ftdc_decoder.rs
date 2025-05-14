@@ -260,7 +260,7 @@ impl ChunkParser {
     // Decodes a chunk into a vector of "metric values" (timestamp / value pairs)
     // Each sub-vector contains the metrics for a single sample.
     pub fn decode_chunk_values(&self, chunk: &Chunk) -> Result<Vec<MetricValue>> {
-        let mut delta_index = 0;
+        let mut reader = VarintReader::new(&chunk.deltas);
         let mut final_values: Vec<MetricValue> = Vec::new();
         // For each metric vector
         for key in chunk.keys.iter() {
@@ -285,13 +285,11 @@ impl ChunkParser {
             while final_values.len() - starting_final_values_len
                 < chunk.n_deltas.try_into().unwrap()
             {
-                let (mut value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
-                delta_index += bytes_read;
+                let mut value = reader.read()?;
 
                 if let MetricType::Timestamp = key.1 {
                     // already got the 't', now parse the 'i'
-                    let (i_value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
-                    delta_index += bytes_read;
+                    let i_value = reader.read()?;
                     println!("Parsed timestamp: t {} i {}", value, i_value);
                     value += i_value; // todo: this is clearly wrong
                 }
@@ -299,9 +297,7 @@ impl ChunkParser {
                 // Run-length decoding of zeros
                 if value == 0 {
                     // Found a zero, next value is the count
-                    let (mut zero_count, bytes_read) =
-                        decode_varint_ftdc(&chunk.deltas[delta_index..])?;
-                    delta_index += bytes_read;
+                    let mut zero_count = reader.read()?;
 
                     // Safety check
                     if final_values.len() - starting_final_values_len + zero_count as usize
