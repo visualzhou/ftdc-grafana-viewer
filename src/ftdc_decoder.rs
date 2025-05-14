@@ -302,13 +302,6 @@ impl ChunkParser {
                     assert_eq!(value, 0);
                 }
 
-                if let MetricType::Timestamp = key.1 {
-                    // already got the 't', now parse the 'i'
-                    let i_value = reader.read()?;
-                    println!("Parsed timestamp: t {} i {}", value, i_value);
-                    //value += i_value; // todo: this is clearly wrong
-                }
-
                 expanded_values.push(value);
             }
 
