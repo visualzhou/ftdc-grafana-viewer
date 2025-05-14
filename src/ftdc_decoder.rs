@@ -260,17 +260,24 @@ impl ChunkParser {
     // Decodes a chunk into a vector of "metric values" (timestamp / value pairs)
     // Each sub-vector contains the metrics for a single sample.
     pub fn decode_chunk_values(&self, chunk: &Chunk) -> Result<Vec<MetricValue>> {
+        println!("deltas length is {}", chunk.deltas.len());
         let mut reader = VarintReader::new(&chunk.deltas);
         let mut final_values: Vec<MetricValue> = Vec::new();
         // For each metric vector
+        let mut key_cnt = 0u64;
+        let mut zero_count = 0u64;
+
         for key in chunk.keys.iter() {
             let mut current_timestamp = chunk.timestamp;
             let mut prev_value = key.2.as_i64().unwrap_or_default();
-
             println!(
-                "Working on metric {} with reference value {}",
-                key.0, prev_value
+                "Working on metric {} of {}, {} with reference value {}",
+                key_cnt,
+                chunk.keys.len(),
+                key.0,
+                prev_value
             );
+            key_cnt += 1;
             // First, insert the first sample from the reference doc
             // 'key' is tuple of (string name, metric type, bson value)
             let metric_value = MetricValue {
@@ -281,7 +288,6 @@ impl ChunkParser {
             };
             final_values.push(metric_value);
 
-            let mut zero_count = 0u64;
             let mut expanded_values: Vec<u64> = Vec::new();
             let mut value = 0u64;
 
@@ -343,14 +349,21 @@ impl ChunkParser {
 
         let mut reader = VarintReader::new(&chunk.deltas);
         let mut zero_count = 0u64;
-
+        let mut key_cnt = 0u64;
         // For each metric, construct its values vector.
         for key in chunk.keys.iter() {
             let mut current_value = key.2.as_i64().unwrap_or_default();
             let mut values: Vec<i64> = Vec::new();
             // The initial value is the reference value.
             values.push(current_value);
-
+            println!(
+                "Working on metric {} of {}, {} with reference value {}",
+                key_cnt,
+                chunk.keys.len(),
+                key.0,
+                current_value
+            );
+            key_cnt += 1;
             for _ in 0..chunk.n_deltas {
                 if zero_count == 0 {
                     let delta = reader.read()?;

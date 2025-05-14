@@ -70,6 +70,13 @@ pub struct FtdcDocument {
     pub metrics: Vec<MetricValue>,
 }
 
+/// Represents a single FTDC document containing multiple metrics, in time series format
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FtdcDocumentTS {
+    pub timestamp: SystemTime,
+    pub metrics: Vec<FtdcTimeSeries>,
+}
+
 /// Represents a single FTDC time series
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FtdcTimeSeries {
