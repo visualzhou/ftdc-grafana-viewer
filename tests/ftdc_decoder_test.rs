@@ -1,5 +1,5 @@
-use bson::Document;
 use bson::{doc, Bson};
+use bson::{Document, RawDocumentBuf};
 use ftdc_importer::ChunkParser;
 use ftdc_importer::{Chunk, MetricType};
 use std::fs::File;
@@ -21,13 +21,12 @@ async fn test_parse_chunk() -> io::Result<()> {
 
     let chunk_parser = ChunkParser;
     let chunk = chunk_parser.parse_chunk_header(&doc).unwrap();
-    assert_eq!(chunk.reference_doc.len(), 9);
+    assert!(!chunk.reference_doc.is_empty());
     assert_eq!(chunk.n_keys, 3479);
     assert_eq!(chunk.n_deltas, 299);
     assert!(!chunk.deltas.is_empty());
 
-    // TODO(XXX): fix this: assertion failed. left: 3476 right: 3479
-    //assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
+    assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
     Ok(())
 }
 
@@ -40,10 +39,10 @@ async fn test_decode_chunk() -> io::Result<()> {
     }
     let timestamp = SystemTime::now();
     let chunk = Chunk {
-        reference_doc: doc! {}, // Empty reference document
-        n_keys: 2,              // Two metrics: "a" and "x"
-        n_deltas: 3,            // 3 samples per metric
-        deltas: varint_deltas,  // The varint-encoded deltas
+        reference_doc: RawDocumentBuf::from_document(&doc! {}).unwrap(), // Empty reference document
+        n_keys: 2,                                                       // Two metrics: "a" and "x"
+        n_deltas: 3,                                                     // 3 samples per metric
+        deltas: varint_deltas, // The varint-encoded deltas
         keys: vec![
             ("a".to_string(), MetricType::Int64, Bson::Int64(1)),
             ("x".to_string(), MetricType::Int64, Bson::Int64(2)),

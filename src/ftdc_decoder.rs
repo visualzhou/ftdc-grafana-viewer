@@ -1,5 +1,6 @@
 use crate::varint::decode_varint_ftdc;
 use crate::{FtdcError, MetricType, MetricValue};
+use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
 use std::io::Read;
 use std::time::{Duration, SystemTime};
@@ -8,7 +9,7 @@ pub type Result<T> = std::result::Result<T, FtdcError>;
 
 pub struct Chunk {
     // Original
-    pub reference_doc: Document,
+    pub reference_doc: RawDocumentBuf,
     pub n_keys: u32,
     pub n_deltas: u32,
     pub deltas: Vec<u8>,
@@ -66,7 +67,7 @@ impl ChunkParser {
 
         // Create a new chunk
         let mut chunk = Chunk {
-            reference_doc: Document::new(),
+            reference_doc: RawDocumentBuf::new(),
             n_keys: 0,
             n_deltas: 0,
             deltas: Vec::new(),
@@ -100,8 +101,16 @@ impl ChunkParser {
         }
 
         // Parse the reference document
-        chunk.reference_doc = bson::from_slice::<Document>(&decompressed_chunk[..ref_doc_size])
-            .map_err(|e| FtdcError::Format(format!("Failed to parse reference document: {}", e)))?;
+        chunk.reference_doc =
+            match RawDocumentBuf::from_bytes(decompressed_chunk[..ref_doc_size].to_vec()) {
+                Ok(doc) => doc,
+                Err(e) => {
+                    return Err(FtdcError::Format(format!(
+                        "Failed to parse reference document: {}",
+                        e
+                    )))
+                }
+            };
 
         let offset = ref_doc_size;
         if decompressed_chunk.len() < offset + 8 {
@@ -142,87 +151,107 @@ impl ChunkParser {
 
     fn extract_keys_recursive(
         &self,
-        doc: &Document,
+        doc: &RawDocument,
         prefix: &str,
         keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
-        for (key, value) in doc.iter() {
+        for element_result in doc.iter() {
+            let (key, value) = element_result.map_err(|e| {
+                FtdcError::Format(format!("Failed to read document element: {}", e))
+            })?;
+
+            // Check if the key is empty, print it
+            if key.is_empty() {
+                return Err(FtdcError::Format(format!("Empty key: prefix={}", prefix)));
+            }
+
             let current_path = if prefix.is_empty() {
                 key.to_string()
             } else {
                 format!("{}{}{}", prefix, Self::PATH_SEP, key)
             };
 
-            self.extract_keys_from_value(value, &current_path, keys)?;
+            self.extract_keys_from_raw_value(&value, &current_path, keys)?;
         }
         Ok(())
     }
 
-    // Helper method to extract keys from a single BSON value
-    fn extract_keys_from_value(
+    fn to_bson(&self, value: &RawBsonRef) -> Result<Bson> {
+        Bson::try_from(value.clone())
+            .map_err(|e| FtdcError::Format(format!("Failed to convert RawBsonRef to Bson: {}", e)))
+    }
+
+    // Helper method to extract keys from a RawBsonRef value
+    fn extract_keys_from_raw_value(
         &self,
-        value: &Bson,
+        value: &RawBsonRef,
         path: &str,
         keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
         match value {
-            Bson::String(_) | Bson::ObjectId(_) => {
-                // log
-                println!("Skipping key: {} {}", path, value);
+            RawBsonRef::String(_) | RawBsonRef::ObjectId(_) => {
+                println!("Skipping key: {}", path);
                 Ok(())
             }
             // For numeric types, add the key to the list
-            Bson::Double(_) => {
-                keys.push((path.to_string(), MetricType::Double, value.clone()));
+            RawBsonRef::Double(_) => {
+                keys.push((path.to_string(), MetricType::Double, self.to_bson(value)?));
                 Ok(())
             }
-            Bson::Int32(_) => {
-                keys.push((path.to_string(), MetricType::Int32, value.clone()));
+            RawBsonRef::Int32(_) => {
+                keys.push((path.to_string(), MetricType::Int32, self.to_bson(value)?));
                 Ok(())
             }
-            Bson::Int64(_) => {
-                keys.push((path.to_string(), MetricType::Int64, value.clone()));
+            RawBsonRef::Int64(_) => {
+                keys.push((path.to_string(), MetricType::Int64, self.to_bson(value)?));
                 Ok(())
             }
-            Bson::Decimal128(_) => {
-                keys.push((path.to_string(), MetricType::Decimal128, value.clone()));
+            RawBsonRef::Decimal128(_) => {
+                keys.push((
+                    path.to_string(),
+                    MetricType::Decimal128,
+                    self.to_bson(value)?,
+                ));
                 Ok(())
             }
-            Bson::Boolean(_) => {
-                keys.push((path.to_string(), MetricType::Boolean, value.clone()));
+            RawBsonRef::Boolean(_) => {
+                keys.push((path.to_string(), MetricType::Boolean, self.to_bson(value)?));
                 Ok(())
             }
-            Bson::DateTime(_) => {
-                keys.push((path.to_string(), MetricType::DateTime, value.clone()));
+            RawBsonRef::DateTime(_) => {
+                keys.push((path.to_string(), MetricType::DateTime, self.to_bson(value)?));
                 Ok(())
             }
             // Timestamp counts as two fields
-            Bson::Timestamp(_) => {
+            RawBsonRef::Timestamp(_) => {
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "t"),
                     MetricType::Timestamp,
-                    value.clone(), // todo: fix timestamp
+                    self.to_bson(value)?, // todo: fix timestamp
                 )); // time component
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "i"),
                     MetricType::Timestamp,
-                    value.clone(),
+                    self.to_bson(value)?,
                 )); // increment component
                 Ok(())
             }
             // Recursively process nested documents
-            Bson::Document(subdoc) => self.extract_keys_recursive(subdoc, path, keys),
+            RawBsonRef::Document(subdoc) => self.extract_keys_recursive(subdoc, path, keys),
             // Handle arrays
-            Bson::Array(arr) => {
-                for (i, item) in arr.iter().enumerate() {
+            RawBsonRef::Array(arr) => {
+                for (i, item_result) in arr.into_iter().enumerate() {
+                    let item = item_result.map_err(|e| {
+                        FtdcError::Format(format!("Failed to read array item: {}", e))
+                    })?;
                     let array_path = format!("{}{}{}", path, Self::PATH_SEP, i);
-                    self.extract_keys_from_value(item, &array_path, keys)?;
+                    self.extract_keys_from_raw_value(&item, &array_path, keys)?;
                 }
                 Ok(())
             }
             // Return error for other unhandled BSON types
             _ => Err(FtdcError::Format(format!(
-                "Unhandled BSON type for key: {} {}",
+                "Unhandled BSON type for key: {} {:?}",
                 path, value
             ))),
         }
