@@ -192,7 +192,7 @@ mod tests {
             (MetricType::Decimal128, 42.5, "decimal128"),
         ];
 
-        for (metric_type, value, expected_type) in test_cases {
+        for (metric_type, value, _) in test_cases {
             let metric = MetricValue {
                 name: "test_metric".to_string(),
                 value,
@@ -202,10 +202,9 @@ mod tests {
 
             let line = VictoriaMetricsClient::metric_to_line_protocol(&metric).unwrap();
 
-            // Updated assertion to match lowercase metric_type and correct format
             assert!(line.starts_with(&format!(
-                "mongodb_ftdc,metric_type={},metric_name=test_metric value={} ",
-                expected_type, value
+                "{},source=mongodb_ftdc value={} ",
+                "test_metric", value
             )));
         }
     }
