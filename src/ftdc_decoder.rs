@@ -367,25 +367,25 @@ impl ChunkParser {
         }
         // Construct the values vector.
         let mut reader = VarintReader::new(&chunk.deltas);
+        let mut zero_count = 0u64;
         for key in chunk.keys.iter() {
             let mut current_value = key.2.as_i64().unwrap_or_default();
             let mut values: Vec<i64> = Vec::new();
             // The initial value is the reference value.
             values.push(current_value);
 
-            let mut i = 0u64;
-            while i < chunk.n_deltas.into() {
-                let value = reader.read()?;
-                if value == 0 {
-                    // Consume one more value to get the zero count
-                    let zero_count = reader.read()?;
-                    i += zero_count;
-                    values.extend(vec![current_value; zero_count as usize]);
+            for _ in 0..chunk.n_deltas {
+                if zero_count == 0 {
+                    let delta = reader.read()?;
+                    if delta == 0 {
+                        // Consume the zero count
+                        zero_count = reader.read()?;
+                    }
+                    current_value += delta as i64;
                 } else {
-                    current_value += value as i64;
-                    values.push(current_value);
-                    i += 1;
+                    zero_count -= 1;
                 }
+                values.push(current_value);
             }
             final_values.push(FtdcTimeSeries {
                 name: key.0.clone(),
@@ -393,8 +393,14 @@ impl ChunkParser {
                 timestamps: timestamps.clone(),
             });
         }
+        // Check zero count is exhausted
+        if zero_count != 0 {
+            return Err(FtdcError::Format("Zero count not exhausted at end of parsing".to_string()));
+        }
         // Deltas should be exhausted by now.
-        assert!(reader.read().is_err());
+        if !reader.read().is_err() {
+            return Err(FtdcError::Format("Not all deltas were consumed".to_string()));
+        }
 
         return Ok(final_values);
     }

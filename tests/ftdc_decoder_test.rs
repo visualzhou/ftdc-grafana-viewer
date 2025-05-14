@@ -76,7 +76,7 @@ async fn test_decode_chunk() -> io::Result<()> {
 
 #[tokio::test]
 async fn test_decode_time_series() -> io::Result<()> {
-    let lre_deltas = vec![1, 1, 1, 0, 3];
+    let lre_deltas = vec![1, 1, 1, 0, 2];
     let mut varint_deltas = Vec::new();
     for delta in &lre_deltas {
         ftdc_importer::encode_varint_vec(*delta, &mut varint_deltas).unwrap();
@@ -128,7 +128,7 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
     assert_eq!(actual.len(), 3479);
     for time_series in actual {
-        assert_eq!(time_series.values.len(), 299);
+        assert_eq!(time_series.values.len(), 300);
     }
     Ok(())
 }
