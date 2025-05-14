@@ -354,20 +354,23 @@ impl ChunkParser {
         Ok(final_values)
     }
 
+    // Decodes a chunk into a vector of FtdcTimeSeries (a single metric's values over time)
     pub fn decode_time_series(&self, chunk: &Chunk) -> Result<Vec<FtdcTimeSeries>> {
-        let mut final_values: Vec<FtdcTimeSeries> = Vec::new();
+        let mut metrics_time_series: Vec<FtdcTimeSeries> = Vec::new();
         let mut timestamps: Vec<SystemTime> = Vec::new();
         let mut current_timestamp = chunk.timestamp;
-        // Construct the timestamp vector
+        // Construct the timestamp vector; we will clone a copy of this into each FtdcTimeSeries.
         for _ in 0..chunk.n_deltas {
             current_timestamp = current_timestamp
                 .checked_add(Duration::from_secs(1))
                 .unwrap();
             timestamps.push(current_timestamp);
         }
-        // Construct the values vector.
+
         let mut reader = VarintReader::new(&chunk.deltas);
         let mut zero_count = 0u64;
+
+        // For each metric, construct its values vector.
         for key in chunk.keys.iter() {
             let mut current_value = key.2.as_i64().unwrap_or_default();
             let mut values: Vec<i64> = Vec::new();
@@ -387,7 +390,7 @@ impl ChunkParser {
                 }
                 values.push(current_value);
             }
-            final_values.push(FtdcTimeSeries {
+            metrics_time_series.push(FtdcTimeSeries {
                 name: key.0.clone(),
                 values,
                 timestamps: timestamps.clone(),
@@ -395,13 +398,17 @@ impl ChunkParser {
         }
         // Check zero count is exhausted
         if zero_count != 0 {
-            return Err(FtdcError::Format("Zero count not exhausted at end of parsing".to_string()));
+            return Err(FtdcError::Format(
+                "Zero count not exhausted at end of parsing".to_string(),
+            ));
         }
         // Deltas should be exhausted by now.
         if !reader.read().is_err() {
-            return Err(FtdcError::Format("Not all deltas were consumed".to_string()));
+            return Err(FtdcError::Format(
+                "Not all deltas were consumed".to_string(),
+            ));
         }
 
-        return Ok(final_values);
+        return Ok(metrics_time_series);
     }
 }
