@@ -27,6 +27,11 @@ async fn test_parse_chunk() -> io::Result<()> {
     assert!(!chunk.deltas.is_empty());
 
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
+
+    // Print the keys with index
+    // for (i, key) in chunk.keys.iter().enumerate() {
+    //     println!("Key {}: {}", i, key.0);
+    // }
     Ok(())
 }
 

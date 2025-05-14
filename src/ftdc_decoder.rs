@@ -147,7 +147,7 @@ impl ChunkParser {
 
     // Use null byte as path separator.
     // This avoids conflicts with field names that might contain dots
-    const PATH_SEP: &str = "\x00";
+    const PATH_SEP: &str = "_";
 
     fn extract_keys_recursive(
         &self,
@@ -165,10 +165,18 @@ impl ChunkParser {
                 return Err(FtdcError::Format(format!("Empty key: prefix={}", prefix)));
             }
 
+            let escaped_key = key
+                .to_string()
+                .trim()
+                .replace(' ', "_")
+                .replace('.', "_")
+                .replace('-', "_")
+                .replace(',', "_");
+
             let current_path = if prefix.is_empty() {
-                key.to_string()
+                escaped_key
             } else {
-                format!("{}{}{}", prefix, Self::PATH_SEP, key)
+                format!("{}{}{}", prefix, Self::PATH_SEP, escaped_key)
             };
 
             self.extract_keys_from_raw_value(&value, &current_path, keys)?;
