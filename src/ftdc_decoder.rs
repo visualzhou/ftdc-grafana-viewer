@@ -294,13 +294,14 @@ impl ChunkParser {
                     if value == 0 {
                         // Found a zero, next value is the count
                         zero_count = reader.read()?;
-                        println!("\tFound {} zeros", zero_count);
+                        //println!("\tFound {} zeros", zero_count + 1);
                     }
                 } else {
                     // We're filling in zero's.
                     zero_count -= 1;
                     assert_eq!(value, 0);
                 }
+
                 if let MetricType::Timestamp = key.1 {
                     // already got the 't', now parse the 'i'
                     let i_value = reader.read()?;
@@ -323,12 +324,12 @@ impl ChunkParser {
                     value: value.unwrap_or_default() as f64,
                     metric_type: key.1.clone(),
                 };
-                println!("\t\tAdding metric value: {:?}", metric_value);
+                //println!("\t\tAdding metric value: {:?}", metric_value);
                 final_values.push(metric_value);
                 prev_value = value.unwrap_or_default();
             }
 
-            println!("\t\tFinal decompressed values: {}", final_values.len());
+            //println!("\t\tFinal decompressed values: {}", final_values.len());
         } // for each metric
 
         Ok(final_values)
