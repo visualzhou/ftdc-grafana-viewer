@@ -1,4 +1,4 @@
-use crate::varint::decode_varint_ftdc;
+use crate::varint::{decode_varint_ftdc, VarintReader};
 use crate::{FtdcError, FtdcTimeSeries, MetricType, MetricValue};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
@@ -366,7 +366,7 @@ impl ChunkParser {
             timestamps.push(current_timestamp);
         }
         // Construct the values vector.
-        let mut delta_index = 0;
+        let mut reader = VarintReader::new(&chunk.deltas);
         for key in chunk.keys.iter() {
             let mut current_value = key.2.as_i64().unwrap_or_default();
             let mut values: Vec<i64> = Vec::new();
@@ -375,13 +375,10 @@ impl ChunkParser {
 
             let mut i = 0u64;
             while i < chunk.n_deltas.into() {
-                let (value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
-                delta_index += bytes_read;
+                let value = reader.read()?;
                 if value == 0 {
                     // Consume one more value to get the zero count
-                    let (zero_count, bytes_read) =
-                        decode_varint_ftdc(&chunk.deltas[delta_index..])?;
-                    delta_index += bytes_read;
+                    let zero_count = reader.read()?;
                     i += zero_count;
                     values.extend(vec![current_value; zero_count as usize]);
                 } else {
@@ -396,7 +393,8 @@ impl ChunkParser {
                 timestamps: timestamps.clone(),
             });
         }
-        assert_eq!(delta_index, chunk.deltas.len());
+        // Deltas should be exhausted by now.
+        assert!(reader.read().is_err());
 
         return Ok(final_values);
     }
