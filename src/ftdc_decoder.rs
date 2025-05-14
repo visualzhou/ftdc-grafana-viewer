@@ -1,5 +1,5 @@
 use crate::varint::decode_varint_ftdc;
-use crate::{FtdcError, MetricType, MetricValue};
+use crate::{FtdcError, FtdcTimeSeries, MetricType, MetricValue};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
 use std::io::Read;
@@ -352,5 +352,52 @@ impl ChunkParser {
         }
 
         Ok(final_values)
+    }
+
+    pub fn decode_time_series(&self, chunk: &Chunk) -> Result<Vec<FtdcTimeSeries>> {
+        let mut final_values: Vec<FtdcTimeSeries> = Vec::new();
+        let mut timestamps: Vec<SystemTime> = Vec::new();
+        let mut current_timestamp = chunk.timestamp;
+        // Construct the timestamp vector
+        for _ in 0..chunk.n_deltas {
+            current_timestamp = current_timestamp
+                .checked_add(Duration::from_secs(1))
+                .unwrap();
+            timestamps.push(current_timestamp);
+        }
+        // Construct the values vector.
+        let mut delta_index = 0;
+        for key in chunk.keys.iter() {
+            let mut current_value = key.2.as_i64().unwrap_or_default();
+            let mut values: Vec<i64> = Vec::new();
+            // The initial value is the reference value.
+            values.push(current_value);
+
+            let mut i = 0u64;
+            while i < chunk.n_deltas.into() {
+                let (value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
+                delta_index += bytes_read;
+                if value == 0 {
+                    // Consume one more value to get the zero count
+                    let (zero_count, bytes_read) =
+                        decode_varint_ftdc(&chunk.deltas[delta_index..])?;
+                    delta_index += bytes_read;
+                    i += zero_count;
+                    values.extend(vec![current_value; zero_count as usize]);
+                } else {
+                    current_value += value as i64;
+                    values.push(current_value);
+                    i += 1;
+                }
+            }
+            final_values.push(FtdcTimeSeries {
+                name: key.0.clone(),
+                values,
+                timestamps: timestamps.clone(),
+            });
+        }
+        assert_eq!(delta_index, chunk.deltas.len());
+
+        return Ok(final_values);
     }
 }

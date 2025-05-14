@@ -73,3 +73,38 @@ async fn test_decode_chunk() -> io::Result<()> {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn test_decode_time_series() -> io::Result<()> {
+    let lre_deltas = vec![1, 1, 1, 0, 3];
+    let mut varint_deltas = Vec::new();
+    for delta in &lre_deltas {
+        ftdc_importer::encode_varint_vec(*delta, &mut varint_deltas).unwrap();
+    }
+    let timestamp = SystemTime::now();
+    let chunk = Chunk {
+        // Empty reference document
+        reference_doc: RawDocumentBuf::from_document(&doc! {}).unwrap(),
+        n_keys: 2,             // Two metrics: "a" and "x"
+        n_deltas: 3,           // 3 samples per metric
+        deltas: varint_deltas, // The varint-encoded deltas
+        keys: vec![
+            ("a".to_string(), MetricType::Int64, Bson::Int64(1)),
+            ("x".to_string(), MetricType::Int64, Bson::Int64(2)),
+        ],
+        timestamp,
+    };
+
+    // Decode the chunk
+    let chunk_parser = ChunkParser;
+
+    let actual = chunk_parser.decode_time_series(&chunk).unwrap();
+    let expected = vec![("a", vec![1i64, 2, 3, 4]), ("x", vec![2i64, 2, 2, 2])];
+
+    assert_eq!(actual.len(), 2); // 2 metrics(keys)
+    for (actual, (name, expected_values)) in actual.iter().zip(expected.iter()) {
+        assert_eq!(actual.name, *name);
+        assert_eq!(actual.values, *expected_values);
+    }
+    Ok(())
+}
