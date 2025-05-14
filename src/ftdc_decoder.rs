@@ -15,7 +15,6 @@ pub struct Chunk {
     // Decoded
     pub keys: Vec<(String, MetricType, Bson)>,
     pub timestamp: SystemTime,
-    //pub next_keys_idx: u32,
     // Each metric (key) is a vector.
     // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
 }
@@ -166,7 +165,6 @@ impl ChunkParser {
         path: &str,
         keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
-        let keylen = keys.len();
         match value {
             Bson::String(_) | Bson::ObjectId(_) => {
                 // log

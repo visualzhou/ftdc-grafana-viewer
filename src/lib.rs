@@ -52,7 +52,7 @@ pub struct MetricValue {
 }
 
 /// Represents the type of metric value
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum MetricType {
     Double,
     Int32,
