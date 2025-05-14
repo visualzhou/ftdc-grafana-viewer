@@ -120,12 +120,6 @@ pub fn decode_varint(input: &[u8]) -> io::Result<(u64, usize)> {
     ))
 }
 
-/// Similar to decode_varint but uses FtdcError instead of io::Error
-pub fn decode_varint_ftdc(input: &[u8]) -> Result<(u64, usize), FtdcError> {
-    decode_varint(input)
-        .map_err(|e| FtdcError::Compression(format!("Varint decoding error: {}", e)))
-}
-
 // Varint reader that holds a reference to the input buffer
 pub struct VarintReader<'a> {
     input: &'a [u8],

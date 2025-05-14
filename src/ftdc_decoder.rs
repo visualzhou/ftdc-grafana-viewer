@@ -1,4 +1,4 @@
-use crate::varint::{decode_varint_ftdc, VarintReader};
+use crate::varint::VarintReader;
 use crate::{FtdcError, FtdcTimeSeries, MetricType, MetricValue};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
@@ -280,72 +280,56 @@ impl ChunkParser {
                 metric_type: key.1.clone(),
             };
             final_values.push(metric_value);
-            let starting_final_values_len = final_values.len(); // this should be number of metrics * samples so far
-                                                                // Keep going until we have decoded all the samples for this metric.
-            while final_values.len() - starting_final_values_len
-                < chunk.n_deltas.try_into().unwrap()
-            {
-                let mut value = reader.read()?;
 
+            let mut zero_count = 0u64;
+            let mut expanded_values: Vec<u64> = Vec::new();
+            let mut value = 0u64;
+
+            // Now generate the rest of the samples for this metric.
+            // First, create a vector of deltas.
+            for _ in 0..chunk.n_deltas {
+                // RLE for zeros.
+                if zero_count == 0 {
+                    value = reader.read()?;
+                    if value == 0 {
+                        // Found a zero, next value is the count
+                        zero_count = reader.read()?;
+                        println!("\tFound {} zeros", zero_count);
+                    }
+                } else {
+                    // We're filling in zero's.
+                    zero_count -= 1;
+                    assert_eq!(value, 0);
+                }
                 if let MetricType::Timestamp = key.1 {
                     // already got the 't', now parse the 'i'
                     let i_value = reader.read()?;
                     println!("Parsed timestamp: t {} i {}", value, i_value);
-                    value += i_value; // todo: this is clearly wrong
-                }
-                let mut expanded_values: Vec<u64> = Vec::new();
-                // Run-length decoding of zeros
-                if value == 0 {
-                    // Found a zero, next value is the count
-                    let mut zero_count = reader.read()?;
-
-                    // Safety check
-                    if final_values.len() - starting_final_values_len + zero_count as usize
-                        > chunk.n_deltas.try_into().unwrap()
-                    {
-                        /*
-                        return Err(FtdcError::Compression(format!(
-                            "Invalid zero count: {}",
-                            zero_count
-                        )));
-                        */
-                        println!("\t\tInvalid zero count: {} with final_values.len {} starting_final_values_len {} chunk.n_deltas {} Skipping.", zero_count,
-                            final_values.len(),
-                            starting_final_values_len,
-                            chunk.n_deltas
-                        );
-                        zero_count = 1;
-                    }
-                    // Expand the zeros
-                    for _ in 0..zero_count {
-                        expanded_values.push(0);
-                    }
-                    println!("\tFound {} zeros", zero_count);
-                } else {
-                    expanded_values.push(value);
-                    println!("\tFound value {}", value);
+                    //value += i_value; // todo: this is clearly wrong
                 }
 
-                // Delta decoding
-                for delta in expanded_values {
-                    let value = prev_value.checked_add(delta as i64);
-                    current_timestamp = current_timestamp
-                        .checked_add(Duration::from_secs(1))
-                        .unwrap();
-                    let metric_value = MetricValue {
-                        name: key.0.clone(),
-                        timestamp: current_timestamp,
-                        value: value.unwrap_or_default() as f64,
-                        metric_type: key.1.clone(),
-                    };
-                    println!("\t\tAdding metric value: {:?}", metric_value);
-                    final_values.push(metric_value);
-                    prev_value = value.unwrap_or_default();
-                }
+                expanded_values.push(value);
+            }
+
+            // Now apply those deltas and generate all the MetricValues.
+            for delta in expanded_values {
+                let value = prev_value.checked_add(delta as i64);
+                current_timestamp = current_timestamp
+                    .checked_add(Duration::from_secs(1))
+                    .unwrap();
+                let metric_value = MetricValue {
+                    name: key.0.clone(),
+                    timestamp: current_timestamp,
+                    value: value.unwrap_or_default() as f64,
+                    metric_type: key.1.clone(),
+                };
+                println!("\t\tAdding metric value: {:?}", metric_value);
+                final_values.push(metric_value);
+                prev_value = value.unwrap_or_default();
             }
 
             println!("\t\tFinal decompressed values: {}", final_values.len());
-        }
+        } // for each metric
 
         Ok(final_values)
     }
