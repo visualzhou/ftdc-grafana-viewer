@@ -35,7 +35,11 @@ impl VictoriaMetricsClient {
         let timestamp_ns = Self::system_time_to_nanos(SystemTime::now())?;
 
         // Sanitize metric name (replace spaces and special chars with underscores)
-        let sanitized_name = metric.name.replace(' ', "_").replace('.', "_");
+        let sanitized_name = metric
+            .name
+            .replace(' ', "_")
+            .replace('.', "_")
+            .replace(',', ";");
 
         // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
         // Include the metric name as a tag for better identification in Victoria Metrics
@@ -82,8 +86,8 @@ impl VictoriaMetricsClient {
             println!("...");
 
             // Print the exact payload being sent
-            println!("\nExact payload being sent:");
-            println!("{}", payload);
+            //println!("\nExact payload being sent:");
+            //println!("{}", payload);
 
             let response = self
                 .client
