@@ -256,9 +256,16 @@ impl ChunkParser {
             while final_values.len() - starting_final_values_len
                 < chunk.n_deltas.try_into().unwrap()
             {
-                let (value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
+                let (mut value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
                 delta_index += bytes_read;
 
+                if let MetricType::Timestamp = key.1 {
+                    // already got the 't', now parse the 'i'
+                    let (i_value, bytes_read) = decode_varint_ftdc(&chunk.deltas[delta_index..])?;
+                    delta_index += bytes_read;
+                    println!("Parsed timestamp: t {} i {}", value, i_value);
+                    value += i_value; // todo: this is clearly wrong
+                }
                 let mut expanded_values: Vec<u64> = Vec::new();
                 // Run-length decoding of zeros
                 if value == 0 {
