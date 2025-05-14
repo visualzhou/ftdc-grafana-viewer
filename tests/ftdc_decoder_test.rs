@@ -54,7 +54,23 @@ async fn test_decode_chunk() -> io::Result<()> {
     // Decode the chunk
     let chunk_parser = ChunkParser;
 
-    let metric_values = chunk_parser.decode_chunk_values(&chunk).unwrap();
-    assert_eq!(metric_values.len(), 8); // Note:  8 = 2 metrics(keys) * 4 samples(deltas).  The reference doc counts as a sample too.
+    let actual = chunk_parser.decode_chunk_values(&chunk).unwrap();
+    let expected = vec![
+        ("a", 1.0),
+        ("a", 2.0),
+        ("a", 3.0),
+        ("a", 4.0),
+        ("x", 2.0),
+        ("x", 2.0),
+        ("x", 2.0),
+        ("x", 2.0),
+    ];
+
+    assert_eq!(actual.len(), 8); // Note:  8 = 2 metrics(keys) * 4 samples(deltas).  The reference doc counts as a sample too.
+    for (actual, (name, value)) in actual.iter().zip(expected.iter()) {
+        assert_eq!(actual.name, *name);
+        assert_eq!(actual.value, *value);
+        assert_eq!(actual.metric_type, MetricType::Int64);
+    }
     Ok(())
 }
