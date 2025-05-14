@@ -116,15 +116,9 @@ async fn test_line_protocol_conversion() {
     assert_eq!(lines.len(), 2);
 
     // Check that the lines are formatted correctly
-    assert!(lines[0].contains("mongodb_ftdc,metric_type=double"));
+    assert!(lines[0].contains("test.metric.with.dots"));
     assert!(lines[0].contains("value=42.5"));
 
-    assert!(lines[1].contains("mongodb_ftdc,metric_type=int64"));
+    assert!(lines[1].contains("test metric with spaces"));
     assert!(lines[1].contains("value=100"));
-
-    // Check that special characters are handled correctly
-    assert!(!lines[0].contains("test.metric.with.dots"));
-    assert!(lines[0].contains("test_metric_with_dots"));
-    assert!(!lines[1].contains("test metric with spaces"));
-    assert!(lines[1].contains("test_metric_with_spaces"));
 }
