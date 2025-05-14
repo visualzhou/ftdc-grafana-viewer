@@ -32,23 +32,12 @@ impl VictoriaMetricsClient {
     fn metric_to_line_protocol(metric: &MetricValue) -> VictoriaMetricsResult<String> {
         // Use current time instead of metric's timestamp
         // TODO: Use metric's timestamp instead of current time
-        let timestamp_ns = Self::system_time_to_nanos(SystemTime::now())?;
-
-        // Sanitize metric name (replace spaces and special chars with underscores)
-        let sanitized_name = metric
-            .name
-            .replace(' ', "_")
-            .replace('.', "_")
-            .replace(',', ";");
+        let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
 
         // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
-        // Include the metric name as a tag for better identification in Victoria Metrics
-        let line = format!(
-            "mongodb_ftdc,metric_type={},metric_name={} value={} {}",
-            metric.metric_type.to_string().to_lowercase(),
-            sanitized_name,
-            metric.value,
-            timestamp_ns
+        let line: String = format!(
+            "{},source=mongodb_ftdc value={} {}",
+            metric.name, metric.value, timestamp_ns
         );
 
         Ok(line)
