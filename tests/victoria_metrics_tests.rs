@@ -32,6 +32,8 @@ async fn test_victoria_metrics_client() {
                 metric_type: MetricType::Int64,
             },
         ],
+        file_path: Some("test/sample.ftdc".to_string()),
+        folder_path: Some("test".to_string()),
     };
 
     // Setup the mock to expect a POST request to /write
@@ -65,6 +67,8 @@ async fn test_victoria_metrics_client_error() {
             timestamp,
             metric_type: MetricType::Double,
         }],
+        file_path: Some("test/sample.ftdc".to_string()),
+        folder_path: Some("test".to_string()),
     };
 
     // Setup the mock to return a 500 error
@@ -103,6 +107,8 @@ async fn test_line_protocol_conversion() {
                 metric_type: MetricType::Int64,
             },
         ],
+        file_path: Some("test/sample.ftdc".to_string()),
+        folder_path: Some("test".to_string()),
     };
 
     // Convert to line protocol

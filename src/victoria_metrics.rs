@@ -29,15 +29,40 @@ impl VictoriaMetricsClient {
     }
 
     /// Convert a metric value to InfluxDB Line Protocol format
-    fn metric_to_line_protocol(metric: &MetricValue) -> VictoriaMetricsResult<String> {
-        // Use current time instead of metric's timestamp
-        // TODO: Use metric's timestamp instead of current time
+    fn metric_to_line_protocol(
+        metric: &MetricValue,
+        doc: &FtdcDocument,
+    ) -> VictoriaMetricsResult<String> {
+        // Use the metric's timestamp
         let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
+
+        // Build the tags section, including file and folder paths if available
+        let mut tags = format!("source=mongodb_ftdc");
+
+        // Add file_path tag if available
+        if let Some(file_path) = &doc.file_path {
+            // Escape special characters in the file path
+            let escaped_path = file_path
+                .replace(' ', "\\ ")
+                .replace(',', "\\,")
+                .replace('=', "\\=");
+            tags.push_str(&format!(",file_path={}", escaped_path));
+        }
+
+        // Add folder_path tag if available
+        if let Some(folder_path) = &doc.folder_path {
+            // Escape special characters in the folder path
+            let escaped_path = folder_path
+                .replace(' ', "\\ ")
+                .replace(',', "\\,")
+                .replace('=', "\\=");
+            tags.push_str(&format!(",folder_path={}", escaped_path));
+        }
 
         // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
         let line: String = format!(
-            "{},source=mongodb_ftdc value={} {}",
-            metric.name, metric.value, timestamp_ns
+            "{},{} value={} {}",
+            metric.name, tags, metric.value, timestamp_ns
         );
 
         Ok(line)
@@ -51,7 +76,7 @@ impl VictoriaMetricsClient {
         let mut lines = Vec::with_capacity(doc.metrics.len());
 
         for metric in &doc.metrics {
-            let line = Self::metric_to_line_protocol(metric)?;
+            let line = Self::metric_to_line_protocol(metric, doc)?;
             lines.push(line);
         }
 
@@ -126,18 +151,23 @@ impl VictoriaMetricsClient {
         self.send_metrics(lines).await
     }
 
-    /// Clean up old metrics by deleting them
+    /// Clean up all metrics
+    ///
+    /// This function deletes all metrics with source=mongodb_ftdc.
     pub async fn cleanup_old_metrics(&self) -> VictoriaMetricsResult<()> {
-        println!("Cleaning up old metrics...");
+        println!("Cleaning up all metrics...");
 
-        // Delete all metrics with mongodb_ftdc prefix
+        // Delete all metrics with source=mongodb_ftdc
         let delete_url = format!("{}/api/v1/admin/tsdb/delete_series", self.base_url);
 
-        // Create the request with match[] parameter to match all mongodb_ftdc metrics
+        println!("Sending delete request to: {}", delete_url);
+        println!("With params: match[]={{source=\"mongodb_ftdc\"}}");
+
+        // Delete all metrics regardless of timestamp
         let response = self
             .client
             .post(&delete_url)
-            .query(&[("match[]", "{__name__=~\"mongodb_ftdc.*\"}")])
+            .query(&[("match[]", "{source=\"mongodb_ftdc\"}")])
             .send()
             .await?;
 
@@ -151,7 +181,12 @@ impl VictoriaMetricsClient {
             return Err(FtdcError::Server { status, message });
         }
 
-        println!("Successfully cleaned up old metrics");
+        let response_text = response.text().await?;
+        println!(
+            "Successfully cleaned up metrics. Response: {}",
+            response_text
+        );
+
         Ok(())
     }
 }
@@ -200,12 +235,21 @@ mod tests {
                 metric_type: metric_type.clone(),
             };
 
-            let line = VictoriaMetricsClient::metric_to_line_protocol(&metric).unwrap();
+            // Create a test document
+            let doc = FtdcDocument {
+                timestamp,
+                metrics: vec![metric.clone()],
+                file_path: Some("test/file.ftdc".to_string()),
+                folder_path: Some("test".to_string()),
+            };
 
-            assert!(line.starts_with(&format!(
-                "{},source=mongodb_ftdc value={} ",
-                "test_metric", value
-            )));
+            let line = VictoriaMetricsClient::metric_to_line_protocol(&metric, &doc).unwrap();
+
+            assert!(line.starts_with(&format!("{},source=mongodb_ftdc", "test_metric")));
+
+            // Check for file path and folder path tags
+            assert!(line.contains("file_path=test/file.ftdc"));
+            assert!(line.contains("folder_path=test"));
         }
     }
 
