@@ -136,16 +136,10 @@ impl ChunkParser {
         // Extract keys directly
         chunk.keys.clear();
         self.extract_keys_recursive(&chunk.reference_doc, "", &mut chunk.keys)?;
-        println!(
-            "new chunk refdoc n_keys {} n_deltas {} actual keys {}",
-            chunk.n_keys,
-            chunk.n_deltas,
-            chunk.keys.len()
-        );
         Ok(chunk)
     }
 
-    // Use null byte as path separator.
+    // Use underscore as path separator.
     // This avoids conflicts with field names that might contain dots
     const PATH_SEP: &str = "_";
 
@@ -197,10 +191,7 @@ impl ChunkParser {
         keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
         match value {
-            RawBsonRef::String(_) | RawBsonRef::ObjectId(_) => {
-                println!("Skipping key: {}", path);
-                Ok(())
-            }
+            RawBsonRef::String(_) | RawBsonRef::ObjectId(_) => Ok(()),
             // For numeric types, add the key to the list
             RawBsonRef::Double(_) => {
                 keys.push((path.to_string(), MetricType::Double, self.to_bson(value)?));
@@ -268,7 +259,6 @@ impl ChunkParser {
     // Decodes a chunk into a vector of "metric values" (timestamp / value pairs)
     // Each sub-vector contains the metrics for a single sample.
     pub fn decode_chunk_values(&self, chunk: &Chunk) -> Result<Vec<MetricValue>> {
-        //println!("deltas length is {}", chunk.deltas.len());
         let mut reader = VarintReader::new(&chunk.deltas);
         let mut final_values: Vec<MetricValue> = Vec::new();
         // For each metric vector
@@ -322,12 +312,9 @@ impl ChunkParser {
                     value: value.unwrap_or_default() as f64,
                     metric_type: key.1.clone(),
                 };
-                //println!("\t\tAdding metric value: {:?}", metric_value);
                 final_values.push(metric_value);
                 prev_value = value.unwrap_or_default();
             }
-
-            //println!("\t\tFinal decompressed values: {}", final_values.len());
         } // for each metric
 
         Ok(final_values)

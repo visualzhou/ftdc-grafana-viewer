@@ -343,10 +343,6 @@ impl FtdcReader {
             FtdcDocType::Metadata => {
                 // Metadata is only for one-shot metrics that have no time series
                 if let Some(Bson::Document(ref_doc)) = doc.get("doc") {
-                    println!(
-                        "Found reference document (type 0) with {} fields",
-                        ref_doc.len()
-                    );
                     let result = handler.handle_metadata(self, ref_doc, timestamp)?;
                     if result.is_some() {
                         return Ok(result);
@@ -386,7 +382,7 @@ impl FtdcReader {
                 _ref_doc: &Document,
                 _timestamp: SystemTime,
             ) -> ReaderResult<Option<Self::TransformedType>> {
-                println!("Skipping metadata for time series processing");
+                // Skipping metadata for time series processing
                 Ok(None)
             }
 
@@ -395,7 +391,6 @@ impl FtdcReader {
                 doc: &Document,
                 _timestamp: SystemTime,
             ) -> ReaderResult<Self::TransformedType> {
-                println!("Processing metric document (type 1)  {} bytes", doc.len());
                 let chunk_parser = ChunkParser;
                 let chunk = chunk_parser.parse_chunk_header(&doc)?;
                 let time_series = chunk_parser.decode_time_series(&chunk)?;
@@ -441,7 +436,6 @@ impl FtdcReader {
                 timestamp: SystemTime,
             ) -> ReaderResult<Self::TransformedType> {
                 let chunk_parser = ChunkParser;
-                println!("Processing metric document (type 1)  {} bytes", doc.len());
                 let chunk = chunk_parser.parse_chunk_header(&doc)?;
                 let metrics = chunk_parser.decode_chunk_values(&chunk)?;
 

@@ -77,8 +77,8 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
             }
         }
 
-        // Print progress every 100 documents
-        if document_count % 100 == 0 {
+        // Print progress every 10 documents
+        if document_count % 10 == 0 {
             println!(
                 "Processed {} documents ({} metrics)",
                 document_count, total_metric_count
