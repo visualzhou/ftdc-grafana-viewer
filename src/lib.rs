@@ -4,14 +4,16 @@ use std::time::SystemTime;
 use thiserror::Error;
 
 pub mod ftdc_decoder;
+pub mod prometheus;
 pub mod reader;
 mod varint;
 pub mod victoria_metrics;
 
 pub use ftdc_decoder::{Chunk, ChunkParser};
+pub use prometheus::{ImportMetadata, PrometheusRemoteWriteClient};
 pub use reader::{FtdcReader, ReaderResult};
 pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
-pub use victoria_metrics::{ImportMetadata, VictoriaMetricsClient};
+pub use victoria_metrics::VictoriaMetricsClient;
 
 #[derive(Error, Debug)]
 pub enum FtdcError {

@@ -18,12 +18,13 @@ tokio = { version = "1.36.0", features = ["full"] }
 bytes = "1.5"
 futures = "0.3"
 async-trait = "0.1"
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.12", features = ["json"] }
 structopt = "0.3"
 varinteger = "1.0"
 tempfile = "3.10.0"
 zstd = "0.13.0"
 flate2 = "1.0.28"
+prometheus-reqwest-remote-write = "0.3.0"
 
 [dev-dependencies]
 criterion = "0.5"

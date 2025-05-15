@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use ftdc_importer::{
-    reader::FtdcReader, victoria_metrics::VictoriaMetricsClient, FtdcDocument, ImportMetadata,
+    prometheus::PrometheusRemoteWriteClient, reader::FtdcReader,
+    victoria_metrics::VictoriaMetricsClient, FtdcDocument, ImportMetadata,
 };
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -137,6 +138,7 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
 }
 
 /// Import FTDC metrics to Victoria Metrics
+#[allow(dead_code)]
 async fn run_import_mode(
     reader: &mut FtdcReader,
     client: &VictoriaMetricsClient,
@@ -189,6 +191,7 @@ async fn run_import_mode(
     Ok((document_count, metric_count))
 }
 
+#[allow(dead_code)]
 async fn run_import_mode_ts(
     reader: &mut FtdcReader,
     client: &VictoriaMetricsClient,
@@ -227,6 +230,34 @@ async fn run_import_mode_ts(
     Ok((document_count, metric_count))
 }
 
+/// Import FTDC metrics to a Prometheus compatible endpoint via remote write API
+async fn run_import_mode_prometheus(
+    reader: &mut FtdcReader,
+    client: &PrometheusRemoteWriteClient,
+) -> Result<(usize, usize)> {
+    let mut document_count = 0;
+    let mut metric_count = 0;
+
+    // Process all documents in time series format
+    while let Some(doc) = reader.read_next_time_series().await? {
+        document_count += 1;
+        metric_count += doc.metrics.len();
+
+        let sample_count = doc.metrics.first().map(|m| m.values.len()).unwrap_or(0);
+
+        // print progress
+        println!(
+            "Sending {} documents ({} metrics) - {} samples",
+            document_count, metric_count, sample_count
+        );
+
+        // Import the document via Prometheus remote write
+        client.import_document_ts(&doc).await?;
+    }
+
+    Ok((document_count, metric_count))
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::from_args();
@@ -260,7 +291,7 @@ async fn main() -> Result<()> {
     // Clone vm_url before using it
     let vm_url = opt.vm_url.clone();
     let metadata = ImportMetadata::new(Some(file_path.clone()), Some(folder_path.clone()));
-    let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size, metadata);
+    let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size, metadata.clone());
 
     if opt.check {
         // Run in check mode without sending metrics
@@ -272,8 +303,17 @@ async fn main() -> Result<()> {
         client.cleanup_old_metrics(opt.verbose).await?;
     }
 
-    // Run in import mode
-    let (document_count, metric_count) = run_import_mode(&mut reader, &client, opt.verbose).await?;
+    // Create the Prometheus Remote Write client
+    let prometheus_url = format!("{}/api/v1/write", vm_url);
+    let prom_client = PrometheusRemoteWriteClient::new(prometheus_url, metadata);
+    // Use time series format for Victoria Metrics
+    println!("Using time series format for Victoria Metrics");
+    let result = run_import_mode_prometheus(&mut reader, &prom_client).await?;
+
+    // Use regular format for Victoria Metrics
+    // run_import_mode(&mut reader, &client, opt.verbose).await?
+
+    let (document_count, metric_count) = result;
     let elapsed = start.elapsed();
 
     println!("Import completed successfully!");

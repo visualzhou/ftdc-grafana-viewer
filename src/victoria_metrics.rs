@@ -1,38 +1,9 @@
+use crate::prometheus::ImportMetadata;
 use crate::{FtdcDocument, FtdcDocumentTS, FtdcError, MetricValue};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
-
-/// Represents metadata about the import process with pre-escaped paths
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ImportMetadata {
-    file_path: Option<String>,
-    folder_path: Option<String>,
-}
-
-impl ImportMetadata {
-    /// Create a new import metadata with pre-escaped paths
-    pub fn new(raw_file_path: Option<String>, raw_folder_path: Option<String>) -> Self {
-        let escaped_file_path = raw_file_path.as_ref().map(|path| {
-            path.replace(' ', "\\ ")
-                .replace(',', "\\,")
-                .replace('=', "\\=")
-        });
-
-        let escaped_folder_path = raw_folder_path.as_ref().map(|path| {
-            path.replace(' ', "\\ ")
-                .replace(',', "\\,")
-                .replace('=', "\\=")
-        });
-
-        Self {
-            file_path: escaped_file_path,
-            folder_path: escaped_folder_path,
-        }
-    }
-}
 
 /// Client for sending metrics to Victoria Metrics
 pub struct VictoriaMetricsClient {
