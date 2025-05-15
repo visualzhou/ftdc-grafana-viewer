@@ -348,12 +348,14 @@ impl FtdcReader {
                         ref_doc.len()
                     );
                     let result = handler.handle_metadata(self, ref_doc, timestamp)?;
-                    Ok(result)
+                    if result.is_some() {
+                        return Ok(result);
+                    }
                 } else {
                     println!("WARNING: Metadata document missing 'doc' field");
-                    // Try next document
-                    Box::pin(self.iterate_next(handler)).await
                 }
+                // Try next document
+                Box::pin(self.iterate_next(handler)).await
             }
             FtdcDocType::Metric => {
                 let result = handler.handle_metric(&doc, timestamp)?;

@@ -182,6 +182,40 @@ async fn run_import_mode(
     Ok((document_count, metric_count))
 }
 
+async fn run_import_mode_ts(
+    reader: &mut FtdcReader,
+    client: &VictoriaMetricsClient,
+) -> Result<(usize, usize)> {
+    let mut document_count = 0;
+    let mut metric_count = 0;
+
+    // Each doc represents a chunk that is translated into a vector of time series.
+    while let Some(doc) = reader
+        .read_next_time_series()
+        .await
+        .context("Failed to read FTDC time series")?
+    {
+        document_count += 1;
+        let doc_metric_count = doc.metrics.len();
+        metric_count += doc_metric_count;
+
+        // if doc.metrics is not empty
+        if !doc.metrics.is_empty() && doc.metrics[0].timestamps.is_empty() {
+            println!(
+                "Importing time series starting at {:?} with {} metrics",
+                doc.metrics[0].timestamps[0], doc_metric_count
+            );
+        } else {
+            println!("Found empty time series or empty timestamps");
+        }
+
+        // Convert and import the document
+        client.import_document_ts(&doc).await?;
+    }
+
+    Ok((document_count, metric_count))
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::from_args();
