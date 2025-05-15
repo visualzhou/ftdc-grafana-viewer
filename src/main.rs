@@ -32,6 +32,10 @@ struct Opt {
     /// Check mode - analyze all metrics in the file without sending
     #[structopt(long)]
     check: bool,
+
+    /// Clean up all existing metrics before importing
+    #[structopt(long)]
+    clean: bool,
 }
 
 /// Run the check mode to analyze FTDC file contents without sending to Victoria Metrics
@@ -214,46 +218,49 @@ async fn main() -> Result<()> {
     let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size, metadata);
 
     if opt.check {
-        // Run in check mode
-        run_check_mode(&mut reader, &client).await?;
-        println!("\nAnalysis completed in {:.2?}", start.elapsed());
-    } else {
-        // Clean up old metrics before importing new ones
-        client.cleanup_old_metrics().await?;
+        // Run in check mode without sending metrics
+        return run_check_mode(&mut reader, &client).await;
+    }
 
-        // Run in import mode
-        let (document_count, metric_count) =
-            run_import_mode(&mut reader, &client, opt.verbose).await?;
-        let elapsed = start.elapsed();
-
-        println!("Import completed successfully!");
-        println!(
-            "Processed {} documents with {} metrics in {:.2?}",
-            document_count, metric_count, elapsed
-        );
-        println!(
-            "Average processing speed: {:.2} documents/sec",
-            document_count as f64 / elapsed.as_secs_f64()
-        );
-
-        // Verify metrics in Victoria Metrics
-        println!("\nVerifying metrics in Victoria Metrics...");
-        let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", vm_url);
-        println!("Query URL: {}", verify_url);
-
-        let response = reqwest::get(&verify_url)
-            .await
-            .context("Failed to query Victoria Metrics")?;
-
-        if response.status().is_success() {
-            let body = response.text().await?;
-            println!("Victoria Metrics response: {}", body);
-        } else {
-            println!(
-                "Warning: Failed to verify metrics in Victoria Metrics. Status: {}",
-                response.status()
-            );
+    // Clean up old metrics only if clean flag is specified
+    if opt.clean {
+        if opt.verbose {
+            println!("Cleaning up existing metrics...");
         }
+        client.cleanup_old_metrics().await?;
+    }
+
+    // Run in import mode
+    let (document_count, metric_count) = run_import_mode(&mut reader, &client, opt.verbose).await?;
+    let elapsed = start.elapsed();
+
+    println!("Import completed successfully!");
+    println!(
+        "Processed {} documents with {} metrics in {:.2?}",
+        document_count, metric_count, elapsed
+    );
+    println!(
+        "Average processing speed: {:.2} documents/sec",
+        document_count as f64 / elapsed.as_secs_f64()
+    );
+
+    // Verify metrics in Victoria Metrics
+    println!("\nVerifying metrics in Victoria Metrics...");
+    let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", vm_url);
+    println!("Query URL: {}", verify_url);
+
+    let response = reqwest::get(&verify_url)
+        .await
+        .context("Failed to query Victoria Metrics")?;
+
+    if response.status().is_success() {
+        let body = response.text().await?;
+        println!("Victoria Metrics response: {}", body);
+    } else {
+        println!(
+            "Warning: Failed to verify metrics in Victoria Metrics. Status: {}",
+            response.status()
+        );
     }
 
     Ok(())
