@@ -37,6 +37,41 @@ impl TryFrom<i32> for FtdcDocType {
 
 pub type ReaderResult<T> = std::result::Result<T, FtdcError>;
 
+/// Handler trait for processing FTDC documents
+pub trait MetricsDocHandler {
+    /// The type returned after transformation
+    type TransformedType;
+
+    /// Process a metadata document
+    fn handle_metadata(
+        &self,
+        reader: &FtdcReader,
+        doc: &Document,
+        ref_doc: &Document,
+        timestamp: SystemTime,
+        file_path: &Option<String>,
+        folder_path: &Option<String>,
+    ) -> ReaderResult<Self::TransformedType>;
+
+    /// Process a metric document
+    fn handle_metric(
+        &self,
+        doc: &Document,
+        timestamp: SystemTime,
+        file_path: &Option<String>,
+        folder_path: &Option<String>,
+    ) -> ReaderResult<Self::TransformedType>;
+
+    /// Process a metadata delta document
+    fn handle_metadata_delta(
+        &self,
+        doc: &Document,
+        timestamp: SystemTime,
+        file_path: &Option<String>,
+        folder_path: &Option<String>,
+    ) -> ReaderResult<Option<Self::TransformedType>>;
+}
+
 /// Reader for FTDC files that supports async streaming
 pub struct FtdcReader {
     reader: BufReader<File>,
@@ -286,8 +321,11 @@ impl FtdcReader {
         Ok(())
     }
 
-    /// Reads and processes the next FTDC document
-    pub async fn read_next(&mut self) -> ReaderResult<Option<FtdcDocument>> {
+    /// Iterates through FTDC documents and processes them with the given handler
+    pub async fn iterate_next<H, T>(&mut self, handler: &H) -> ReaderResult<Option<T>>
+    where
+        H: MetricsDocHandler<TransformedType = T>,
+    {
         let doc = match self.read_bson_document().await? {
             Some(doc) => doc,
             None => return Ok(None),
@@ -310,44 +348,110 @@ impl FtdcReader {
 
         match doc_type {
             FtdcDocType::Metadata => {
-                // Metadata is only for one-shot metrics that have no time series, like "architecture" and "OS".
+                // Metadata is only for one-shot metrics that have no time series
                 if let Some(Bson::Document(ref_doc)) = doc.get("doc") {
                     println!(
                         "Found reference document (type 0) with {} fields",
                         ref_doc.len()
                     );
-                    let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                    Ok(Some(FtdcDocument {
+                    let result = handler.handle_metadata(
+                        self,
+                        &doc,
+                        ref_doc,
                         timestamp,
-                        metrics,
-                        file_path: self.file_path.clone(),
-                        folder_path: self.folder_path.clone(),
-                    }))
+                        &self.file_path,
+                        &self.folder_path,
+                    )?;
+                    Ok(Some(result))
                 } else {
                     println!("WARNING: Metadata document missing 'doc' field");
-                    Box::pin(self.read_next()).await
+                    // Try next document
+                    Box::pin(self.iterate_next(handler)).await
                 }
             }
             FtdcDocType::Metric => {
-                // Extract and decompress metric data
+                let result =
+                    handler.handle_metric(&doc, timestamp, &self.file_path, &self.folder_path)?;
+                Ok(Some(result))
+            }
+            FtdcDocType::MetadataDelta => {
+                // Handle metadata delta documents
+                match handler.handle_metadata_delta(
+                    &doc,
+                    timestamp,
+                    &self.file_path,
+                    &self.folder_path,
+                )? {
+                    Some(result) => Ok(Some(result)),
+                    None => {
+                        // If handler returned None, continue to the next document
+                        Box::pin(self.iterate_next(handler)).await
+                    }
+                }
+            }
+        }
+    }
+
+    /// Reads and processes the next FTDC document
+    pub async fn read_next(&mut self) -> ReaderResult<Option<FtdcDocument>> {
+        // Use a default handler that returns FtdcDocument
+        struct DefaultDocHandler;
+
+        impl MetricsDocHandler for DefaultDocHandler {
+            type TransformedType = FtdcDocument;
+
+            fn handle_metadata(
+                &self,
+                reader: &FtdcReader,
+                _doc: &Document,
+                ref_doc: &Document,
+                timestamp: SystemTime,
+                file_path: &Option<String>,
+                folder_path: &Option<String>,
+            ) -> ReaderResult<Self::TransformedType> {
+                let metrics = reader.extract_metrics(ref_doc, timestamp, "")?;
+                Ok(FtdcDocument {
+                    timestamp,
+                    metrics,
+                    file_path: file_path.clone(),
+                    folder_path: folder_path.clone(),
+                })
+            }
+
+            fn handle_metric(
+                &self,
+                doc: &Document,
+                timestamp: SystemTime,
+                file_path: &Option<String>,
+                folder_path: &Option<String>,
+            ) -> ReaderResult<Self::TransformedType> {
                 let chunk_parser = ChunkParser;
                 println!("Processing metric document (type 1)  {} bytes", doc.len());
                 let chunk = chunk_parser.parse_chunk_header(&doc)?;
                 let metrics = chunk_parser.decode_chunk_values(&chunk)?;
 
-                Ok(Some(FtdcDocument {
+                Ok(FtdcDocument {
                     timestamp,
                     metrics,
-                    file_path: self.file_path.clone(),
-                    folder_path: self.folder_path.clone(),
-                }))
+                    file_path: file_path.clone(),
+                    folder_path: folder_path.clone(),
+                })
             }
-            FtdcDocType::MetadataDelta => {
-                // Skip metadata delta documents in the stream
-                println!("Skipping MetadataDelta document (type 2) ");
-                Box::pin(self.read_next()).await
+
+            fn handle_metadata_delta(
+                &self,
+                _doc: &Document,
+                _timestamp: SystemTime,
+                _file_path: &Option<String>,
+                _folder_path: &Option<String>,
+            ) -> ReaderResult<Option<Self::TransformedType>> {
+                // Skip this document type
+                Ok(None)
             }
         }
+
+        let handler = DefaultDocHandler;
+        self.iterate_next(&handler).await
     }
 
     /// Returns an async stream of FTDC documents
