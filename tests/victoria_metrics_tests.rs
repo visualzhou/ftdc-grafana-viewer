@@ -47,7 +47,7 @@ async fn test_victoria_metrics_client() {
         .await;
 
     // Import the document
-    let result = client.import_document(&doc).await;
+    let result = client.import_document(&doc, false).await;
     assert!(result.is_ok());
 }
 
@@ -84,7 +84,7 @@ async fn test_victoria_metrics_client_error() {
         .await;
 
     // Import the document
-    let result = client.import_document(&doc).await;
+    let result = client.import_document(&doc, false).await;
     assert!(result.is_err());
 }
 

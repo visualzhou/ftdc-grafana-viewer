@@ -36,6 +36,10 @@ struct Opt {
     /// Clean up all existing metrics before importing
     #[structopt(long)]
     clean: bool,
+
+    /// Verify metrics in Victoria Metrics after import
+    #[structopt(long)]
+    verify: bool,
 }
 
 /// Run the check mode to analyze FTDC file contents without sending to Victoria Metrics
@@ -171,12 +175,15 @@ async fn run_import_mode(
         }
 
         // Convert and import the document
-        client.import_document(&doc).await.with_context(|| {
-            format!(
-                "Failed to import document {} with {} metrics",
-                document_count, doc_metric_count
-            )
-        })?;
+        client
+            .import_document(&doc, verbose)
+            .await
+            .with_context(|| {
+                format!(
+                    "Failed to import document {} with {} metrics",
+                    document_count, doc_metric_count
+                )
+            })?;
     }
 
     Ok((document_count, metric_count))
@@ -185,6 +192,7 @@ async fn run_import_mode(
 async fn run_import_mode_ts(
     reader: &mut FtdcReader,
     client: &VictoriaMetricsClient,
+    verbose: bool,
 ) -> Result<(usize, usize)> {
     let mut document_count = 0;
     let mut metric_count = 0;
@@ -199,18 +207,21 @@ async fn run_import_mode_ts(
         let doc_metric_count = doc.metrics.len();
         metric_count += doc_metric_count;
 
-        // if doc.metrics is not empty
-        if !doc.metrics.is_empty() && doc.metrics[0].timestamps.is_empty() {
-            println!(
-                "Importing time series starting at {:?} with {} metrics",
-                doc.metrics[0].timestamps[0], doc_metric_count
-            );
-        } else {
-            println!("Found empty time series or empty timestamps");
+        // Print time series info only in verbose mode
+        if verbose {
+            // if doc.metrics is not empty
+            if !doc.metrics.is_empty() && doc.metrics[0].timestamps.is_empty() {
+                println!(
+                    "Importing time series starting at {:?} with {} metrics",
+                    doc.metrics[0].timestamps[0], doc_metric_count
+                );
+            } else {
+                println!("Found empty time series or empty timestamps");
+            }
         }
 
         // Convert and import the document
-        client.import_document_ts(&doc).await?;
+        client.import_document_ts(&doc, verbose).await?;
     }
 
     Ok((document_count, metric_count))
@@ -258,10 +269,7 @@ async fn main() -> Result<()> {
 
     // Clean up old metrics only if clean flag is specified
     if opt.clean {
-        if opt.verbose {
-            println!("Cleaning up existing metrics...");
-        }
-        client.cleanup_old_metrics().await?;
+        client.cleanup_old_metrics(opt.verbose).await?;
     }
 
     // Run in import mode
@@ -278,23 +286,33 @@ async fn main() -> Result<()> {
         document_count as f64 / elapsed.as_secs_f64()
     );
 
-    // Verify metrics in Victoria Metrics
-    println!("\nVerifying metrics in Victoria Metrics...");
-    let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", vm_url);
-    println!("Query URL: {}", verify_url);
+    // Verify metrics in Victoria Metrics only if verify flag is specified
+    if opt.verify {
+        println!("\nVerifying metrics in Victoria Metrics...");
+        let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", vm_url);
 
-    let response = reqwest::get(&verify_url)
-        .await
-        .context("Failed to query Victoria Metrics")?;
+        if opt.verbose {
+            println!("Query URL: {}", verify_url);
+        }
 
-    if response.status().is_success() {
-        let body = response.text().await?;
-        println!("Victoria Metrics response: {}", body);
-    } else {
-        println!(
-            "Warning: Failed to verify metrics in Victoria Metrics. Status: {}",
-            response.status()
-        );
+        let response = reqwest::get(&verify_url)
+            .await
+            .context("Failed to query Victoria Metrics")?;
+
+        if response.status().is_success() {
+            let body = response.text().await?;
+
+            if opt.verbose {
+                println!("Victoria Metrics response: {}", body);
+            } else {
+                println!("Verification successful");
+            }
+        } else {
+            println!(
+                "Warning: Failed to verify metrics in Victoria Metrics. Status: {}",
+                response.status()
+            );
+        }
     }
 
     Ok(())

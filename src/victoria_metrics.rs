@@ -108,24 +108,27 @@ impl VictoriaMetricsClient {
     }
 
     /// Send metrics to Victoria Metrics
-    pub async fn send_metrics(&self, lines: Vec<String>) -> VictoriaMetricsResult<()> {
+    pub async fn send_metrics(
+        &self,
+        lines: Vec<String>,
+        verbose: bool,
+    ) -> VictoriaMetricsResult<()> {
         // Split lines into batches of batch_size
         for chunk in lines.chunks(self.batch_size) {
             let payload = chunk.join("\n");
 
-            // Debug logging
-            println!("\nSending metrics to Victoria Metrics:");
-            println!("URL: {}/influx/write", self.base_url);
-            println!("Total metrics in this batch: {}", chunk.len());
-            println!("First few metrics in line protocol format:");
-            for line in chunk.iter().take(3) {
-                println!("  {}", line);
-            }
-            println!("...");
+            // Debug logging only in verbose mode
+            if verbose {
+                println!("\nSending metrics to Victoria Metrics:");
+                println!("URL: {}/influx/write", self.base_url);
+                println!("Total metrics in this batch: {}", chunk.len());
 
-            // Print the exact payload being sent
-            //println!("\nExact payload being sent:");
-            //println!("{}", payload);
+                println!("First few metrics in line protocol format:");
+                for line in chunk.iter().take(3) {
+                    println!("  {}", line);
+                }
+                println!("...");
+            }
 
             let response = self
                 .client
@@ -149,33 +152,36 @@ impl VictoriaMetricsClient {
                 return Err(FtdcError::Server { status, message });
             }
 
-            // Print response details
-            println!("\nResponse details:");
-            println!("Status: {}", response.status());
-            let response_text = response.text().await?;
-            println!("Body: {}", response_text);
-
-            // Verify the metrics were received
-            let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", self.base_url);
-            println!("\nVerifying metrics at: {}", verify_url);
-            let verify_response = self.client.get(&verify_url).send().await?;
-            if !verify_response.status().is_success() {
-                println!("Verification status: {}", verify_response.status());
-                let verify_body = verify_response.text().await?;
-                println!("Verification response: {}", verify_body);
+            // Print response details only in verbose mode
+            if verbose {
+                println!("Response details:");
+                println!("Status: {}", response.status());
+                let response_text = response.text().await?;
+                println!("Body: {}", response_text);
+            } else {
+                // Still need to read the response body to avoid keeping the connection open
+                let _ = response.text().await?;
             }
         }
 
         Ok(())
     }
 
-    /// Import an FTDC document into Victoria Metrics
-    pub async fn import_document(&self, doc: &FtdcDocument) -> VictoriaMetricsResult<()> {
+    /// Import a document into Victoria Metrics
+    pub async fn import_document(
+        &self,
+        doc: &FtdcDocument,
+        verbose: bool,
+    ) -> VictoriaMetricsResult<()> {
         let lines = self.document_to_line_protocol(doc)?;
-        self.send_metrics(lines).await
+        self.send_metrics(lines, verbose).await
     }
 
-    pub async fn import_document_ts(&self, _doc: &FtdcDocumentTS) -> VictoriaMetricsResult<()> {
+    pub async fn import_document_ts(
+        &self,
+        _doc: &FtdcDocumentTS,
+        _verbose: bool,
+    ) -> VictoriaMetricsResult<()> {
         // TODO(XXX): Implement this
         Ok(())
     }
@@ -183,14 +189,18 @@ impl VictoriaMetricsClient {
     /// Clean up all metrics
     ///
     /// This function deletes all metrics with source=mongodb_ftdc.
-    pub async fn cleanup_old_metrics(&self) -> VictoriaMetricsResult<()> {
-        println!("Cleaning up all metrics...");
+    pub async fn cleanup_old_metrics(&self, verbose: bool) -> VictoriaMetricsResult<()> {
+        if verbose {
+            println!("Cleaning up all metrics...");
+        }
 
         // Delete all metrics with source=mongodb_ftdc
         let delete_url = format!("{}/api/v1/admin/tsdb/delete_series", self.base_url);
 
-        println!("Sending delete request to: {}", delete_url);
-        println!("With params: match[]={{source=\"mongodb_ftdc\"}}");
+        if verbose {
+            println!("Sending delete request to: {}", delete_url);
+            println!("With params: match[]={{source=\"mongodb_ftdc\"}}");
+        }
 
         // Delete all metrics regardless of timestamp
         let response = self
@@ -211,10 +221,12 @@ impl VictoriaMetricsClient {
         }
 
         let response_text = response.text().await?;
-        println!(
-            "Successfully cleaned up metrics. Response: {}",
-            response_text
-        );
+        if verbose {
+            println!(
+                "Successfully cleaned up metrics. Response: {}",
+                response_text
+            );
+        }
 
         Ok(())
     }
