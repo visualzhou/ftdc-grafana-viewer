@@ -34,7 +34,7 @@ struct Opt {
     #[structopt(long)]
     check: bool,
 
-    /// Clean up all existing metrics before importing
+    /// Clean up existing metrics for this specific file before importing
     #[structopt(long)]
     clean: bool,
 

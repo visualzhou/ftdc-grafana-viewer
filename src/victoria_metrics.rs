@@ -162,41 +162,49 @@ impl VictoriaMetricsClient {
     /// This function deletes all metrics with source=mongodb_ftdc.
     pub async fn cleanup_old_metrics(&self, verbose: bool) -> VictoriaMetricsResult<()> {
         if verbose {
-            println!("Cleaning up all metrics...");
+            println!("Cleaning up metrics for the current file...");
         }
 
-        // Delete all metrics with source=mongodb_ftdc
-        let delete_url = format!("{}/api/v1/admin/tsdb/delete_series", self.base_url);
+        // Only delete metrics for the current file_path if available
+        if let Some(file_path) = &self.metadata.file_path {
+            let delete_url = format!("{}/api/v1/admin/tsdb/delete_series", self.base_url);
+            let query = format!("{{source=\"mongodb_ftdc\",file_path=\"{}\"}}", file_path);
 
-        if verbose {
-            println!("Sending delete request to: {}", delete_url);
-            println!("With params: match[]={{source=\"mongodb_ftdc\"}}");
-        }
+            if verbose {
+                println!("Sending delete request to: {}", delete_url);
+                println!("With params: match[]={}", query);
+            }
 
-        // Delete all metrics regardless of timestamp
-        let response = self
-            .client
-            .post(&delete_url)
-            .query(&[("match[]", "{source=\"mongodb_ftdc\"}")])
-            .send()
-            .await?;
+            // Delete metrics for the specific file path
+            let response = self
+                .client
+                .post(&delete_url)
+                .query(&[("match[]", query)])
+                .send()
+                .await?;
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let message = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            println!("Error cleaning up metrics: {} - {}", status, message);
-            return Err(FtdcError::Server { status, message });
-        }
+            if !response.status().is_success() {
+                let status = response.status();
+                let message = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|_| "Unknown error".to_string());
+                println!("Error cleaning up metrics: {} - {}", status, message);
+                return Err(FtdcError::Server { status, message });
+            }
 
-        let response_text = response.text().await?;
-        if verbose {
-            println!(
-                "Successfully cleaned up metrics. Response: {}",
-                response_text
-            );
+            let response_text = response.text().await?;
+            if verbose {
+                println!(
+                    "Successfully cleaned up metrics for file '{}'. Response: {}",
+                    file_path, response_text
+                );
+            } else {
+                println!("Successfully cleaned up metrics for file '{}'", file_path);
+            }
+        } else {
+            // If no file path is available, print a warning
+            println!("Warning: No file path available, skipping cleanup");
         }
 
         Ok(())
