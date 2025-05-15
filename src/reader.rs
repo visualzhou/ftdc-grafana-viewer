@@ -8,7 +8,7 @@ use tokio::{
     io::{AsyncReadExt, BufReader},
 };
 
-use crate::{ChunkParser, FtdcDocument, FtdcError, MetricType, MetricValue};
+use crate::{ChunkParser, FtdcDocument, FtdcDocumentTS, FtdcError, MetricType, MetricValue};
 
 const BUFFER_SIZE: usize = 64 * 1024; // 64KB buffer
 
@@ -46,10 +46,9 @@ pub trait MetricsDocHandler {
     fn handle_metadata(
         &self,
         reader: &FtdcReader,
-        doc: &Document,
         ref_doc: &Document,
         timestamp: SystemTime,
-    ) -> ReaderResult<Self::TransformedType>;
+    ) -> ReaderResult<Option<Self::TransformedType>>;
 
     /// Process a metric document
     fn handle_metric(
@@ -348,13 +347,8 @@ impl FtdcReader {
                         "Found reference document (type 0) with {} fields",
                         ref_doc.len()
                     );
-                    let result = handler.handle_metadata(
-                        self,
-                        &doc,
-                        ref_doc,
-                        timestamp,
-                    )?;
-                    Ok(Some(result))
+                    let result = handler.handle_metadata(self, ref_doc, timestamp)?;
+                    Ok(result)
                 } else {
                     println!("WARNING: Metadata document missing 'doc' field");
                     // Try next document
@@ -378,13 +372,53 @@ impl FtdcReader {
         }
     }
 
+    pub async fn read_next_time_series(&mut self) -> ReaderResult<Option<FtdcDocumentTS>> {
+        struct TimeSeriesDocHandler {}
+
+        impl MetricsDocHandler for TimeSeriesDocHandler {
+            type TransformedType = FtdcDocumentTS;
+
+            fn handle_metadata(
+                &self,
+                _reader: &FtdcReader,
+                _ref_doc: &Document,
+                _timestamp: SystemTime,
+            ) -> ReaderResult<Option<Self::TransformedType>> {
+                println!("Skipping metadata for time series processing");
+                Ok(None)
+            }
+
+            fn handle_metric(
+                &self,
+                doc: &Document,
+                _timestamp: SystemTime,
+            ) -> ReaderResult<Self::TransformedType> {
+                println!("Processing metric document (type 1)  {} bytes", doc.len());
+                let chunk_parser = ChunkParser;
+                let chunk = chunk_parser.parse_chunk_header(&doc)?;
+                let time_series = chunk_parser.decode_time_series(&chunk)?;
+                Ok(FtdcDocumentTS {
+                    metrics: time_series,
+                })
+            }
+
+            fn handle_metadata_delta(
+                &self,
+                _doc: &Document,
+                _timestamp: SystemTime,
+            ) -> ReaderResult<Option<Self::TransformedType>> {
+                Ok(None)
+            }
+        }
+
+        let handler = TimeSeriesDocHandler {};
+        self.iterate_next(&handler).await
+    }
+
     /// Reads and processes the next FTDC document
     pub async fn read_next(&mut self) -> ReaderResult<Option<FtdcDocument>> {
         // Use a default handler that returns FtdcDocument
-        struct DefaultDocHandler {
-            file_path: Option<String>,
-            folder_path: Option<String>,
-        }
+        struct DefaultDocHandler {}
 
         impl MetricsDocHandler for DefaultDocHandler {
             type TransformedType = FtdcDocument;
@@ -392,17 +426,11 @@ impl FtdcReader {
             fn handle_metadata(
                 &self,
                 reader: &FtdcReader,
-                _doc: &Document,
                 ref_doc: &Document,
                 timestamp: SystemTime,
-            ) -> ReaderResult<Self::TransformedType> {
+            ) -> ReaderResult<Option<Self::TransformedType>> {
                 let metrics = reader.extract_metrics(ref_doc, timestamp, "")?;
-                Ok(FtdcDocument {
-                    timestamp,
-                    metrics,
-                    file_path: self.file_path.clone(),
-                    folder_path: self.folder_path.clone(),
-                })
+                Ok(Some(FtdcDocument { timestamp, metrics }))
             }
 
             fn handle_metric(
@@ -415,12 +443,7 @@ impl FtdcReader {
                 let chunk = chunk_parser.parse_chunk_header(&doc)?;
                 let metrics = chunk_parser.decode_chunk_values(&chunk)?;
 
-                Ok(FtdcDocument {
-                    timestamp,
-                    metrics,
-                    file_path: self.file_path.clone(),
-                    folder_path: self.folder_path.clone(),
-                })
+                Ok(FtdcDocument { timestamp, metrics })
             }
 
             fn handle_metadata_delta(
@@ -433,10 +456,7 @@ impl FtdcReader {
             }
         }
 
-        let handler = DefaultDocHandler {
-            file_path: self.file_path.clone(),
-            folder_path: self.folder_path.clone(),
-        };
+        let handler = DefaultDocHandler {};
         self.iterate_next(&handler).await
     }
 
