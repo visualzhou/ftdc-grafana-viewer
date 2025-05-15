@@ -49,8 +49,6 @@ pub trait MetricsDocHandler {
         doc: &Document,
         ref_doc: &Document,
         timestamp: SystemTime,
-        file_path: &Option<String>,
-        folder_path: &Option<String>,
     ) -> ReaderResult<Self::TransformedType>;
 
     /// Process a metric document
@@ -58,8 +56,6 @@ pub trait MetricsDocHandler {
         &self,
         doc: &Document,
         timestamp: SystemTime,
-        file_path: &Option<String>,
-        folder_path: &Option<String>,
     ) -> ReaderResult<Self::TransformedType>;
 
     /// Process a metadata delta document
@@ -67,8 +63,6 @@ pub trait MetricsDocHandler {
         &self,
         doc: &Document,
         timestamp: SystemTime,
-        file_path: &Option<String>,
-        folder_path: &Option<String>,
     ) -> ReaderResult<Option<Self::TransformedType>>;
 }
 
@@ -359,8 +353,6 @@ impl FtdcReader {
                         &doc,
                         ref_doc,
                         timestamp,
-                        &self.file_path,
-                        &self.folder_path,
                     )?;
                     Ok(Some(result))
                 } else {
@@ -370,18 +362,12 @@ impl FtdcReader {
                 }
             }
             FtdcDocType::Metric => {
-                let result =
-                    handler.handle_metric(&doc, timestamp, &self.file_path, &self.folder_path)?;
+                let result = handler.handle_metric(&doc, timestamp)?;
                 Ok(Some(result))
             }
             FtdcDocType::MetadataDelta => {
                 // Handle metadata delta documents
-                match handler.handle_metadata_delta(
-                    &doc,
-                    timestamp,
-                    &self.file_path,
-                    &self.folder_path,
-                )? {
+                match handler.handle_metadata_delta(&doc, timestamp)? {
                     Some(result) => Ok(Some(result)),
                     None => {
                         // If handler returned None, continue to the next document
@@ -395,7 +381,10 @@ impl FtdcReader {
     /// Reads and processes the next FTDC document
     pub async fn read_next(&mut self) -> ReaderResult<Option<FtdcDocument>> {
         // Use a default handler that returns FtdcDocument
-        struct DefaultDocHandler;
+        struct DefaultDocHandler {
+            file_path: Option<String>,
+            folder_path: Option<String>,
+        }
 
         impl MetricsDocHandler for DefaultDocHandler {
             type TransformedType = FtdcDocument;
@@ -406,15 +395,13 @@ impl FtdcReader {
                 _doc: &Document,
                 ref_doc: &Document,
                 timestamp: SystemTime,
-                file_path: &Option<String>,
-                folder_path: &Option<String>,
             ) -> ReaderResult<Self::TransformedType> {
                 let metrics = reader.extract_metrics(ref_doc, timestamp, "")?;
                 Ok(FtdcDocument {
                     timestamp,
                     metrics,
-                    file_path: file_path.clone(),
-                    folder_path: folder_path.clone(),
+                    file_path: self.file_path.clone(),
+                    folder_path: self.folder_path.clone(),
                 })
             }
 
@@ -422,8 +409,6 @@ impl FtdcReader {
                 &self,
                 doc: &Document,
                 timestamp: SystemTime,
-                file_path: &Option<String>,
-                folder_path: &Option<String>,
             ) -> ReaderResult<Self::TransformedType> {
                 let chunk_parser = ChunkParser;
                 println!("Processing metric document (type 1)  {} bytes", doc.len());
@@ -433,8 +418,8 @@ impl FtdcReader {
                 Ok(FtdcDocument {
                     timestamp,
                     metrics,
-                    file_path: file_path.clone(),
-                    folder_path: folder_path.clone(),
+                    file_path: self.file_path.clone(),
+                    folder_path: self.folder_path.clone(),
                 })
             }
 
@@ -442,15 +427,16 @@ impl FtdcReader {
                 &self,
                 _doc: &Document,
                 _timestamp: SystemTime,
-                _file_path: &Option<String>,
-                _folder_path: &Option<String>,
             ) -> ReaderResult<Option<Self::TransformedType>> {
                 // Skip this document type
                 Ok(None)
             }
         }
 
-        let handler = DefaultDocHandler;
+        let handler = DefaultDocHandler {
+            file_path: self.file_path.clone(),
+            folder_path: self.folder_path.clone(),
+        };
         self.iterate_next(&handler).await
     }
 
