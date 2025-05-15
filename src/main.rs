@@ -107,6 +107,8 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
         let line = client.document_to_line_protocol(&FtdcDocument {
             timestamp: metric.timestamp,
             metrics: vec![(*metric).clone()],
+            file_path: None,
+            folder_path: None,
         })?;
         println!("  Line Protocol: {}", line[0]);
     }
@@ -187,9 +189,24 @@ async fn main() -> Result<()> {
     }
 
     let start = Instant::now();
+    let file_path = opt.input.to_string_lossy().to_string();
+    let folder_path = opt
+        .input
+        .parent()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|| ".".to_string());
+
+    if opt.verbose {
+        println!("File path: {}", file_path);
+        println!("Folder path: {}", folder_path);
+    }
+
     let mut reader = FtdcReader::new(&opt.input)
         .await
         .context("Failed to create FTDC reader")?;
+
+    // Set file and folder paths for FTDC documents
+    reader.set_paths(file_path.clone(), folder_path.clone());
 
     // Clone vm_url before using it
     let vm_url = opt.vm_url.clone();

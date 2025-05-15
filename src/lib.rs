@@ -68,6 +68,8 @@ pub enum MetricType {
 pub struct FtdcDocument {
     pub timestamp: SystemTime,
     pub metrics: Vec<MetricValue>,
+    pub file_path: Option<String>,
+    pub folder_path: Option<String>,
 }
 
 /// Represents a single FTDC document containing multiple metrics, in time series format

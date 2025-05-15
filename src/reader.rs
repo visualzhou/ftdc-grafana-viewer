@@ -40,6 +40,8 @@ pub type ReaderResult<T> = std::result::Result<T, FtdcError>;
 /// Reader for FTDC files that supports async streaming
 pub struct FtdcReader {
     reader: BufReader<File>,
+    file_path: Option<String>,
+    folder_path: Option<String>,
 }
 
 impl FtdcReader {
@@ -48,7 +50,17 @@ impl FtdcReader {
         let file = File::open(path).await?;
         let reader = BufReader::with_capacity(BUFFER_SIZE, file);
 
-        Ok(Self { reader })
+        Ok(Self {
+            reader,
+            file_path: None,
+            folder_path: None,
+        })
+    }
+
+    /// Set the file and folder paths
+    pub fn set_paths(&mut self, file_path: String, folder_path: String) {
+        self.file_path = Some(file_path);
+        self.folder_path = Some(folder_path);
     }
 
     /// Reads the next BSON document from the file
@@ -305,7 +317,12 @@ impl FtdcReader {
                         ref_doc.len()
                     );
                     let metrics = self.extract_metrics(ref_doc, timestamp, "")?;
-                    Ok(Some(FtdcDocument { timestamp, metrics }))
+                    Ok(Some(FtdcDocument {
+                        timestamp,
+                        metrics,
+                        file_path: self.file_path.clone(),
+                        folder_path: self.folder_path.clone(),
+                    }))
                 } else {
                     println!("WARNING: Metadata document missing 'doc' field");
                     Box::pin(self.read_next()).await
@@ -318,7 +335,12 @@ impl FtdcReader {
                 let chunk = chunk_parser.parse_chunk_header(&doc)?;
                 let metrics = chunk_parser.decode_chunk_values(&chunk)?;
 
-                Ok(Some(FtdcDocument { timestamp, metrics }))
+                Ok(Some(FtdcDocument {
+                    timestamp,
+                    metrics,
+                    file_path: self.file_path.clone(),
+                    folder_path: self.folder_path.clone(),
+                }))
             }
             FtdcDocType::MetadataDelta => {
                 // Skip metadata delta documents in the stream
