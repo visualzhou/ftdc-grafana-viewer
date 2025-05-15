@@ -339,6 +339,7 @@ impl ChunkParser {
         let mut timestamps: Vec<SystemTime> = Vec::new();
         let mut current_timestamp = chunk.timestamp;
         // Construct the timestamp vector; we will clone a copy of this into each FtdcTimeSeries.
+        timestamps.push(current_timestamp);
         for _ in 0..chunk.n_deltas {
             current_timestamp = current_timestamp
                 .checked_add(Duration::from_secs(1))

@@ -66,3 +66,30 @@ async fn test_real_ftdc_file() -> ReaderResult<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_real_ftdc_file_time_series() -> ReaderResult<()> {
+    assert!(Path::new(EXAMPLE_FTDC_FILE).exists());
+
+    let expected_metrics_count = 3479;
+    let expected_sample_count = 300;
+    let mut reader = FtdcReader::new(EXAMPLE_FTDC_FILE).await?;
+
+    let mut time_series_collection = Vec::new();
+
+    while let Some(doc) = reader.read_next_time_series().await? {
+        time_series_collection.push(doc);
+    }
+
+    assert_eq!(time_series_collection.len(), 2);
+    assert_eq!(
+        time_series_collection[0].metrics.len(),
+        expected_metrics_count,
+    );
+    for metric in time_series_collection[0].metrics.iter() {
+        assert_eq!(metric.timestamps.len(), expected_sample_count);
+        assert_eq!(metric.values.len(), expected_sample_count);
+    }
+
+    Ok(())
+}

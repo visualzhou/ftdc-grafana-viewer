@@ -1,4 +1,4 @@
-use crate::{FtdcDocument, FtdcError, MetricValue};
+use crate::{FtdcDocument, FtdcDocumentTS, FtdcError, MetricValue};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -173,6 +173,11 @@ impl VictoriaMetricsClient {
     pub async fn import_document(&self, doc: &FtdcDocument) -> VictoriaMetricsResult<()> {
         let lines = self.document_to_line_protocol(doc)?;
         self.send_metrics(lines).await
+    }
+
+    pub async fn import_document_ts(&self, _doc: &FtdcDocumentTS) -> VictoriaMetricsResult<()> {
+        // TODO(XXX): Implement this
+        Ok(())
     }
 
     /// Clean up all metrics
