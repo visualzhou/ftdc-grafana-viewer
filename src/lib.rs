@@ -4,14 +4,14 @@ use std::time::SystemTime;
 use thiserror::Error;
 
 pub mod ftdc_decoder;
-mod reader;
+pub mod reader;
 mod varint;
-mod victoria_metrics;
+pub mod victoria_metrics;
 
 pub use ftdc_decoder::{Chunk, ChunkParser};
 pub use reader::{FtdcReader, ReaderResult};
 pub use varint::{decode_varint, encode_varint, encode_varint_vec, MAX_VARINT_SIZE_64};
-pub use victoria_metrics::VictoriaMetricsClient;
+pub use victoria_metrics::{ImportMetadata, VictoriaMetricsClient};
 
 #[derive(Error, Debug)]
 pub enum FtdcError {
@@ -68,14 +68,11 @@ pub enum MetricType {
 pub struct FtdcDocument {
     pub timestamp: SystemTime,
     pub metrics: Vec<MetricValue>,
-    pub file_path: Option<String>,
-    pub folder_path: Option<String>,
 }
 
 /// Represents a single FTDC document containing multiple metrics, in time series format
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FtdcDocumentTS {
-    pub timestamp: SystemTime,
     pub metrics: Vec<FtdcTimeSeries>,
 }
 

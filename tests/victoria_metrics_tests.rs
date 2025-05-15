@@ -1,4 +1,4 @@
-use ftdc_importer::{FtdcDocument, MetricType, MetricValue, VictoriaMetricsClient};
+use ftdc_importer::{FtdcDocument, ImportMetadata, MetricType, MetricValue, VictoriaMetricsClient};
 use std::time::{Duration, UNIX_EPOCH};
 use tokio;
 use wiremock::{
@@ -10,9 +10,6 @@ use wiremock::{
 async fn test_victoria_metrics_client() {
     // Start a mock server
     let mock_server = MockServer::start().await;
-
-    // Create a Victoria Metrics client pointing to our mock server
-    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000);
 
     // Create a test document with metrics
     let timestamp = UNIX_EPOCH + Duration::from_secs(1615000000);
@@ -32,9 +29,14 @@ async fn test_victoria_metrics_client() {
                 metric_type: MetricType::Int64,
             },
         ],
-        file_path: Some("test/sample.ftdc".to_string()),
-        folder_path: Some("test".to_string()),
     };
+
+    // Create metadata and client
+    let metadata = ImportMetadata::new(
+        Some("test/sample.ftdc".to_string()),
+        Some("test".to_string()),
+    );
+    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000, metadata);
 
     // Setup the mock to expect a POST request to /write
     Mock::given(method("POST"))
@@ -54,9 +56,6 @@ async fn test_victoria_metrics_client_error() {
     // Start a mock server
     let mock_server = MockServer::start().await;
 
-    // Create a Victoria Metrics client pointing to our mock server
-    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000);
-
     // Create a test document with metrics
     let timestamp = UNIX_EPOCH + Duration::from_secs(1615000000);
     let doc = FtdcDocument {
@@ -67,9 +66,14 @@ async fn test_victoria_metrics_client_error() {
             timestamp,
             metric_type: MetricType::Double,
         }],
-        file_path: Some("test/sample.ftdc".to_string()),
-        folder_path: Some("test".to_string()),
     };
+
+    // Create metadata and client
+    let metadata = ImportMetadata::new(
+        Some("test/sample.ftdc".to_string()),
+        Some("test".to_string()),
+    );
+    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000, metadata);
 
     // Setup the mock to return a 500 error
     Mock::given(method("POST"))
@@ -86,9 +90,6 @@ async fn test_victoria_metrics_client_error() {
 
 #[tokio::test]
 async fn test_line_protocol_conversion() {
-    // Create a Victoria Metrics client
-    let client = VictoriaMetricsClient::new("http://localhost:8428".to_string(), 1000);
-
     // Create a test document with metrics
     let timestamp = UNIX_EPOCH + Duration::from_secs(1615000000);
     let doc = FtdcDocument {
@@ -107,9 +108,14 @@ async fn test_line_protocol_conversion() {
                 metric_type: MetricType::Int64,
             },
         ],
-        file_path: Some("test/sample.ftdc".to_string()),
-        folder_path: Some("test".to_string()),
     };
+
+    // Create metadata and client
+    let metadata = ImportMetadata::new(
+        Some("test/sample.ftdc".to_string()),
+        Some("test".to_string()),
+    );
+    let client = VictoriaMetricsClient::new("http://localhost:8428".to_string(), 1000, metadata);
 
     // Convert to line protocol
     let lines = client.document_to_line_protocol(&doc).unwrap();

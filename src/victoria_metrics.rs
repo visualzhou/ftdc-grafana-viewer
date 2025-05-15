@@ -1,24 +1,61 @@
 use crate::{FtdcDocument, FtdcError, MetricValue};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
+
+/// Represents metadata about the import process with pre-escaped paths
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportMetadata {
+    file_path: Option<String>,
+    folder_path: Option<String>,
+}
+
+impl ImportMetadata {
+    /// Create a new import metadata with pre-escaped paths
+    pub fn new(raw_file_path: Option<String>, raw_folder_path: Option<String>) -> Self {
+        let escaped_file_path = raw_file_path.as_ref().map(|path| {
+            path.replace(' ', "\\ ")
+                .replace(',', "\\,")
+                .replace('=', "\\=")
+        });
+
+        let escaped_folder_path = raw_folder_path.as_ref().map(|path| {
+            path.replace(' ', "\\ ")
+                .replace(',', "\\,")
+                .replace('=', "\\=")
+        });
+
+        Self {
+            file_path: escaped_file_path,
+            folder_path: escaped_folder_path,
+        }
+    }
+}
 
 /// Client for sending metrics to Victoria Metrics
 pub struct VictoriaMetricsClient {
     client: Client,
     base_url: String,
     batch_size: usize,
+    metadata: ImportMetadata,
 }
 
 impl VictoriaMetricsClient {
     /// Create a new Victoria Metrics client
-    pub fn new(base_url: String, batch_size: usize) -> Self {
+    pub fn new(base_url: String, batch_size: usize, metadata: ImportMetadata) -> Self {
         Self {
             client: Client::new(),
             base_url,
             batch_size,
+            metadata,
         }
+    }
+
+    /// Set the import metadata
+    pub fn set_metadata(&mut self, metadata: ImportMetadata) {
+        self.metadata = metadata;
     }
 
     /// Convert a SystemTime to nanoseconds since UNIX epoch
@@ -29,33 +66,20 @@ impl VictoriaMetricsClient {
     }
 
     /// Convert a metric value to InfluxDB Line Protocol format
-    fn metric_to_line_protocol(
-        metric: &MetricValue,
-        doc: &FtdcDocument,
-    ) -> VictoriaMetricsResult<String> {
+    fn metric_to_line_protocol(&self, metric: &MetricValue) -> VictoriaMetricsResult<String> {
         // Use the metric's timestamp
         let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
 
         // Build the tags section, including file and folder paths if available
         let mut tags = format!("source=mongodb_ftdc");
 
-        // Add file_path tag if available
-        if let Some(file_path) = &doc.file_path {
-            // Escape special characters in the file path
-            let escaped_path = file_path
-                .replace(' ', "\\ ")
-                .replace(',', "\\,")
-                .replace('=', "\\=");
+        // Add file_path tag if available (using pre-escaped path)
+        if let Some(escaped_path) = &self.metadata.file_path {
             tags.push_str(&format!(",file_path={}", escaped_path));
         }
 
-        // Add folder_path tag if available
-        if let Some(folder_path) = &doc.folder_path {
-            // Escape special characters in the folder path
-            let escaped_path = folder_path
-                .replace(' ', "\\ ")
-                .replace(',', "\\,")
-                .replace('=', "\\=");
+        // Add folder_path tag if available (using pre-escaped path)
+        if let Some(escaped_path) = &self.metadata.folder_path {
             tags.push_str(&format!(",folder_path={}", escaped_path));
         }
 
@@ -76,7 +100,7 @@ impl VictoriaMetricsClient {
         let mut lines = Vec::with_capacity(doc.metrics.len());
 
         for metric in &doc.metrics {
-            let line = Self::metric_to_line_protocol(metric, doc)?;
+            let line = self.metric_to_line_protocol(metric)?;
             lines.push(line);
         }
 
@@ -226,6 +250,11 @@ mod tests {
             (MetricType::Timestamp, 1615000000.0, "timestamp"),
             (MetricType::Decimal128, 42.5, "decimal128"),
         ];
+        // Create metadata
+        let metadata =
+            ImportMetadata::new(Some("test/file.ftdc".to_string()), Some("test".to_string()));
+        let client =
+            VictoriaMetricsClient::new("http://localhost:8428".to_string(), 1000, metadata);
 
         for (metric_type, value, _) in test_cases {
             let metric = MetricValue {
@@ -235,15 +264,7 @@ mod tests {
                 metric_type: metric_type.clone(),
             };
 
-            // Create a test document
-            let doc = FtdcDocument {
-                timestamp,
-                metrics: vec![metric.clone()],
-                file_path: Some("test/file.ftdc".to_string()),
-                folder_path: Some("test".to_string()),
-            };
-
-            let line = VictoriaMetricsClient::metric_to_line_protocol(&metric, &doc).unwrap();
+            let line = client.metric_to_line_protocol(&metric).unwrap();
 
             assert!(line.starts_with(&format!("{},source=mongodb_ftdc", "test_metric")));
 

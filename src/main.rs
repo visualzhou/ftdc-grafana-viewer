@@ -1,5 +1,7 @@
 use anyhow::{Context, Result};
-use ftdc_importer::{FtdcDocument, FtdcReader, VictoriaMetricsClient};
+use ftdc_importer::{
+    reader::FtdcReader, victoria_metrics::VictoriaMetricsClient, FtdcDocument, ImportMetadata,
+};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -107,8 +109,6 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
         let line = client.document_to_line_protocol(&FtdcDocument {
             timestamp: metric.timestamp,
             metrics: vec![(*metric).clone()],
-            file_path: None,
-            folder_path: None,
         })?;
         println!("  Line Protocol: {}", line[0]);
     }
@@ -210,7 +210,8 @@ async fn main() -> Result<()> {
 
     // Clone vm_url before using it
     let vm_url = opt.vm_url.clone();
-    let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size);
+    let metadata = ImportMetadata::new(Some(file_path.clone()), Some(folder_path.clone()));
+    let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size, metadata);
 
     if opt.check {
         // Run in check mode
