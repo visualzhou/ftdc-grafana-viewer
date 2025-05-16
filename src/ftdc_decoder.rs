@@ -1,5 +1,5 @@
 use crate::varint::VarintReader;
-use crate::{FtdcError, FtdcTimeSeries, MetricType, MetricValue};
+use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries, MetricType, MetricValue};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
 use std::io::Read;
@@ -315,7 +315,7 @@ impl ChunkParser {
     }
 
     // Decodes a chunk into a vector of FtdcTimeSeries (a single metric's values over time)
-    pub fn decode_time_series(&self, chunk: &Chunk) -> Result<Vec<FtdcTimeSeries>> {
+    pub fn decode_time_series(&self, chunk: &Chunk) -> Result<FtdcDocumentTS> {
         let mut metrics_time_series: Vec<FtdcTimeSeries> = Vec::new();
         let mut timestamps: Vec<SystemTime> = Vec::new();
         let mut current_timestamp = chunk.timestamp;
@@ -369,6 +369,6 @@ impl ChunkParser {
             ));
         }
 
-        Ok(metrics_time_series)
+        Ok(FtdcDocumentTS { metrics: metrics_time_series })
     }
 }
