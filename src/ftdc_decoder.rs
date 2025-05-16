@@ -159,7 +159,10 @@ impl ChunkParser {
                 return Err(FtdcError::Format(format!("Empty key: prefix={}", prefix)));
             }
 
-            let escaped_key = key.to_string().trim().replace([' ', '.', '-', ','], "_");
+            let escaped_key = key
+                .to_string()
+                .trim()
+                .replace([' ', '.', '-', ',', '(', ')'], "_");
 
             let current_path = if prefix.is_empty() {
                 escaped_key
