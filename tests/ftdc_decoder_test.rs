@@ -59,7 +59,7 @@ async fn test_decode_chunk() -> io::Result<()> {
     let chunk_parser = ChunkParser;
 
     let actual = chunk_parser.decode_chunk_values(&chunk).unwrap();
-    let expected = vec![
+    let expected = [
         ("a", 1.0),
         ("a", 2.0),
         ("a", 3.0),
@@ -104,7 +104,7 @@ async fn test_decode_time_series() -> io::Result<()> {
     let chunk_parser = ChunkParser;
 
     let actual = chunk_parser.decode_time_series(&chunk).unwrap();
-    let expected = vec![("a", vec![1i64, 2, 3, 4]), ("x", vec![2i64, 2, 2, 2])];
+    let expected = [("a", vec![1i64, 2, 3, 4]), ("x", vec![2i64, 2, 2, 2])];
 
     assert_eq!(actual.len(), 2); // 2 metrics(keys)
     for (actual, (name, expected_values)) in actual.iter().zip(expected.iter()) {

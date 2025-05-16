@@ -159,13 +159,7 @@ impl ChunkParser {
                 return Err(FtdcError::Format(format!("Empty key: prefix={}", prefix)));
             }
 
-            let escaped_key = key
-                .to_string()
-                .trim()
-                .replace(' ', "_")
-                .replace('.', "_")
-                .replace('-', "_")
-                .replace(',', "_");
+            let escaped_key = key.to_string().trim().replace([' ', '.', '-', ','], "_");
 
             let current_path = if prefix.is_empty() {
                 escaped_key
@@ -179,7 +173,7 @@ impl ChunkParser {
     }
 
     fn to_bson(&self, value: &RawBsonRef) -> Result<Bson> {
-        Bson::try_from(value.clone())
+        Bson::try_from(*value)
             .map_err(|e| FtdcError::Format(format!("Failed to convert RawBsonRef to Bson: {}", e)))
     }
 
@@ -369,12 +363,12 @@ impl ChunkParser {
             ));
         }
         // Deltas should be exhausted by now.
-        if !reader.read().is_err() {
+        if reader.read().is_ok() {
             return Err(FtdcError::Format(
                 "Not all deltas were consumed".to_string(),
             ));
         }
 
-        return Ok(metrics_time_series);
+        Ok(metrics_time_series)
     }
 }
