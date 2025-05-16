@@ -145,17 +145,17 @@ impl PrometheusRemoteWriteClient {
             return Ok(());
         }
 
-        println!("\nSending metrics to Prometheus remote write endpoint:");
-        println!("URL: {}", self.remote_write_url);
-        println!("Total time series: {}", write_request.timeseries.len());
-        println!(
-            "Total samples: {}",
-            write_request
-                .timeseries
-                .iter()
-                .map(|ts| ts.samples.len())
-                .sum::<usize>()
-        );
+        // print!("Sending metrics to Prometheus remote write endpoint: ");
+        // print!("URL: {} ", self.remote_write_url);
+        // print!("Total time series: {} ", write_request.timeseries.len());
+        // println!(
+        //     "Total samples: {}",
+        //     write_request
+        //         .timeseries
+        //         .iter()
+        //         .map(|ts| ts.samples.len())
+        //         .sum::<usize>()
+        // );
 
         let request = write_request.build_http_request(
             self.client.clone(),
@@ -178,9 +178,6 @@ impl PrometheusRemoteWriteClient {
             );
             return Err(FtdcError::Server { status, message });
         }
-
-        println!("\nRequest successfully sent to Prometheus remote write endpoint");
-        println!("Status: {}", response.status());
 
         Ok(())
     }
