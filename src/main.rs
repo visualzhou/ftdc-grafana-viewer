@@ -249,7 +249,7 @@ async fn run_import_mode_prometheus(
 
         // print progress
         println!(
-            "Sending {} documents ({} metrics) - {} samples",
+            "Sent total {} documents ({} metrics); last chunk had {} samples",
             document_count, metric_count, sample_count
         );
 
