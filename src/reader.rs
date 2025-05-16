@@ -392,7 +392,7 @@ impl FtdcReader {
                 _timestamp: SystemTime,
             ) -> ReaderResult<Self::TransformedType> {
                 let chunk_parser = ChunkParser;
-                let chunk = chunk_parser.parse_chunk_header(&doc)?;
+                let chunk = chunk_parser.parse_chunk_header(doc)?;
                 let time_series = chunk_parser.decode_time_series(&chunk)?;
                 Ok(FtdcDocumentTS {
                     metrics: time_series,
@@ -436,7 +436,7 @@ impl FtdcReader {
                 timestamp: SystemTime,
             ) -> ReaderResult<Self::TransformedType> {
                 let chunk_parser = ChunkParser;
-                let chunk = chunk_parser.parse_chunk_header(&doc)?;
+                let chunk = chunk_parser.parse_chunk_header(doc)?;
                 let metrics = chunk_parser.decode_chunk_values(&chunk)?;
 
                 Ok(FtdcDocument { timestamp, metrics })

@@ -103,9 +103,7 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
     let mut examples_by_type = HashMap::new();
     for metric in metric_examples.values() {
         let type_str = format!("{:?}", metric.metric_type);
-        if !examples_by_type.contains_key(&type_str) {
-            examples_by_type.insert(type_str, metric);
-        }
+        examples_by_type.entry(type_str).or_insert(metric);
     }
 
     for (type_str, metric) in &examples_by_type {

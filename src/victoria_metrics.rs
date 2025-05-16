@@ -1,6 +1,7 @@
 use crate::prometheus::ImportMetadata;
 use crate::{FtdcDocument, FtdcDocumentTS, FtdcError, MetricValue};
 use reqwest::Client;
+use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
@@ -42,7 +43,7 @@ impl VictoriaMetricsClient {
         let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
 
         // Build the tags section, including file and folder paths if available
-        let mut tags = format!("source=mongodb_ftdc");
+        let mut tags = "source=mongodb_ftdc".to_string();
 
         // Add file_path tag if available (using pre-escaped path)
         if let Some(escaped_path) = &self.metadata.file_path {
@@ -103,7 +104,7 @@ impl VictoriaMetricsClient {
 
             let response = self
                 .client
-                .post(&format!("{}/influx/write", self.base_url))
+                .post(format!("{}/influx/write", self.base_url))
                 .header("Content-Type", "text/plain")
                 .header("X-Retention-Period", "365d")
                 .body(payload.clone())
@@ -212,16 +213,16 @@ impl VictoriaMetricsClient {
 }
 
 // Add trait implementation for MetricType to convert to string
-impl ToString for crate::MetricType {
-    fn to_string(&self) -> String {
+impl fmt::Display for crate::MetricType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            crate::MetricType::Double => "Double".to_string(),
-            crate::MetricType::Int32 => "Int32".to_string(),
-            crate::MetricType::Int64 => "Int64".to_string(),
-            crate::MetricType::Boolean => "Boolean".to_string(),
-            crate::MetricType::DateTime => "DateTime".to_string(),
-            crate::MetricType::Timestamp => "Timestamp".to_string(),
-            crate::MetricType::Decimal128 => "Decimal128".to_string(),
+            crate::MetricType::Double => write!(f, "Double"),
+            crate::MetricType::Int32 => write!(f, "Int32"),
+            crate::MetricType::Int64 => write!(f, "Int64"),
+            crate::MetricType::Boolean => write!(f, "Boolean"),
+            crate::MetricType::DateTime => write!(f, "DateTime"),
+            crate::MetricType::Timestamp => write!(f, "Timestamp"),
+            crate::MetricType::Decimal128 => write!(f, "Decimal128"),
         }
     }
 }

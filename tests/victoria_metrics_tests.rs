@@ -1,6 +1,5 @@
 use ftdc_importer::{FtdcDocument, ImportMetadata, MetricType, MetricValue, VictoriaMetricsClient};
 use std::time::{Duration, UNIX_EPOCH};
-use tokio;
 use wiremock::{
     matchers::{method, path},
     Mock, MockServer, ResponseTemplate,
