@@ -323,9 +323,21 @@ impl ChunkParser {
         // First pass: collect all metrics and find the "start" time series
         let mut start_time_series_index = None;
 
-        // For each metric, construct its values vector.
         for (i, key) in chunk.keys.iter().enumerate() {
-            let mut current_value = key.2.as_i64().unwrap_or_default();
+            // Treat datetime as milliseconds since epoch
+            let mut current_value = match &key.1 {
+                MetricType::DateTime => match &key.2 {
+                    Bson::DateTime(dt) => dt.timestamp_millis(),
+                    _ => {
+                        return Err(FtdcError::Format(format!(
+                            "Metric '{}' has DateTime type but value is {:?}",
+                            key.0, key.2
+                        )))
+                    }
+                },
+                _ => key.2.as_i64().unwrap_or_default(),
+            };
+
             let mut values: Vec<i64> = Vec::new();
             // The initial value is the reference value.
             values.push(current_value);
