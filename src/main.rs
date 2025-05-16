@@ -41,6 +41,10 @@ struct Opt {
     /// Verify metrics in Victoria Metrics after import
     #[structopt(long)]
     verify: bool,
+
+    /// Extra label to add to all metrics (format: name=value)
+    #[structopt(long, number_of_values = 1, multiple = true)]
+    extra_label: Vec<String>,
 }
 
 /// Run the check mode to analyze FTDC file contents without sending to Victoria Metrics
@@ -288,7 +292,26 @@ async fn main() -> Result<()> {
 
     // Clone vm_url before using it
     let vm_url = opt.vm_url.clone();
-    let metadata = ImportMetadata::new(Some(file_path.clone()), Some(folder_path.clone()));
+    let mut metadata = ImportMetadata::new(Some(file_path.clone()), Some(folder_path.clone()));
+
+    // Parse the extra label strings and add them to metadata
+    for label_str in &opt.extra_label {
+        if let Some(pos) = label_str.find('=') {
+            let name = label_str[..pos].trim().to_string();
+            let value = label_str[pos + 1..].trim().to_string();
+            if !name.is_empty() {
+                if opt.verbose {
+                    println!("Adding extra label: {}={}", name, value);
+                }
+                metadata.add_extra_label(name, value);
+            } else {
+                println!("Warning: Invalid label format (empty name): {}", label_str);
+            }
+        } else {
+            println!("Warning: Invalid label format (missing '='): {}", label_str);
+        }
+    }
+
     let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size, metadata.clone());
 
     if opt.check {
