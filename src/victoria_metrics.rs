@@ -156,75 +156,11 @@ impl VictoriaMetricsClient {
 
     pub async fn import_document_ts(
         &self,
-        doc: &FtdcDocumentTS,
-        verbose: bool,
+        _doc: &FtdcDocumentTS,
+        _verbose: bool,
     ) -> VictoriaMetricsResult<()> {
-        if doc.metrics.is_empty() || doc.timestamps.is_empty() {
-            if verbose {
-                println!("Empty document or timestamps, skipping");
-            }
-            return Ok(());
-        }
-
-        // Pre-allocate for all metrics and timestamps
-        let total_samples = doc.metrics.len() * doc.timestamps.len();
-        let mut lines = Vec::with_capacity(total_samples);
-
-        if verbose {
-            println!(
-                "Converting {} time series with {} samples each to line protocol",
-                doc.metrics.len(),
-                doc.timestamps.len()
-            );
-        }
-
-        for metric in &doc.metrics {
-            let metric_name = &metric.name;
-            if metric.values.len() != doc.timestamps.len() {
-                return Err(FtdcError::Format(format!(
-                    "Values and timestamps have different lengths for metric {}: values={}, timestamps={}",
-                    metric_name, metric.values.len(), doc.timestamps.len()
-                )));
-            }
-
-            // Use the metric's name but with timestamps from the document
-            for (idx, (value, timestamp)) in
-                metric.values.iter().zip(doc.timestamps.iter()).enumerate()
-            {
-                // Build base tags string
-                let mut tags = "source=mongodb_ftdc".to_string();
-
-                // Add file_path tag if available
-                if let Some(file_path) = &self.metadata.file_path {
-                    tags.push_str(&format!(",file_path={}", file_path));
-                }
-
-                // Add folder_path tag if available
-                if let Some(folder_path) = &self.metadata.folder_path {
-                    tags.push_str(&format!(",folder_path={}", folder_path));
-                }
-
-                // Add index tag to uniquely identify each sample
-                tags.push_str(&format!(",sample_idx={}", idx));
-
-                // Add extra labels if any
-                for (name, value) in &self.metadata.extra_labels {
-                    tags.push_str(&format!(",{}={}", name, value));
-                }
-
-                // Convert the timestamp to nanoseconds
-                let timestamp_ns = Self::system_time_to_nanos(*timestamp)?;
-
-                // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
-                let line: String =
-                    format!("{},{} value={} {}", metric_name, tags, *value, timestamp_ns);
-
-                lines.push(line);
-            }
-        }
-
-        // Send the lines to Victoria Metrics
-        self.send_metrics(lines, verbose).await
+        // TODO(XXX): Implement this
+        Ok(())
     }
 
     /// Clean up all metrics
