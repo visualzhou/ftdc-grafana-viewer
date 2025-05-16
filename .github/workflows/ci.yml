@@ -3,28 +3,44 @@ name: ci
 on: [push, pull_request]
 
 jobs:
+  # Code quality checks only need to run once
   check:
+    name: Lints & Formatting
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master      # sets up the toolchain
-        with: { toolchain: stable }
-      - uses: Swatinem/rust-cache@v2             # sccache-backed dependency cache
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test --workspace --locked 
-      
-  apple-silicon:
-    name: Build on Apple Silicon
-    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          target: aarch64-apple-darwin
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Build for Apple Silicon
-        run: cargo build --release --target aarch64-apple-darwin
-      - name: Test on Apple Silicon
-        run: cargo test --workspace --target aarch64-apple-darwin 
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --all-targets -- -D warnings
+
+  # Build and test across multiple platforms
+  build:
+    name: Build → ${{ matrix.name }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux (x86_64)
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - name: macOS (Apple Silicon)
+            os: macos-14
+            target: aarch64-apple-darwin
+    
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Test
+        run: cargo test --workspace --target ${{ matrix.target }} 
