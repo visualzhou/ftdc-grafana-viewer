@@ -161,6 +161,29 @@ async fn test_decode_time_series() -> io::Result<()> {
         );
     }
 
+    // Verify timestamps increase monotonically
+    for i in 1..actual.timestamps.len() {
+        assert!(
+            actual.timestamps[i] > actual.timestamps[i - 1],
+            "Timestamps should be strictly increasing"
+        );
+    }
+
+    // Print timestamp difference information
+    if actual.timestamps.len() >= 2 {
+        let first = actual.timestamps[0];
+        let last = actual.timestamps[actual.timestamps.len() - 1];
+        let diff = last.duration_since(first).unwrap();
+
+        println!("Timestamp range: {:?} to {:?}", first, last);
+        println!("Total duration: {:?}", diff);
+        println!(
+            "Average increment: {:?}",
+            diff / (actual.timestamps.len() as u32 - 1)
+        );
+        assert!(last >= first);
+    }
+
     Ok(())
 }
 
@@ -181,18 +204,39 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
     assert!(!chunk.deltas.is_empty());
 
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
+
+    // Find the "start" metric in the keys
+    let start_metric = chunk.keys.iter().find(|(name, _, _)| name == "start");
+    assert!(
+        start_metric.is_some(),
+        "The 'start' metric should exist in the keys"
+    );
+
     assert_eq!(actual.metrics.len(), 3479);
     assert_eq!(actual.timestamps.len(), 300); // 300 = reference + 299 deltas
+
+    // Verify the "start" time series exists in decoded metrics
+    let start_series = actual.metrics.iter().find(|m| m.name == "start");
+    assert!(
+        start_series.is_some(),
+        "The 'start' time series should exist in the decoded metrics"
+    );
+
     for time_series in actual.metrics {
         assert_eq!(time_series.values.len(), 300);
     }
 
     // Verify timestamps increase monotonically
+    // Check timestamps are monotonically increasing
+    let start_timestamp = start_metric
+        .unwrap()
+        .2
+        .as_datetime()
+        .unwrap()
+        .to_system_time();
     for i in 1..actual.timestamps.len() {
-        assert!(
-            actual.timestamps[i] > actual.timestamps[i - 1],
-            "Timestamps should be strictly increasing"
-        );
+        assert!(actual.timestamps[i] >= start_timestamp);
+        assert!(actual.timestamps[i] > actual.timestamps[i - 1]);
     }
 
     Ok(())
