@@ -2,7 +2,7 @@
 name = "ftdc-importer"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Siyuan Zhou <siyuan.zhou@mongodb.com>"]
 description = "MongoDB FTDC to Victoria Metrics importer"
 
 [dependencies]
