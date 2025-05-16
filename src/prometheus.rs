@@ -73,7 +73,7 @@ impl PrometheusRemoteWriteClient {
 
         for metric in &doc.metrics {
             // Skip empty series
-            if metric.values.is_empty() || metric.timestamps.is_empty() {
+            if metric.values.is_empty() || doc.timestamps.is_empty() {
                 continue;
             }
 
@@ -119,13 +119,13 @@ impl PrometheusRemoteWriteClient {
             let mut samples = Vec::with_capacity(metric.values.len());
 
             // Use zip to iterate through values and timestamps together
-            if metric.values.len() != metric.timestamps.len() {
+            if metric.values.len() != doc.timestamps.len() {
                 return Err(FtdcError::Format(
                     "Values and timestamps have different lengths".to_string(),
                 ));
             }
 
-            for (value, timestamp) in metric.values.iter().zip(metric.timestamps.iter()) {
+            for (value, timestamp) in metric.values.iter().zip(doc.timestamps.iter()) {
                 let timestamp_millis = Self::system_time_to_millis(timestamp);
                 samples.push(Sample {
                     value: *value as f64,

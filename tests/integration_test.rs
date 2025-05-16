@@ -86,8 +86,11 @@ async fn test_real_ftdc_file_time_series() -> ReaderResult<()> {
         time_series_collection[0].metrics.len(),
         expected_metrics_count,
     );
+    assert_eq!(
+        time_series_collection[0].timestamps.len(),
+        expected_sample_count
+    );
     for metric in time_series_collection[0].metrics.iter() {
-        assert_eq!(metric.timestamps.len(), expected_sample_count);
         assert_eq!(metric.values.len(), expected_sample_count);
     }
 

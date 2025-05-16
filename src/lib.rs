@@ -76,6 +76,7 @@ pub struct FtdcDocument {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FtdcDocumentTS {
     pub metrics: Vec<FtdcTimeSeries>,
+    pub timestamps: Vec<SystemTime>,
 }
 
 /// Represents a single FTDC time series
@@ -83,5 +84,4 @@ pub struct FtdcDocumentTS {
 pub struct FtdcTimeSeries {
     pub name: String,
     pub values: Vec<i64>,
-    pub timestamps: Vec<SystemTime>,
 }

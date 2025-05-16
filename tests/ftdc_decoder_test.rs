@@ -111,6 +111,7 @@ async fn test_decode_time_series() -> io::Result<()> {
         assert_eq!(actual.name, *name);
         assert_eq!(actual.values, *expected_values);
     }
+    assert_eq!(actual.timestamps.len(), 4); // 4 timestamps: reference + 3 deltas
     Ok(())
 }
 
@@ -132,6 +133,7 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
 
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
     assert_eq!(actual.metrics.len(), 3479);
+    assert_eq!(actual.timestamps.len(), 300); // 300 = reference + 299 deltas
     for time_series in actual.metrics {
         assert_eq!(time_series.values.len(), 300);
     }

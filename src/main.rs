@@ -215,10 +215,10 @@ async fn run_import_mode_ts(
         // Print time series info only in verbose mode
         if verbose {
             // if doc.metrics is not empty
-            if !doc.metrics.is_empty() && doc.metrics[0].timestamps.is_empty() {
+            if !doc.metrics.is_empty() && !doc.timestamps.is_empty() {
                 println!(
                     "Importing time series starting at {:?} with {} metrics",
-                    doc.metrics[0].timestamps[0], doc_metric_count
+                    doc.timestamps[0], doc_metric_count
                 );
             } else {
                 println!("Found empty time series or empty timestamps");
