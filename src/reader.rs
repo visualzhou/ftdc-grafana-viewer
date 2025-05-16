@@ -394,9 +394,7 @@ impl FtdcReader {
                 let chunk_parser = ChunkParser;
                 let chunk = chunk_parser.parse_chunk_header(doc)?;
                 let time_series = chunk_parser.decode_time_series(&chunk)?;
-                Ok(FtdcDocumentTS {
-                    metrics: time_series,
-                })
+                Ok(time_series)
             }
 
             fn handle_metadata_delta(

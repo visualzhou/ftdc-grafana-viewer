@@ -106,8 +106,8 @@ async fn test_decode_time_series() -> io::Result<()> {
     let actual = chunk_parser.decode_time_series(&chunk).unwrap();
     let expected = [("a", vec![1i64, 2, 3, 4]), ("x", vec![2i64, 2, 2, 2])];
 
-    assert_eq!(actual.len(), 2); // 2 metrics(keys)
-    for (actual, (name, expected_values)) in actual.iter().zip(expected.iter()) {
+    assert_eq!(actual.metrics.len(), 2); // 2 metrics(keys)
+    for (actual, (name, expected_values)) in actual.metrics.iter().zip(expected.iter()) {
         assert_eq!(actual.name, *name);
         assert_eq!(actual.values, *expected_values);
     }
@@ -131,8 +131,8 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
     assert!(!chunk.deltas.is_empty());
 
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
-    assert_eq!(actual.len(), 3479);
-    for time_series in actual {
+    assert_eq!(actual.metrics.len(), 3479);
+    for time_series in actual.metrics {
         assert_eq!(time_series.values.len(), 300);
     }
     Ok(())
