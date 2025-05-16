@@ -17,8 +17,9 @@ jobs:
           # native builds (no cross required)
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
+          # musl failed due to openssl-sys
+          # - os: ubuntu-latest
+          #   target: x86_64-unknown-linux-musl
           - os: macos-13
             target: x86_64-apple-darwin
           - os: macos-14
