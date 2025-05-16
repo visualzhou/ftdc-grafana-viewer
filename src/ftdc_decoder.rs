@@ -220,7 +220,7 @@ impl ChunkParser {
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "t"),
                     MetricType::Timestamp,
-                    self.to_bson(value)?, // todo: fix timestamp
+                    self.to_bson(value)?,
                 )); // time component
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "i"),
@@ -317,26 +317,24 @@ impl ChunkParser {
     // Decodes a chunk into a vector of FtdcTimeSeries (a single metric's values over time)
     pub fn decode_time_series(&self, chunk: &Chunk) -> Result<FtdcDocumentTS> {
         let mut metrics_time_series: Vec<FtdcTimeSeries> = Vec::new();
-        let mut timestamps: Vec<SystemTime> = Vec::new();
-        let mut current_timestamp = chunk.timestamp;
-        // Construct the timestamp vector; we will only store this once in the FtdcDocumentTS.
-        timestamps.push(current_timestamp);
-        for _ in 0..chunk.n_deltas {
-            current_timestamp = current_timestamp
-                .checked_add(Duration::from_secs(1))
-                .unwrap();
-            timestamps.push(current_timestamp);
-        }
-
         let mut reader = VarintReader::new(&chunk.deltas);
         let mut zero_count = 0u64;
 
+        // First pass: collect all metrics and find the "start" time series
+        let mut start_time_series_index = None;
+
         // For each metric, construct its values vector.
-        for key in chunk.keys.iter() {
+        for (i, key) in chunk.keys.iter().enumerate() {
             let mut current_value = key.2.as_i64().unwrap_or_default();
             let mut values: Vec<i64> = Vec::new();
             // The initial value is the reference value.
             values.push(current_value);
+
+            // Check if this is the "start" time series
+            if key.0 == "start" {
+                start_time_series_index = Some(i);
+            }
+
             for _ in 0..chunk.n_deltas {
                 if zero_count == 0 {
                     let delta = reader.read()?;
@@ -350,23 +348,40 @@ impl ChunkParser {
                 }
                 values.push(current_value);
             }
+
             metrics_time_series.push(FtdcTimeSeries {
                 name: key.0.clone(),
                 values,
             });
         }
+
         // Check zero count is exhausted
         if zero_count != 0 {
             return Err(FtdcError::Format(
                 "Zero count not exhausted at end of parsing".to_string(),
             ));
         }
+
         // Deltas should be exhausted by now.
         if reader.read().is_ok() {
             return Err(FtdcError::Format(
                 "Not all deltas were consumed".to_string(),
             ));
         }
+
+        // Get the index of the "start" time series - it should always exist
+        let start_idx = start_time_series_index
+            .ok_or_else(|| FtdcError::Format("Missing required 'start' time series".to_string()))?;
+
+        // Convert "start" time series values to SystemTime timestamps
+        let timestamps = metrics_time_series[start_idx]
+            .values
+            .iter()
+            .map(|&ts_millis| {
+                // Convert milliseconds to SystemTime
+                std::time::UNIX_EPOCH + std::time::Duration::from_millis(ts_millis as u64)
+            })
+            .collect();
 
         Ok(FtdcDocumentTS {
             metrics: metrics_time_series,
