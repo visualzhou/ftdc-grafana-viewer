@@ -53,11 +53,10 @@ async fn test_parse_metric_document() -> io::Result<()> {
             println!("Compressed chunk size: {} bytes", compressed_data.len());
 
             // Try to decompress using zlib
-            match flate2::read::ZlibDecoder::new(compressed_data)
-                .bytes()
-                .collect::<Result<Vec<_>, _>>()
-            {
-                Ok(decompressed) => {
+            let mut decoder = flate2::read::ZlibDecoder::new(compressed_data);
+            let mut decompressed = Vec::new();
+            match decoder.read_to_end(&mut decompressed) {
+                Ok(_) => {
                     println!(
                         "Successfully decompressed with zlib: {} bytes",
                         decompressed.len()
