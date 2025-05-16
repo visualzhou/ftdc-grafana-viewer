@@ -55,6 +55,11 @@ impl VictoriaMetricsClient {
             tags.push_str(&format!(",folder_path={}", escaped_path));
         }
 
+        // Add extra labels if any
+        for (name, value) in &self.metadata.extra_labels {
+            tags.push_str(&format!(",{}={}", name, value));
+        }
+
         // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
         let line: String = format!(
             "{},{} value={} {}",
@@ -248,8 +253,11 @@ mod tests {
             (MetricType::Decimal128, 42.5, "decimal128"),
         ];
         // Create metadata
-        let metadata =
+        let mut metadata =
             ImportMetadata::new(Some("test/file.ftdc".to_string()), Some("test".to_string()));
+        // Add a test label
+        metadata.add_extra_label("test_label".to_string(), "test_value".to_string());
+
         let client =
             VictoriaMetricsClient::new("http://localhost:8428".to_string(), 1000, metadata);
 
@@ -268,6 +276,8 @@ mod tests {
             // Check for file path and folder path tags
             assert!(line.contains("file_path=test/file.ftdc"));
             assert!(line.contains("folder_path=test"));
+            // Check for the extra label
+            assert!(line.contains("test_label=test_value"));
         }
     }
 

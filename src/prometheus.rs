@@ -9,6 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub struct ImportMetadata {
     pub file_path: Option<String>,
     pub folder_path: Option<String>,
+    pub extra_labels: Vec<(String, String)>,
 }
 
 impl ImportMetadata {
@@ -29,7 +30,13 @@ impl ImportMetadata {
         Self {
             file_path: escaped_file_path,
             folder_path: escaped_folder_path,
+            extra_labels: Vec::new(),
         }
+    }
+
+    /// Add an extra label to the metadata
+    pub fn add_extra_label(&mut self, name: String, value: String) {
+        self.extra_labels.push((name, value));
     }
 }
 
@@ -97,6 +104,14 @@ impl PrometheusRemoteWriteClient {
                 labels.push(Label {
                     name: "folder_path".to_string(),
                     value: folder_path.clone(),
+                });
+            }
+
+            // Add extra labels if any
+            for (name, value) in &self.metadata.extra_labels {
+                labels.push(Label {
+                    name: name.clone(),
+                    value: value.clone(),
                 });
             }
 
