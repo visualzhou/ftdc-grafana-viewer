@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    tags: ['v*.*.*']           # any semantic-version tag
+    tags: ["v*.*.*"] # any semantic-version tag
 
 env:
   CARGO_TERM_COLOR: always
@@ -61,10 +61,11 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    permissions: { contents: write }
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: "**/ftdc-importer-*" 
+          files: "**/ftdc-importer-*"
