@@ -31,7 +31,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@master
-        with: { toolchain: stable, target: ${{ matrix.target }} }
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
 
