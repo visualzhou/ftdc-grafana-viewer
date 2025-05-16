@@ -271,28 +271,14 @@ async fn main() -> Result<()> {
     }
 
     let start = Instant::now();
-    let file_path = opt.input.to_string_lossy().to_string();
-    let folder_path = opt
-        .input
-        .parent()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| ".".to_string());
-
-    if opt.verbose {
-        println!("File path: {}", file_path);
-        println!("Folder path: {}", folder_path);
-    }
 
     let mut reader = FtdcReader::new(&opt.input)
         .await
         .context("Failed to create FTDC reader")?;
 
-    // Set file and folder paths for FTDC documents
-    reader.set_paths(file_path.clone(), folder_path.clone());
-
     // Clone vm_url before using it
     let vm_url = opt.vm_url.clone();
-    let mut metadata = ImportMetadata::new(Some(file_path.clone()), Some(folder_path.clone()));
+    let mut metadata = ImportMetadata::new(None, None);
 
     // Parse the extra label strings and add them to metadata
     for label_str in &opt.extra_label {
