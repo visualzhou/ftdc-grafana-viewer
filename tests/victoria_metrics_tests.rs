@@ -1,7 +1,4 @@
-use ftdc_importer::{
-    FtdcDocument, FtdcDocumentTS, FtdcTimeSeries, ImportMetadata, MetricType, MetricValue,
-    VictoriaMetricsClient,
-};
+use ftdc_importer::{FtdcDocument, ImportMetadata, MetricType, MetricValue, VictoriaMetricsClient};
 use std::time::{Duration, UNIX_EPOCH};
 use wiremock::{
     matchers::{method, path},
@@ -135,54 +132,4 @@ async fn test_line_protocol_conversion() {
 
     assert!(lines[1].contains("test metric with spaces"));
     assert!(lines[1].contains("value=100"));
-}
-
-#[tokio::test]
-#[ignore] // Skipping test as import_document_ts is not implemented yet
-async fn test_time_series_line_protocol_conversion() {
-    // Create a test FtdcDocumentTS with metrics and timestamps
-    let base_timestamp = UNIX_EPOCH + Duration::from_secs(1615000000);
-
-    // Create a series of timestamps, 5 samples at 1-second intervals
-    let timestamps = vec![
-        base_timestamp,
-        base_timestamp + Duration::from_secs(1),
-        base_timestamp + Duration::from_secs(2),
-        base_timestamp + Duration::from_secs(3),
-        base_timestamp + Duration::from_secs(4),
-    ];
-
-    // Create two time series with 5 values each
-    let doc = FtdcDocumentTS {
-        metrics: vec![
-            FtdcTimeSeries {
-                name: "time_series_1".to_string(),
-                values: vec![10, 20, 30, 40, 50],
-            },
-            FtdcTimeSeries {
-                name: "time_series_2".to_string(),
-                values: vec![100, 200, 300, 400, 500],
-            },
-        ],
-        timestamps: timestamps.clone(),
-    };
-
-    // Start a mock server
-    let mock_server = MockServer::start().await;
-
-    // Create metadata and client
-    let metadata = ImportMetadata::new(
-        Some("test/sample.ftdc".to_string()),
-        Some("test".to_string()),
-    );
-    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000, metadata);
-
-    // Since import_document_ts is just a stub, we're not testing its functionality
-    // Just ensure it doesn't panic
-    let result = client.import_document_ts(&doc, false).await;
-    assert!(
-        result.is_ok(),
-        "Failed to call import_document_ts: {:?}",
-        result
-    );
 }
