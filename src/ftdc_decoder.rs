@@ -319,7 +319,7 @@ impl ChunkParser {
         let mut metrics_time_series: Vec<FtdcTimeSeries> = Vec::new();
         let mut timestamps: Vec<SystemTime> = Vec::new();
         let mut current_timestamp = chunk.timestamp;
-        // Construct the timestamp vector; we will clone a copy of this into each FtdcTimeSeries.
+        // Construct the timestamp vector; we will only store this once in the FtdcDocumentTS.
         timestamps.push(current_timestamp);
         for _ in 0..chunk.n_deltas {
             current_timestamp = current_timestamp
@@ -353,7 +353,6 @@ impl ChunkParser {
             metrics_time_series.push(FtdcTimeSeries {
                 name: key.0.clone(),
                 values,
-                timestamps: timestamps.clone(),
             });
         }
         // Check zero count is exhausted
@@ -369,6 +368,9 @@ impl ChunkParser {
             ));
         }
 
-        Ok(FtdcDocumentTS { metrics: metrics_time_series })
+        Ok(FtdcDocumentTS {
+            metrics: metrics_time_series,
+            timestamps,
+        })
     }
 }
