@@ -13,3 +13,18 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test --workspace --locked 
+      
+  apple-silicon:
+    name: Build on Apple Silicon
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: Build for Apple Silicon
+        run: cargo build --release --target aarch64-apple-darwin
+      - name: Test on Apple Silicon
+        run: cargo test --workspace --target aarch64-apple-darwin 
