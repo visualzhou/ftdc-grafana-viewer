@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use ftdc_importer::{
     prometheus::PrometheusRemoteWriteClient, reader::FtdcReader,
-    victoria_metrics::VictoriaMetricsClient, FtdcDocument, ImportMetadata,
+    victoria_metrics::VictoriaMetricsClient, ImportMetadata,
 };
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -21,10 +21,6 @@ struct Opt {
     /// Victoria Metrics URL (e.g., http://localhost:8428)
     #[structopt(long, default_value = "http://localhost:8428")]
     vm_url: String,
-
-    /// Batch size for sending metrics
-    #[structopt(long, default_value = "1000")]
-    batch_size: usize,
 
     /// Verbose output
     #[structopt(short, long)]
@@ -48,7 +44,7 @@ struct Opt {
 }
 
 /// Run the check mode to analyze FTDC file contents without sending to Victoria Metrics
-async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient) -> Result<()> {
+async fn run_check_mode(reader: &mut FtdcReader) -> Result<()> {
     println!("CHECK MODE: Analyzing all metrics in the file");
 
     let mut document_count = 0;
@@ -115,13 +111,6 @@ async fn run_check_mode(reader: &mut FtdcReader, client: &VictoriaMetricsClient)
         println!("  Name: {}", metric.name);
         println!("  Value: {}", metric.value);
         println!("  Timestamp: {:?}", metric.timestamp);
-
-        // Show line protocol format
-        let line = client.document_to_line_protocol(&FtdcDocument {
-            timestamp: metric.timestamp,
-            metrics: vec![(*metric).clone()],
-        })?;
-        println!("  Line Protocol: {}", line[0]);
     }
 
     // Print all unique metric names
@@ -228,7 +217,6 @@ async fn main() -> Result<()> {
     if opt.verbose {
         println!("Importing FTDC file: {:?}", opt.input);
         println!("Victoria Metrics URL: {}", opt.vm_url);
-        println!("Batch size: {}", opt.batch_size);
     }
 
     let start = Instant::now();
@@ -259,11 +247,11 @@ async fn main() -> Result<()> {
         }
     }
 
-    let client = VictoriaMetricsClient::new(opt.vm_url, opt.batch_size, metadata.clone());
+    let client = VictoriaMetricsClient::new(opt.vm_url, metadata.clone());
 
     if opt.check {
         // Run in check mode without sending metrics
-        return run_check_mode(&mut reader, &client).await;
+        return run_check_mode(&mut reader).await;
     }
 
     // Clean up old metrics only if clean flag is specified
