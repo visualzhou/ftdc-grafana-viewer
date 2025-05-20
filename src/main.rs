@@ -34,10 +34,6 @@ struct Opt {
     #[structopt(long)]
     clean: bool,
 
-    /// Verify metrics in Victoria Metrics after import
-    #[structopt(long)]
-    verify: bool,
-
     /// Extra label to add to all metrics (format: name=value)
     #[structopt(long, number_of_values = 1, multiple = true)]
     extra_label: Vec<String>,
@@ -281,35 +277,6 @@ async fn main() -> Result<()> {
         "Average processing speed: {:.2} documents/sec",
         document_count as f64 / elapsed.as_secs_f64()
     );
-
-    // Verify metrics in Victoria Metrics only if verify flag is specified
-    if opt.verify {
-        println!("\nVerifying metrics in Victoria Metrics...");
-        let verify_url = format!("{}/api/v1/query?query=mongodb_ftdc_value", vm_url);
-
-        if opt.verbose {
-            println!("Query URL: {}", verify_url);
-        }
-
-        let response = reqwest::get(&verify_url)
-            .await
-            .context("Failed to query Victoria Metrics")?;
-
-        if response.status().is_success() {
-            let body = response.text().await?;
-
-            if opt.verbose {
-                println!("Victoria Metrics response: {}", body);
-            } else {
-                println!("Verification successful");
-            }
-        } else {
-            println!(
-                "Warning: Failed to verify metrics in Victoria Metrics. Status: {}",
-                response.status()
-            );
-        }
-    }
 
     Ok(())
 }
