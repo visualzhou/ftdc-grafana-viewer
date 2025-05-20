@@ -129,7 +129,8 @@ impl FtdcReader {
     }
 
     /// Extracts metrics from a BSON document
-    /// Only useful for reference documents.
+    /// Only useful for reference documents of type 0 metadata chunks.
+    /// It's not used for type 1 metrics chunks.
     fn extract_metrics(
         &self,
         doc: &Document,

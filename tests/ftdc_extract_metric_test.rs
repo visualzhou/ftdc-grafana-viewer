@@ -4,7 +4,7 @@ use std::io::{self, Read, Write};
 use std::path::Path;
 
 //
-// This file prepares the example BSON metrics for the tests.
+// This file prepares the example BSON metrics for other tests.
 //
 /// Reads a single BSON document from a file
 fn read_bson_document(file: &mut File) -> io::Result<Option<(Document, Vec<u8>)>> {
