@@ -1,5 +1,5 @@
 use crate::prometheus::ImportMetadata;
-use crate::{FtdcDocument, FtdcDocumentTS, FtdcError, MetricValue};
+use crate::{FtdcDocument, FtdcError, MetricValue};
 use reqwest::Client;
 use std::fmt;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -152,15 +152,6 @@ impl VictoriaMetricsClient {
     ) -> VictoriaMetricsResult<()> {
         let lines = self.document_to_line_protocol(doc)?;
         self.send_metrics(lines, verbose).await
-    }
-
-    pub async fn import_document_ts(
-        &self,
-        _doc: &FtdcDocumentTS,
-        _verbose: bool,
-    ) -> VictoriaMetricsResult<()> {
-        // TODO(XXX): Implement this
-        Ok(())
     }
 
     /// Clean up all metrics
