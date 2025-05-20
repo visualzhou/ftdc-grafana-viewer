@@ -35,7 +35,7 @@ async fn test_victoria_metrics_client() {
         Some("test/sample.ftdc".to_string()),
         Some("test".to_string()),
     );
-    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000, metadata);
+    let client = VictoriaMetricsClient::new(mock_server.uri(), metadata);
 
     // Setup the mock to expect a POST request to /write
     Mock::given(method("POST"))
@@ -72,7 +72,7 @@ async fn test_victoria_metrics_client_error() {
         Some("test/sample.ftdc".to_string()),
         Some("test".to_string()),
     );
-    let client = VictoriaMetricsClient::new(mock_server.uri(), 1000, metadata);
+    let client = VictoriaMetricsClient::new(mock_server.uri(), metadata);
 
     // Setup the mock to return a 500 error
     Mock::given(method("POST"))
@@ -114,7 +114,7 @@ async fn test_line_protocol_conversion() {
         Some("test/sample.ftdc".to_string()),
         Some("test".to_string()),
     );
-    let client = VictoriaMetricsClient::new("http://localhost:8428".to_string(), 1000, metadata);
+    let client = VictoriaMetricsClient::new("http://localhost:8428".to_string(), metadata);
 
     // Convert to line protocol
     let lines = client.document_to_line_protocol(&doc).unwrap();

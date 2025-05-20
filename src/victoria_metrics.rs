@@ -6,21 +6,27 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
 
+/// Default batch size for sending metrics to Victoria Metrics
+const DEFAULT_BATCH_SIZE: usize = 3000;
+
+///
+/// This file includes the victoria metrics client. It can send metrics in two modes:
+/// 1) line format in plain text, deprecated.
+/// 2) prometheus format in protobuf, used by main.rs.
+///
 /// Client for sending metrics to Victoria Metrics
 pub struct VictoriaMetricsClient {
     client: Client,
     base_url: String,
-    batch_size: usize,
     metadata: ImportMetadata,
 }
 
 impl VictoriaMetricsClient {
     /// Create a new Victoria Metrics client
-    pub fn new(base_url: String, batch_size: usize, metadata: ImportMetadata) -> Self {
+    pub fn new(base_url: String, metadata: ImportMetadata) -> Self {
         Self {
             client: Client::new(),
             base_url,
-            batch_size,
             metadata,
         }
     }
@@ -90,8 +96,8 @@ impl VictoriaMetricsClient {
         lines: Vec<String>,
         verbose: bool,
     ) -> VictoriaMetricsResult<()> {
-        // Split lines into batches of batch_size
-        for chunk in lines.chunks(self.batch_size) {
+        // Split lines into batches of DEFAULT_BATCH_SIZE
+        for chunk in lines.chunks(DEFAULT_BATCH_SIZE) {
             let payload = chunk.join("\n");
 
             // Debug logging only in verbose mode
@@ -249,8 +255,7 @@ mod tests {
         // Add a test label
         metadata.add_extra_label("test_label".to_string(), "test_value".to_string());
 
-        let client =
-            VictoriaMetricsClient::new("http://localhost:8428".to_string(), 1000, metadata);
+        let client = VictoriaMetricsClient::new("http://localhost:8428".to_string(), metadata);
 
         for (metric_type, value, _) in test_cases {
             let metric = MetricValue {
