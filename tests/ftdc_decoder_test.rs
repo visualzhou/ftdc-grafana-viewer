@@ -241,3 +241,107 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_bson_to_i64() {
+    use bson::Bson;
+    use bson::RawDocumentBuf;
+    use ftdc_importer::{Chunk, ChunkParser, MetricType};
+    use std::time::SystemTime;
+
+    // Test DateTime
+    let dt = bson::DateTime::now();
+    let expected_dt = dt.timestamp_millis();
+    let bson_dt = Bson::DateTime(dt);
+
+    // Create proper deltas - Keep it simple following test_decode_time_series pattern
+    let lre_deltas = vec![1, 1, 1, 1, 1, 1, 1, 1]; // Just 1 delta of 1 for each metric
+    let mut varint_deltas = Vec::new();
+    for delta in &lre_deltas {
+        ftdc_importer::encode_varint_vec(*delta, &mut varint_deltas).unwrap();
+    }
+
+    let chunk = Chunk {
+        reference_doc: RawDocumentBuf::from_document(&doc! {}).unwrap(),
+        n_keys: 8,   // Eight different metrics with the added 'start' metric
+        n_deltas: 1, // Just one delta for simplicity
+        deltas: varint_deltas,
+        keys: vec![
+            // start is required for decode_time_series
+            ("start".to_string(), MetricType::Int64, Bson::Int64(1000)),
+            (
+                "datetime".to_string(),
+                MetricType::DateTime,
+                bson_dt.clone(),
+            ),
+            ("int32".to_string(), MetricType::Int32, Bson::Int32(42)),
+            ("int64".to_string(), MetricType::Int64, Bson::Int64(9999)),
+            ("double".to_string(), MetricType::Double, Bson::Double(3.14)),
+            (
+                "boolean_true".to_string(),
+                MetricType::Boolean,
+                Bson::Boolean(true),
+            ),
+            (
+                "boolean_false".to_string(),
+                MetricType::Boolean,
+                Bson::Boolean(false),
+            ),
+            (
+                "string".to_string(),
+                MetricType::Int64,
+                Bson::String("test".to_string()),
+            ),
+        ],
+        timestamp: SystemTime::now(),
+    };
+
+    // Use decode_time_series instead of decode_chunk_values
+    let chunk_parser = ChunkParser;
+    let result = chunk_parser.decode_time_series(&chunk).unwrap();
+
+    // Verify all metrics have the right number of values (initial + 1 delta)
+    assert_eq!(result.metrics.len(), 8); // 8 metrics including start
+    for metric in &result.metrics {
+        assert_eq!(metric.values.len(), 2); // Initial value + 1 delta
+    }
+
+    // Find each time series and check the base value
+    let dt_series = result
+        .metrics
+        .iter()
+        .find(|m| m.name == "datetime")
+        .unwrap();
+    let int32_series = result.metrics.iter().find(|m| m.name == "int32").unwrap();
+    let int64_series = result.metrics.iter().find(|m| m.name == "int64").unwrap();
+    let double_series = result.metrics.iter().find(|m| m.name == "double").unwrap();
+    let bool_true_series = result
+        .metrics
+        .iter()
+        .find(|m| m.name == "boolean_true")
+        .unwrap();
+    let bool_false_series = result
+        .metrics
+        .iter()
+        .find(|m| m.name == "boolean_false")
+        .unwrap();
+    let string_series = result.metrics.iter().find(|m| m.name == "string").unwrap();
+
+    // Verify initial values are converted correctly from BSON to i64
+    assert_eq!(dt_series.values[0], expected_dt);
+    assert_eq!(int32_series.values[0], 42);
+    assert_eq!(int64_series.values[0], 9999);
+    assert_eq!(double_series.values[0], 3); // Double value 3.14 gets truncated to 3 when converted to i64
+    assert_eq!(bool_true_series.values[0], 1);
+    assert_eq!(bool_false_series.values[0], 0);
+    assert_eq!(string_series.values[0], 0); // Other types should default to 0
+
+    // Also verify delta is applied correctly (should be +1 to each value)
+    assert_eq!(dt_series.values[1], expected_dt + 1);
+    assert_eq!(int32_series.values[1], 43);
+    assert_eq!(int64_series.values[1], 10000);
+    assert_eq!(double_series.values[1], 4);
+    assert_eq!(bool_true_series.values[1], 2);
+    assert_eq!(bool_false_series.values[1], 1);
+    assert_eq!(string_series.values[1], 1);
+}
