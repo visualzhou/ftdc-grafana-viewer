@@ -3,7 +3,7 @@ use ftdc_importer::{
     prometheus::PrometheusRemoteWriteClient, reader::FtdcReader,
     victoria_metrics::VictoriaMetricsClient, ImportMetadata,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -45,32 +45,21 @@ async fn run_check_mode(reader: &mut FtdcReader) -> Result<()> {
 
     let mut document_count = 0;
     let mut total_metric_count = 0;
-    let mut unique_metric_names = HashSet::new();
-    let mut metric_type_counts = HashMap::new();
     let mut metric_examples = HashMap::new();
 
-    // Process all documents
+    // Process all documents using time series format
     while let Some(doc) = reader
-        .read_next()
+        .read_next_time_series()
         .await
-        .context("Failed to read FTDC document")?
+        .context("Failed to read FTDC document in time series format")?
     {
         document_count += 1;
         total_metric_count += doc.metrics.len();
 
         // Collect statistics
         for metric in &doc.metrics {
-            unique_metric_names.insert(metric.name.clone());
-
-            // Count metric types
-            *metric_type_counts
-                .entry(format!("{:?}", metric.metric_type))
-                .or_insert(0) += 1;
-
-            // Store an example of each unique metric name (first occurrence)
-            if !metric_examples.contains_key(&metric.name) {
-                metric_examples.insert(metric.name.clone(), metric.clone());
-            }
+            // Store metric example (metrics are guaranteed to be unique)
+            metric_examples.insert(metric.name.clone(), metric.clone());
         }
 
         // Print progress every 10 documents
@@ -83,38 +72,32 @@ async fn run_check_mode(reader: &mut FtdcReader) -> Result<()> {
     }
 
     // Print statistics
-    println!("\n=== FTDC File Analysis ===");
+    println!("\n=== FTDC File Analysis (Time Series Format) ===");
     println!("Total documents: {}", document_count);
     println!("Total metrics: {}", total_metric_count);
-    println!("Unique metric names: {}", unique_metric_names.len());
+    println!("Unique metric names: {}", metric_examples.len());
 
-    println!("\nMetric types distribution:");
-    for (metric_type, count) in &metric_type_counts {
-        let percentage = (*count as f64 / total_metric_count as f64) * 100.0;
-        println!("  {}: {} ({:.2}%)", metric_type, count, percentage);
+    // Print examples of each metric
+    println!("\nExample metrics:");
+    let mut sorted_examples: Vec<_> = metric_examples.values().collect();
+    sorted_examples.sort_by(|a, b| a.name.cmp(&b.name));
+
+    for (i, metric) in sorted_examples.iter().enumerate() {
+        if i < 10 {
+            // Limit to first 10 examples to avoid verbose output
+            println!("\nMetric example {}:", i + 1);
+            println!("  Name: {}", metric.name);
+            println!("  Sample count: {}", metric.values.len());
+            if !metric.values.is_empty() {
+                // FtdcTimeSeries appears to only have name and values fields
+                println!("  First value: {:?}", metric.values.first());
+            }
+        }
     }
 
-    // Print examples of each metric type
-    println!("\nExample metrics (one per type):");
-    let mut examples_by_type = HashMap::new();
-    for metric in metric_examples.values() {
-        let type_str = format!("{:?}", metric.metric_type);
-        examples_by_type.entry(type_str).or_insert(metric);
-    }
-
-    for (type_str, metric) in &examples_by_type {
-        println!("\n{} example:", type_str);
-        println!("  Name: {}", metric.name);
-        println!("  Value: {}", metric.value);
-        println!("  Timestamp: {:?}", metric.timestamp);
-    }
-
-    // Print all unique metric names
-    println!(
-        "\nAll unique metric names ({} total):",
-        unique_metric_names.len()
-    );
-    let mut sorted_metrics: Vec<_> = unique_metric_names.iter().collect();
+    // Print all metric names
+    println!("\nAll metric names ({} total):", metric_examples.len());
+    let mut sorted_metrics: Vec<_> = metric_examples.keys().collect();
     sorted_metrics.sort(); // Sort alphabetically for easier reading
 
     for (i, name) in sorted_metrics.iter().enumerate() {
