@@ -24,6 +24,25 @@ pub struct Chunk {
 pub struct ChunkParser;
 
 impl ChunkParser {
+    // Helper function to convert Bson values to i64 more accurately
+    fn bson_to_i64(value: &Bson) -> i64 {
+        match value {
+            Bson::DateTime(dt) => dt.timestamp_millis(),
+            Bson::Int32(v) => *v as i64,
+            Bson::Int64(v) => *v,
+            Bson::Double(v) => *v as i64,
+            Bson::Boolean(v) => {
+                if *v {
+                    1
+                } else {
+                    0
+                }
+            }
+            // For other types where direct casting doesn't make sense, return 0
+            _ => 0,
+        }
+    }
+
     pub fn parse_chunk_header(&self, doc: &Document) -> Result<Chunk> {
         // metric =
         //     _id : DateTime
@@ -263,7 +282,7 @@ impl ChunkParser {
 
         for key in chunk.keys.iter() {
             let mut current_timestamp = chunk.timestamp;
-            let mut prev_value = key.2.as_i64().unwrap_or_default();
+            let mut prev_value = Self::bson_to_i64(&key.2);
 
             // First, insert the first sample from the reference doc
             // 'key' is tuple of (string name, metric type, bson value)
@@ -327,19 +346,8 @@ impl ChunkParser {
         let mut start_time_series_index = None;
 
         for (i, key) in chunk.keys.iter().enumerate() {
-            // Treat datetime as milliseconds since epoch
-            let mut current_value = match &key.1 {
-                MetricType::DateTime => match &key.2 {
-                    Bson::DateTime(dt) => dt.timestamp_millis(),
-                    _ => {
-                        return Err(FtdcError::Format(format!(
-                            "Metric '{}' has DateTime type but value is {:?}",
-                            key.0, key.2
-                        )))
-                    }
-                },
-                _ => key.2.as_i64().unwrap_or_default(),
-            };
+            // Convert value to i64 using our helper function (handles all types including DateTime)
+            let mut current_value = Self::bson_to_i64(&key.2);
 
             let mut values: Vec<i64> = Vec::new();
             // The initial value is the reference value.
