@@ -31,13 +31,7 @@ impl ChunkParser {
             Bson::Int32(v) => *v as i64,
             Bson::Int64(v) => *v,
             Bson::Double(v) => *v as i64,
-            Bson::Boolean(v) => {
-                if *v {
-                    1
-                } else {
-                    0
-                }
-            }
+            Bson::Boolean(v) => *v as i64,
             // For other types where direct casting doesn't make sense, return 0
             _ => 0,
         }
