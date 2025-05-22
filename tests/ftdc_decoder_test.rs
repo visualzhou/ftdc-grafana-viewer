@@ -276,7 +276,7 @@ fn test_bson_to_i64() {
             ),
             ("int32".to_string(), MetricType::Int32, Bson::Int32(42)),
             ("int64".to_string(), MetricType::Int64, Bson::Int64(9999)),
-            ("double".to_string(), MetricType::Double, Bson::Double(3.14)),
+            ("double".to_string(), MetricType::Double, Bson::Double(3.8)),
             (
                 "boolean_true".to_string(),
                 MetricType::Boolean,
@@ -331,7 +331,7 @@ fn test_bson_to_i64() {
     assert_eq!(dt_series.values[0], expected_dt);
     assert_eq!(int32_series.values[0], 42);
     assert_eq!(int64_series.values[0], 9999);
-    assert_eq!(double_series.values[0], 3); // Double value 3.14 gets truncated to 3 when converted to i64
+    assert_eq!(double_series.values[0], 3); // Double value 3.8 gets truncated to 3 when converted to i64
     assert_eq!(bool_true_series.values[0], 1);
     assert_eq!(bool_false_series.values[0], 0);
     assert_eq!(string_series.values[0], 0); // Other types should default to 0
