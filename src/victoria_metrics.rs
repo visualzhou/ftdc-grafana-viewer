@@ -5,13 +5,9 @@ use std::fmt;
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
 
-/// Default batch size for sending metrics to Victoria Metrics
-const DEFAULT_BATCH_SIZE: usize = 3000;
-
 ///
-/// This file includes the victoria metrics client. It can send metrics in two modes:
-/// 1) line format in plain text, deprecated.
-/// 2) prometheus format in protobuf, used by main.rs.
+/// This file includes the victoria metrics client.
+/// It provides functionality for cleaning up metrics in Victoria Metrics.
 ///
 /// Client for sending metrics to Victoria Metrics
 pub struct VictoriaMetricsClient {
@@ -34,63 +30,6 @@ impl VictoriaMetricsClient {
     /// Set the import metadata
     pub fn set_metadata(&mut self, metadata: ImportMetadata) {
         self.metadata = metadata;
-    }
-
-    /// Send metrics to Victoria Metrics
-    pub async fn send_metrics(
-        &self,
-        lines: Vec<String>,
-        verbose: bool,
-    ) -> VictoriaMetricsResult<()> {
-        // Split lines into batches of DEFAULT_BATCH_SIZE
-        for chunk in lines.chunks(DEFAULT_BATCH_SIZE) {
-            let payload = chunk.join("\n");
-
-            // Debug logging only in verbose mode
-            if verbose {
-                println!("\nSending metrics to Victoria Metrics:");
-                println!("URL: {}/influx/write", self.base_url);
-                println!("Total metrics in this batch: {}", chunk.len());
-
-                println!("First few metrics in line protocol format:");
-                for line in chunk.iter().take(3) {
-                    println!("  {line}");
-                }
-                println!("...");
-            }
-
-            let response = self
-                .client
-                .post(format!("{}/influx/write", self.base_url))
-                .header("Content-Type", "text/plain")
-                .header("X-Retention-Period", "365d")
-                .body(payload.clone())
-                .send()
-                .await?;
-
-            if !response.status().is_success() {
-                let status = response.status();
-                let message = response
-                    .text()
-                    .await
-                    .unwrap_or_else(|_| "Unknown error".to_string());
-                println!("Error response from Victoria Metrics: {status} - {message}");
-                return Err(FtdcError::Server { status, message });
-            }
-
-            // Print response details only in verbose mode
-            if verbose {
-                println!("Response details:");
-                println!("Status: {}", response.status());
-                let response_text = response.text().await?;
-                println!("Body: {response_text}");
-            } else {
-                // Still need to read the response body to avoid keeping the connection open
-                let _ = response.text().await?;
-            }
-        }
-
-        Ok(())
     }
 
     /// Clean up all metrics
