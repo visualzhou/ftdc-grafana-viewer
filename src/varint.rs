@@ -71,14 +71,6 @@ pub fn encode_varint_vec(value: u64, output: &mut Vec<u8>) -> io::Result<usize> 
     Ok(output.len() - initial_len)
 }
 
-/// Similar to encode_varint_vec but uses FtdcError instead of io::Error
-#[allow(dead_code)]
-pub fn encode_varint_ftdc(value: u64, output: &mut Vec<u8>) -> Result<(), FtdcError> {
-    encode_varint_vec(value, output)
-        .map(|_| ())
-        .map_err(|e| FtdcError::Compression(format!("Varint encoding error: {}", e)))
-}
-
 /// Decodes a varint from the provided input buffer.
 ///
 /// Returns a tuple containing the decoded value and the number of bytes read.
