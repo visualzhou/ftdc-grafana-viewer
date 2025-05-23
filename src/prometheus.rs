@@ -1,4 +1,4 @@
-use crate::{FtdcDocumentTS, FtdcError};
+use crate::{FtdcDocumentTS, FtdcError, Result};
 use prometheus_reqwest_remote_write::{Label, Sample, TimeSeries, WriteRequest};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -16,8 +16,6 @@ impl ImportMetadata {
         self.extra_labels.push((name, value));
     }
 }
-
-pub type PrometheusResult<T> = Result<T, FtdcError>;
 
 /// Client for sending metrics to Prometheus using the remote write protocol
 pub struct PrometheusRemoteWriteClient {
@@ -44,7 +42,7 @@ impl PrometheusRemoteWriteClient {
     }
 
     /// Import an FTDC document time series into Prometheus
-    pub async fn import_document_ts(&self, doc: &FtdcDocumentTS) -> PrometheusResult<()> {
+    pub async fn import_document_ts(&self, doc: &FtdcDocumentTS) -> Result<()> {
         // Create the Prometheus remote write request
         let mut timeseries = Vec::with_capacity(doc.metrics.len());
 

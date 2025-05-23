@@ -1,11 +1,9 @@
 use crate::varint::VarintReader;
-use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries};
+use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries, Result};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
 use std::io::Read;
 use std::time::SystemTime;
-
-pub type Result<T> = std::result::Result<T, FtdcError>;
 
 pub struct Chunk {
     // Original

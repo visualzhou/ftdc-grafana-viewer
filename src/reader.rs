@@ -6,7 +6,7 @@ use tokio::{
     io::{AsyncReadExt, BufReader},
 };
 
-use crate::{ChunkParser, FtdcDocumentTS, FtdcError};
+use crate::{ChunkParser, FtdcDocumentTS, FtdcError, Result};
 
 const BUFFER_SIZE: usize = 64 * 1024; // 64KB buffer
 
@@ -20,7 +20,7 @@ enum FtdcDocType {
 impl TryFrom<i32> for FtdcDocType {
     type Error = FtdcError;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         match value {
             0 => Ok(FtdcDocType::Metadata),
             1 => Ok(FtdcDocType::Metric),
@@ -31,8 +31,6 @@ impl TryFrom<i32> for FtdcDocType {
         }
     }
 }
-
-pub type ReaderResult<T> = std::result::Result<T, FtdcError>;
 
 /// Handler trait for processing FTDC documents
 pub trait MetricsDocHandler {
@@ -45,21 +43,18 @@ pub trait MetricsDocHandler {
         reader: &FtdcReader,
         ref_doc: &Document,
         timestamp: SystemTime,
-    ) -> ReaderResult<Option<Self::TransformedType>>;
+    ) -> Result<Option<Self::TransformedType>>;
 
     /// Process a metric document
-    fn handle_metric(
-        &self,
-        doc: &Document,
-        timestamp: SystemTime,
-    ) -> ReaderResult<Self::TransformedType>;
+    fn handle_metric(&self, doc: &Document, timestamp: SystemTime)
+        -> Result<Self::TransformedType>;
 
     /// Process a metadata delta document
     fn handle_metadata_delta(
         &self,
         doc: &Document,
         timestamp: SystemTime,
-    ) -> ReaderResult<Option<Self::TransformedType>>;
+    ) -> Result<Option<Self::TransformedType>>;
 }
 
 /// Reader for FTDC files that supports async streaming
@@ -69,7 +64,7 @@ pub struct FtdcReader {
 
 impl FtdcReader {
     /// Creates a new FTDC reader from a file path
-    pub async fn new<P: AsRef<Path>>(path: P) -> ReaderResult<Self> {
+    pub async fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
         let file = File::open(path).await?;
         let reader = BufReader::with_capacity(BUFFER_SIZE, file);
 
@@ -77,7 +72,7 @@ impl FtdcReader {
     }
 
     /// Reads the next BSON document from the file
-    async fn read_bson_document(&mut self) -> ReaderResult<Option<Document>> {
+    async fn read_bson_document(&mut self) -> Result<Option<Document>> {
         // Read document size (4 bytes)
         let mut size_buf = [0u8; 4];
         match self.reader.read_exact(&mut size_buf).await {
@@ -114,7 +109,7 @@ impl FtdcReader {
     }
 
     /// Iterates through FTDC documents and processes them with the given handler
-    pub async fn iterate_next<H, T>(&mut self, handler: &H) -> ReaderResult<Option<T>>
+    pub async fn iterate_next<H, T>(&mut self, handler: &H) -> Result<Option<T>>
     where
         H: MetricsDocHandler<TransformedType = T>,
     {
@@ -168,7 +163,7 @@ impl FtdcReader {
         }
     }
 
-    pub async fn read_next_time_series(&mut self) -> ReaderResult<Option<FtdcDocumentTS>> {
+    pub async fn read_next_time_series(&mut self) -> Result<Option<FtdcDocumentTS>> {
         struct TimeSeriesDocHandler {}
 
         impl MetricsDocHandler for TimeSeriesDocHandler {
@@ -179,7 +174,7 @@ impl FtdcReader {
                 _reader: &FtdcReader,
                 _ref_doc: &Document,
                 _timestamp: SystemTime,
-            ) -> ReaderResult<Option<Self::TransformedType>> {
+            ) -> Result<Option<Self::TransformedType>> {
                 // Skipping metadata for time series processing
                 Ok(None)
             }
@@ -188,7 +183,7 @@ impl FtdcReader {
                 &self,
                 doc: &Document,
                 _timestamp: SystemTime,
-            ) -> ReaderResult<Self::TransformedType> {
+            ) -> Result<Self::TransformedType> {
                 let chunk_parser = ChunkParser;
                 let chunk = chunk_parser.parse_chunk_header(doc)?;
                 let time_series = chunk_parser.decode_time_series(&chunk)?;
@@ -199,7 +194,7 @@ impl FtdcReader {
                 &self,
                 _doc: &Document,
                 _timestamp: SystemTime,
-            ) -> ReaderResult<Option<Self::TransformedType>> {
+            ) -> Result<Option<Self::TransformedType>> {
                 Ok(None)
             }
         }

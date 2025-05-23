@@ -1,10 +1,10 @@
-use ftdc_importer::{FtdcReader, ImportMetadata, PrometheusRemoteWriteClient, ReaderResult};
+use ftdc_importer::{FtdcReader, ImportMetadata, PrometheusRemoteWriteClient, Result};
 use std::path::Path;
 
 const EXAMPLE_FTDC_FILE: &str = "tests/fixtures/ftdc-metrics-example";
 
 #[tokio::test]
-async fn test_real_ftdc_file_time_series() -> ReaderResult<()> {
+async fn test_real_ftdc_file_time_series() -> Result<()> {
     assert!(Path::new(EXAMPLE_FTDC_FILE).exists());
 
     let expected_metrics_count = 3479;
@@ -38,7 +38,7 @@ async fn test_real_ftdc_file_time_series() -> ReaderResult<()> {
 // command to run:
 // cargo test -- --ignored
 #[ignore]
-async fn test_prometheus_remote_write_client() -> ReaderResult<()> {
+async fn test_prometheus_remote_write_client() -> Result<()> {
     let prometheus_url = "http://localhost:8428/api/v1/write".to_string();
 
     println!("Using Prometheus server at: {}", prometheus_url);
