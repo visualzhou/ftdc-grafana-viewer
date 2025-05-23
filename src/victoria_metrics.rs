@@ -16,10 +16,10 @@ pub struct VictoriaMetricsClient {
 impl VictoriaMetricsClient {
     /// Create a new Victoria Metrics client
     #[must_use]
-    pub fn new(base_url: String, metadata: ImportMetadata) -> Self {
+    pub fn new(base_url: &str, metadata: ImportMetadata) -> Self {
         Self {
             client: Client::new(),
-            base_url,
+            base_url: base_url.to_string(),
             metadata,
         }
     }
