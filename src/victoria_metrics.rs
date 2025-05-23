@@ -1,8 +1,7 @@
 use crate::prometheus::ImportMetadata;
-use crate::{FtdcDocument, FtdcError, MetricValue};
+use crate::FtdcError;
 use reqwest::Client;
 use std::fmt;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
 
@@ -34,60 +33,6 @@ impl VictoriaMetricsClient {
     /// Set the import metadata
     pub fn set_metadata(&mut self, metadata: ImportMetadata) {
         self.metadata = metadata;
-    }
-
-    /// Convert a SystemTime to nanoseconds since UNIX epoch
-    fn system_time_to_nanos(time: SystemTime) -> VictoriaMetricsResult<u128> {
-        time.duration_since(UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .map_err(|e| FtdcError::Format(format!("Invalid timestamp: {}", e)))
-    }
-
-    /// Convert a metric value to InfluxDB Line Protocol format
-    fn metric_to_line_protocol(&self, metric: &MetricValue) -> VictoriaMetricsResult<String> {
-        // Use the metric's timestamp
-        let timestamp_ns = Self::system_time_to_nanos(metric.timestamp)?;
-
-        // Build the tags section, including file and folder paths if available
-        let mut tags = "source=mongodb_ftdc".to_string();
-
-        // Add file_path tag if available (using pre-escaped path)
-        if let Some(escaped_path) = &self.metadata.file_path {
-            tags.push_str(&format!(",file_path={}", escaped_path));
-        }
-
-        // Add folder_path tag if available (using pre-escaped path)
-        if let Some(escaped_path) = &self.metadata.folder_path {
-            tags.push_str(&format!(",folder_path={}", escaped_path));
-        }
-
-        // Add extra labels if any
-        for (name, value) in &self.metadata.extra_labels {
-            tags.push_str(&format!(",{}={}", name, value));
-        }
-
-        // Format: measurement,tag1=value1,tag2=value2 field1=value1,field2=value2 timestamp
-        let line: String = format!(
-            "{},{} value={} {}",
-            metric.name, tags, metric.value, timestamp_ns
-        );
-
-        Ok(line)
-    }
-
-    /// Convert an FTDC document to InfluxDB Line Protocol format
-    pub fn document_to_line_protocol(
-        &self,
-        doc: &FtdcDocument,
-    ) -> VictoriaMetricsResult<Vec<String>> {
-        let mut lines = Vec::with_capacity(doc.metrics.len());
-
-        for metric in &doc.metrics {
-            let line = self.metric_to_line_protocol(metric)?;
-            lines.push(line);
-        }
-
-        Ok(lines)
     }
 
     /// Send metrics to Victoria Metrics
@@ -148,16 +93,6 @@ impl VictoriaMetricsClient {
         }
 
         Ok(())
-    }
-
-    /// Import a document into Victoria Metrics
-    pub async fn import_document(
-        &self,
-        doc: &FtdcDocument,
-        verbose: bool,
-    ) -> VictoriaMetricsResult<()> {
-        let lines = self.document_to_line_protocol(doc)?;
-        self.send_metrics(lines, verbose).await
     }
 
     /// Clean up all metrics
@@ -226,61 +161,5 @@ impl fmt::Display for crate::MetricType {
             crate::MetricType::Timestamp => write!(f, "Timestamp"),
             crate::MetricType::Decimal128 => write!(f, "Decimal128"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{MetricType, MetricValue};
-    use std::time::{Duration, SystemTime};
-
-    #[test]
-    fn test_metric_to_line_protocol() {
-        let timestamp = SystemTime::UNIX_EPOCH + Duration::from_secs(1615000000);
-
-        // Test each metric type
-        let test_cases = vec![
-            (MetricType::Double, 42.5, "double"),
-            (MetricType::Int32, 42.0, "int32"),
-            (MetricType::Int64, 42.0, "int64"),
-            (MetricType::Boolean, 1.0, "boolean"),
-            (MetricType::DateTime, 1615000000000.0, "datetime"),
-            (MetricType::Timestamp, 1615000000.0, "timestamp"),
-            (MetricType::Decimal128, 42.5, "decimal128"),
-        ];
-        // Create metadata
-        let mut metadata =
-            ImportMetadata::new(Some("test/file.ftdc".to_string()), Some("test".to_string()));
-        // Add a test label
-        metadata.add_extra_label("test_label".to_string(), "test_value".to_string());
-
-        let client = VictoriaMetricsClient::new("http://localhost:8428".to_string(), metadata);
-
-        for (metric_type, value, _) in test_cases {
-            let metric = MetricValue {
-                name: "test_metric".to_string(),
-                value,
-                timestamp,
-                metric_type: metric_type.clone(),
-            };
-
-            let line = client.metric_to_line_protocol(&metric).unwrap();
-
-            assert!(line.starts_with(&format!("{},source=mongodb_ftdc", "test_metric")));
-
-            // Check for file path and folder path tags
-            assert!(line.contains("file_path=test/file.ftdc"));
-            assert!(line.contains("folder_path=test"));
-            // Check for the extra label
-            assert!(line.contains("test_label=test_value"));
-        }
-    }
-
-    #[test]
-    fn test_system_time_to_nanos() {
-        let timestamp = SystemTime::UNIX_EPOCH + Duration::from_secs(1);
-        let nanos = VictoriaMetricsClient::system_time_to_nanos(timestamp).unwrap();
-        assert_eq!(nanos, 1_000_000_000);
     }
 }

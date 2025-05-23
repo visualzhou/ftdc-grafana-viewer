@@ -65,13 +65,6 @@ pub enum MetricType {
     Decimal128,
 }
 
-/// Represents a single FTDC document containing multiple metrics
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FtdcDocument {
-    pub timestamp: SystemTime,
-    pub metrics: Vec<MetricValue>,
-}
-
 /// Represents a single FTDC document containing multiple metrics, in time series format
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FtdcDocumentTS {
