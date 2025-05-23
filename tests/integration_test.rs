@@ -43,13 +43,8 @@ async fn test_prometheus_remote_write_client() -> ReaderResult<()> {
 
     println!("Using Prometheus server at: {}", prometheus_url);
 
-    let client = PrometheusRemoteWriteClient::new(
-        prometheus_url.clone(),
-        ImportMetadata::new(
-            Some("tests/fixtures/ftdc-metrics-example".to_string()),
-            Some("tests/fixtures".to_string()),
-        ),
-    );
+    let client =
+        PrometheusRemoteWriteClient::new(prometheus_url.clone(), ImportMetadata::default());
 
     // Create a reader for the example FTDC file
     assert!(Path::new(EXAMPLE_FTDC_FILE).exists());

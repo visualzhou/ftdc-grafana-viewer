@@ -5,35 +5,12 @@ use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Re-using the ImportMetadata from victoria_metrics.rs
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ImportMetadata {
-    pub file_path: Option<String>,
-    pub folder_path: Option<String>,
     pub extra_labels: Vec<(String, String)>,
 }
 
 impl ImportMetadata {
-    /// Create a new import metadata with pre-escaped paths
-    pub fn new(raw_file_path: Option<String>, raw_folder_path: Option<String>) -> Self {
-        let escaped_file_path = raw_file_path.as_ref().map(|path| {
-            path.replace(' ', "\\ ")
-                .replace(',', "\\,")
-                .replace('=', "\\=")
-        });
-
-        let escaped_folder_path = raw_folder_path.as_ref().map(|path| {
-            path.replace(' ', "\\ ")
-                .replace(',', "\\,")
-                .replace('=', "\\=")
-        });
-
-        Self {
-            file_path: escaped_file_path,
-            folder_path: escaped_folder_path,
-            extra_labels: Vec::new(),
-        }
-    }
-
     /// Add an extra label to the metadata
     pub fn add_extra_label(&mut self, name: String, value: String) {
         self.extra_labels.push((name, value));
@@ -90,22 +67,6 @@ impl PrometheusRemoteWriteClient {
                     value: "mongodb_ftdc".to_string(),
                 },
             ];
-
-            // Add file_path label if available
-            if let Some(file_path) = &self.metadata.file_path {
-                labels.push(Label {
-                    name: "file_path".to_string(),
-                    value: file_path.clone(),
-                });
-            }
-
-            // Add folder_path label if available
-            if let Some(folder_path) = &self.metadata.folder_path {
-                labels.push(Label {
-                    name: "folder_path".to_string(),
-                    value: folder_path.clone(),
-                });
-            }
 
             // Add extra labels if any
             for (name, value) in &self.metadata.extra_labels {

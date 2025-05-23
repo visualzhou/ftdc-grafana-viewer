@@ -148,7 +148,7 @@ async fn main() -> Result<()> {
 
     // Clone vm_url before using it
     let vm_url = opt.vm_url.clone();
-    let mut metadata = ImportMetadata::new(None, None);
+    let mut metadata = ImportMetadata::default();
 
     // Parse the extra label strings and add them to metadata
     for label_str in &opt.extra_label {
