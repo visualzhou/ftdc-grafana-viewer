@@ -1,8 +1,6 @@
 use crate::prometheus::ImportMetadata;
-use crate::FtdcError;
+use crate::{FtdcError, Result};
 use reqwest::Client;
-
-pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
 
 ///
 /// This file includes the victoria metrics client.
@@ -34,7 +32,7 @@ impl VictoriaMetricsClient {
     /// Clean up all metrics
     ///
     /// This function deletes all metrics with `source=mongodb_ftdc`.
-    pub async fn cleanup_old_metrics(&self, verbose: bool) -> VictoriaMetricsResult<()> {
+    pub async fn cleanup_old_metrics(&self, verbose: bool) -> Result<()> {
         if verbose {
             println!("Cleaning up all mongodb_ftdc metrics...");
         }
