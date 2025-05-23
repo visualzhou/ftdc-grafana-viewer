@@ -5,7 +5,7 @@ use ftdc_importer::{
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -105,60 +105,6 @@ async fn run_check_mode(reader: &mut FtdcReader) -> Result<()> {
     }
 
     Ok(())
-}
-
-/// Import FTDC metrics to Victoria Metrics
-#[allow(dead_code)]
-async fn run_import_mode(
-    reader: &mut FtdcReader,
-    client: &VictoriaMetricsClient,
-    verbose: bool,
-) -> Result<(usize, usize)> {
-    let mut document_count = 0;
-    let mut metric_count = 0;
-    let mut last_progress = Instant::now();
-    let mut total_metrics_processed = 0;
-
-    // Process all documents
-    while let Some(doc) = reader
-        .read_next()
-        .await
-        .context("Failed to read FTDC document")?
-    {
-        document_count += 1;
-        let doc_metric_count = doc.metrics.len();
-        metric_count += doc_metric_count;
-        total_metrics_processed += doc_metric_count;
-
-        // Print progress every 100 documents or every 5 seconds
-        if verbose
-            && (document_count % 100 == 0 || last_progress.elapsed() >= Duration::from_secs(5))
-        {
-            let elapsed = last_progress.elapsed();
-            let metrics_per_second = total_metrics_processed as f64 / elapsed.as_secs_f64();
-
-            println!(
-                "Processed {} documents ({} metrics) - {:.2} metrics/sec",
-                document_count, metric_count, metrics_per_second
-            );
-
-            last_progress = Instant::now();
-            total_metrics_processed = 0;
-        }
-
-        // Convert and import the document
-        client
-            .import_document(&doc, verbose)
-            .await
-            .with_context(|| {
-                format!(
-                    "Failed to import document {} with {} metrics",
-                    document_count, doc_metric_count
-                )
-            })?;
-    }
-
-    Ok((document_count, metric_count))
 }
 
 /// Import FTDC metrics to a Prometheus compatible endpoint via remote write API
