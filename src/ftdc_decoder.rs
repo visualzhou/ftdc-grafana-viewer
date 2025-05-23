@@ -1,9 +1,9 @@
 use crate::varint::VarintReader;
-use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries, MetricValue};
+use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
 use std::io::Read;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
 
@@ -252,68 +252,6 @@ impl ChunkParser {
                 "Unhandled BSON type for key: {path} {value:?}"
             ))),
         }
-    }
-
-    // Decodes a chunk into a vector of "metric values" (timestamp / value pairs)
-    // Each sub-vector contains the metrics for a single sample.
-    pub fn decode_chunk_values(&self, chunk: &Chunk) -> Result<Vec<MetricValue>> {
-        let mut reader = VarintReader::new(&chunk.deltas);
-        let mut final_values: Vec<MetricValue> = Vec::new();
-        // For each metric vector
-        let mut zero_count = 0u64;
-
-        for key in &chunk.keys {
-            let mut current_timestamp = chunk.timestamp;
-            let mut prev_value = Self::bson_to_i64(&key.1);
-
-            // First, insert the first sample from the reference doc
-            // 'key' is tuple of (string name, bson value)
-            let metric_value = MetricValue {
-                name: key.0.clone(),
-                timestamp: current_timestamp,
-                value: prev_value as f64,
-            };
-            final_values.push(metric_value);
-
-            let mut expanded_values: Vec<u64> = Vec::new();
-            let mut value = 0u64;
-
-            // Now generate the rest of the samples for this metric.
-            // First, create a vector of deltas.
-            for _ in 0..chunk.n_deltas {
-                // RLE for zeros.
-                if zero_count == 0 {
-                    value = reader.read()?;
-                    if value == 0 {
-                        // Found a zero, next value is the count
-                        zero_count = reader.read()?;
-                    }
-                } else {
-                    // We're filling in zero's.
-                    zero_count -= 1;
-                    assert_eq!(value, 0);
-                }
-
-                expanded_values.push(value);
-            }
-
-            // Now apply those deltas and generate all the MetricValues.
-            for delta in expanded_values {
-                let value = prev_value.checked_add(delta as i64);
-                current_timestamp = current_timestamp
-                    .checked_add(Duration::from_secs(1))
-                    .unwrap();
-                let metric_value = MetricValue {
-                    name: key.0.clone(),
-                    timestamp: current_timestamp,
-                    value: value.unwrap_or_default() as f64,
-                };
-                final_values.push(metric_value);
-                prev_value = value.unwrap_or_default();
-            }
-        } // for each metric
-
-        Ok(final_values)
     }
 
     // Decodes a chunk into a vector of FtdcTimeSeries (a single metric's values over time)
