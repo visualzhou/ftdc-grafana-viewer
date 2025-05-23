@@ -1,7 +1,7 @@
 use bson::{doc, Bson};
 use bson::{Document, RawDocumentBuf};
+use ftdc_importer::Chunk;
 use ftdc_importer::ChunkParser;
-use ftdc_importer::{Chunk, MetricType};
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
@@ -49,8 +49,8 @@ async fn test_decode_chunk() -> io::Result<()> {
         n_deltas: 3,                                                     // 3 samples per metric
         deltas: varint_deltas, // The varint-encoded deltas
         keys: vec![
-            ("a".to_string(), MetricType::Int64, Bson::Int64(1)),
-            ("x".to_string(), MetricType::Int64, Bson::Int64(2)),
+            ("a".to_string(), Bson::Int64(1)),
+            ("x".to_string(), Bson::Int64(2)),
         ],
         timestamp,
     };
@@ -74,7 +74,6 @@ async fn test_decode_chunk() -> io::Result<()> {
     for (actual, (name, value)) in actual.iter().zip(expected.iter()) {
         assert_eq!(actual.name, *name);
         assert_eq!(actual.value, *value);
-        assert_eq!(actual.metric_type, MetricType::Int64);
     }
     Ok(())
 }
@@ -100,13 +99,9 @@ async fn test_decode_time_series() -> io::Result<()> {
         deltas: varint_deltas, // The varint-encoded deltas
         keys: vec![
             // "start" metric with millisecond values since UNIX epoch
-            (
-                "start".to_string(),
-                MetricType::Int64,
-                Bson::Int64(1600000000000),
-            ),
+            ("start".to_string(), Bson::Int64(1600000000000)),
             // Another random metric
-            ("x".to_string(), MetricType::Int64, Bson::Int64(42)),
+            ("x".to_string(), Bson::Int64(42)),
         ],
         timestamp: base_ts, // This should be ignored in favor of "start" values
     };
@@ -206,7 +201,7 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
     assert_eq!(chunk.keys.len(), chunk.n_keys as usize);
 
     // Find the "start" metric in the keys
-    let start_metric = chunk.keys.iter().find(|(name, _, _)| name == "start");
+    let start_metric = chunk.keys.iter().find(|(name, _)| name == "start");
     assert!(
         start_metric.is_some(),
         "The 'start' metric should exist in the keys"
@@ -230,7 +225,7 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
     // Check timestamps are monotonically increasing
     let start_timestamp = start_metric
         .unwrap()
-        .2
+        .1
         .as_datetime()
         .unwrap()
         .to_system_time();
@@ -246,7 +241,7 @@ async fn test_decode_time_series_with_example_file() -> io::Result<()> {
 fn test_bson_to_i64() {
     use bson::Bson;
     use bson::RawDocumentBuf;
-    use ftdc_importer::{Chunk, ChunkParser, MetricType};
+    use ftdc_importer::{Chunk, ChunkParser};
     use std::time::SystemTime;
 
     // Test DateTime
@@ -268,30 +263,14 @@ fn test_bson_to_i64() {
         deltas: varint_deltas,
         keys: vec![
             // start is required for decode_time_series
-            ("start".to_string(), MetricType::Int64, Bson::Int64(1000)),
-            (
-                "datetime".to_string(),
-                MetricType::DateTime,
-                bson_dt.clone(),
-            ),
-            ("int32".to_string(), MetricType::Int32, Bson::Int32(42)),
-            ("int64".to_string(), MetricType::Int64, Bson::Int64(9999)),
-            ("double".to_string(), MetricType::Double, Bson::Double(3.8)),
-            (
-                "boolean_true".to_string(),
-                MetricType::Boolean,
-                Bson::Boolean(true),
-            ),
-            (
-                "boolean_false".to_string(),
-                MetricType::Boolean,
-                Bson::Boolean(false),
-            ),
-            (
-                "string".to_string(),
-                MetricType::Int64,
-                Bson::String("test".to_string()),
-            ),
+            ("start".to_string(), Bson::Int64(1000)),
+            ("datetime".to_string(), bson_dt.clone()),
+            ("int32".to_string(), Bson::Int32(42)),
+            ("int64".to_string(), Bson::Int64(9999)),
+            ("double".to_string(), Bson::Double(3.8)),
+            ("boolean_true".to_string(), Bson::Boolean(true)),
+            ("boolean_false".to_string(), Bson::Boolean(false)),
+            ("string".to_string(), Bson::String("test".to_string())),
         ],
         timestamp: SystemTime::now(),
     };

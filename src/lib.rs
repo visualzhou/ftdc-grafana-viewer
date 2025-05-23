@@ -50,19 +50,6 @@ pub struct MetricValue {
     pub name: String,
     pub value: f64,
     pub timestamp: SystemTime,
-    pub metric_type: MetricType,
-}
-
-/// Represents the type of metric value
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum MetricType {
-    Double,
-    Int32,
-    Int64,
-    Boolean,
-    DateTime,
-    Timestamp,
-    Decimal128,
 }
 
 /// Represents a single FTDC document containing multiple metrics, in time series format
