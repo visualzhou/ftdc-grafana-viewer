@@ -28,10 +28,10 @@ impl ChunkParser {
     fn bson_to_i64(value: &Bson) -> i64 {
         match value {
             Bson::DateTime(dt) => dt.timestamp_millis(),
-            Bson::Int32(v) => *v as i64,
+            Bson::Int32(v) => i64::from(*v),
             Bson::Int64(v) => *v,
             Bson::Double(v) => *v as i64,
-            Bson::Boolean(v) => *v as i64,
+            Bson::Boolean(v) => i64::from(*v),
             // For other types where direct casting doesn't make sense, return 0
             _ => 0,
         }
@@ -60,13 +60,10 @@ impl ChunkParser {
         };
 
         // Extract the binary data
-        let metrics_chunk = match doc.get("data") {
-            Some(Bson::Binary(bin)) => bin,
-            _ => {
-                return Err(FtdcError::Format(
-                    "No 'data' field found in the document".to_string(),
-                ))
-            }
+        let Some(Bson::Binary(metrics_chunk)) = doc.get("data") else {
+            return Err(FtdcError::Format(
+                "No 'data' field found in the document".to_string(),
+            ));
         };
 
         // metrics_chunk = // Not a BSON document, raw bytes
@@ -89,14 +86,14 @@ impl ChunkParser {
         };
 
         // Extract the compressed data
-        let compressed_chunk = metrics_chunk.bytes.to_vec();
+        let compressed_chunk = metrics_chunk.bytes.clone();
 
         // Decompress the data
         let mut decoder = flate2::read::ZlibDecoder::new(&compressed_chunk[4..]);
         let mut decompressed_chunk = Vec::new();
         decoder
             .read_to_end(&mut decompressed_chunk)
-            .map_err(|e| FtdcError::Compression(format!("ZLIB decompression error: {}", e)))?;
+            .map_err(|e| FtdcError::Compression(format!("ZLIB decompression error: {e}")))?;
 
         // decompressed_chunk = // Not a BSON document, raw bytes
         //     reference_document uint8_t[] // a BSON Document -see role_based_collectors_doc
@@ -119,8 +116,7 @@ impl ChunkParser {
                 Ok(doc) => doc,
                 Err(e) => {
                     return Err(FtdcError::Format(format!(
-                        "Failed to parse reference document: {}",
-                        e
+                        "Failed to parse reference document: {e}"
                     )))
                 }
             };
@@ -162,14 +158,13 @@ impl ChunkParser {
         prefix: &str,
         keys: &mut Vec<(String, MetricType, Bson)>,
     ) -> Result<()> {
-        for element_result in doc.iter() {
-            let (key, value) = element_result.map_err(|e| {
-                FtdcError::Format(format!("Failed to read document element: {}", e))
-            })?;
+        for element_result in doc {
+            let (key, value) = element_result
+                .map_err(|e| FtdcError::Format(format!("Failed to read document element: {e}")))?;
 
             // Check if the key is empty, print it
             if key.is_empty() {
-                return Err(FtdcError::Format(format!("Empty key: prefix={}", prefix)));
+                return Err(FtdcError::Format(format!("Empty key: prefix={prefix}")));
             }
 
             let escaped_key = key
@@ -188,9 +183,9 @@ impl ChunkParser {
         Ok(())
     }
 
-    fn to_bson(&self, value: &RawBsonRef) -> Result<Bson> {
+    fn to_bson(value: &RawBsonRef) -> Result<Bson> {
         Bson::try_from(*value)
-            .map_err(|e| FtdcError::Format(format!("Failed to convert RawBsonRef to Bson: {}", e)))
+            .map_err(|e| FtdcError::Format(format!("Failed to convert RawBsonRef to Bson: {e}")))
     }
 
     // Helper method to extract keys from a RawBsonRef value
@@ -204,31 +199,35 @@ impl ChunkParser {
             RawBsonRef::String(_) | RawBsonRef::ObjectId(_) => Ok(()),
             // For numeric types, add the key to the list
             RawBsonRef::Double(_) => {
-                keys.push((path.to_string(), MetricType::Double, self.to_bson(value)?));
+                keys.push((path.to_string(), MetricType::Double, Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Int32(_) => {
-                keys.push((path.to_string(), MetricType::Int32, self.to_bson(value)?));
+                keys.push((path.to_string(), MetricType::Int32, Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Int64(_) => {
-                keys.push((path.to_string(), MetricType::Int64, self.to_bson(value)?));
+                keys.push((path.to_string(), MetricType::Int64, Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Decimal128(_) => {
                 keys.push((
                     path.to_string(),
                     MetricType::Decimal128,
-                    self.to_bson(value)?,
+                    Self::to_bson(value)?,
                 ));
                 Ok(())
             }
             RawBsonRef::Boolean(_) => {
-                keys.push((path.to_string(), MetricType::Boolean, self.to_bson(value)?));
+                keys.push((path.to_string(), MetricType::Boolean, Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::DateTime(_) => {
-                keys.push((path.to_string(), MetricType::DateTime, self.to_bson(value)?));
+                keys.push((
+                    path.to_string(),
+                    MetricType::DateTime,
+                    Self::to_bson(value)?,
+                ));
                 Ok(())
             }
             // Timestamp counts as two fields
@@ -236,12 +235,12 @@ impl ChunkParser {
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "t"),
                     MetricType::Timestamp,
-                    self.to_bson(value)?,
+                    Self::to_bson(value)?,
                 )); // time component
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "i"),
                     MetricType::Timestamp,
-                    self.to_bson(value)?,
+                    Self::to_bson(value)?,
                 )); // increment component
                 Ok(())
             }
@@ -251,7 +250,7 @@ impl ChunkParser {
             RawBsonRef::Array(arr) => {
                 for (i, item_result) in arr.into_iter().enumerate() {
                     let item = item_result.map_err(|e| {
-                        FtdcError::Format(format!("Failed to read array item: {}", e))
+                        FtdcError::Format(format!("Failed to read array item: {e}"))
                     })?;
                     let array_path = format!("{}{}{}", path, Self::PATH_SEP, i);
                     self.extract_keys_from_raw_value(&item, &array_path, keys)?;
@@ -260,8 +259,7 @@ impl ChunkParser {
             }
             // Return error for other unhandled BSON types
             _ => Err(FtdcError::Format(format!(
-                "Unhandled BSON type for key: {} {:?}",
-                path, value
+                "Unhandled BSON type for key: {path} {value:?}"
             ))),
         }
     }
@@ -274,7 +272,7 @@ impl ChunkParser {
         // For each metric vector
         let mut zero_count = 0u64;
 
-        for key in chunk.keys.iter() {
+        for key in &chunk.keys {
             let mut current_timestamp = chunk.timestamp;
             let mut prev_value = Self::bson_to_i64(&key.2);
 

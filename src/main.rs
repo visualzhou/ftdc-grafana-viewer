@@ -18,7 +18,7 @@ struct Opt {
     #[structopt(parse(from_os_str))]
     input: PathBuf,
 
-    /// Victoria Metrics URL (e.g., http://localhost:8428)
+    /// Victoria Metrics URL (e.g., <http://localhost:8428>)
     #[structopt(long, default_value = "http://localhost:8428")]
     vm_url: String,
 
@@ -64,17 +64,14 @@ async fn run_check_mode(reader: &mut FtdcReader) -> Result<()> {
 
         // Print progress every 10 documents
         if document_count % 10 == 0 {
-            println!(
-                "Processed {} documents ({} metrics)",
-                document_count, total_metric_count
-            );
+            println!("Processed {document_count} documents ({total_metric_count} metrics)");
         }
     }
 
     // Print statistics
     println!("\n=== FTDC File Analysis (Time Series Format) ===");
-    println!("Total documents: {}", document_count);
-    println!("Total metrics: {}", total_metric_count);
+    println!("Total documents: {document_count}");
+    println!("Total metrics: {total_metric_count}");
     println!("Unique metric names: {}", metric_examples.len());
 
     // Print examples of each metric
@@ -120,12 +117,11 @@ async fn run_import_mode_prometheus(
         document_count += 1;
         metric_count += doc.metrics.len();
 
-        let sample_count = doc.metrics.first().map(|m| m.values.len()).unwrap_or(0);
+        let sample_count = doc.metrics.first().map_or(0, |m| m.values.len());
 
         // print progress
         println!(
-            "Sent total {} documents ({} metrics); last chunk had {} samples",
-            document_count, metric_count, sample_count
+            "Sent total {document_count} documents ({metric_count} metrics); last chunk had {sample_count} samples"
         );
 
         // Import the document via Prometheus remote write
@@ -159,16 +155,16 @@ async fn main() -> Result<()> {
         if let Some(pos) = label_str.find('=') {
             let name = label_str[..pos].trim().to_string();
             let value = label_str[pos + 1..].trim().to_string();
-            if !name.is_empty() {
+            if name.is_empty() {
+                println!("Warning: Invalid label format (empty name): {label_str}");
+            } else {
                 if opt.verbose {
-                    println!("Adding extra label: {}={}", name, value);
+                    println!("Adding extra label: {name}={value}");
                 }
                 metadata.add_extra_label(name, value);
-            } else {
-                println!("Warning: Invalid label format (empty name): {}", label_str);
             }
         } else {
-            println!("Warning: Invalid label format (missing '='): {}", label_str);
+            println!("Warning: Invalid label format (missing '='): {label_str}");
         }
     }
 
@@ -185,7 +181,7 @@ async fn main() -> Result<()> {
     }
 
     // Create the Prometheus Remote Write client
-    let prometheus_url = format!("{}/api/v1/write", vm_url);
+    let prometheus_url = format!("{vm_url}/api/v1/write");
     let prom_client = PrometheusRemoteWriteClient::new(prometheus_url, metadata);
     // Use time series format for Victoria Metrics
     println!("Using time series format for Victoria Metrics");
@@ -198,10 +194,7 @@ async fn main() -> Result<()> {
     let elapsed = start.elapsed();
 
     println!("Import completed successfully!");
-    println!(
-        "Processed {} documents with {} metrics in {:.2?}",
-        document_count, metric_count, elapsed
-    );
+    println!("Processed {document_count} documents with {metric_count} metrics in {elapsed:.2?}");
     println!(
         "Average processing speed: {:.2} documents/sec",
         document_count as f64 / elapsed.as_secs_f64()

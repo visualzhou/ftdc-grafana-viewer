@@ -22,6 +22,7 @@ pub struct VictoriaMetricsClient {
 
 impl VictoriaMetricsClient {
     /// Create a new Victoria Metrics client
+    #[must_use]
     pub fn new(base_url: String, metadata: ImportMetadata) -> Self {
         Self {
             client: Client::new(),
@@ -53,7 +54,7 @@ impl VictoriaMetricsClient {
 
                 println!("First few metrics in line protocol format:");
                 for line in chunk.iter().take(3) {
-                    println!("  {}", line);
+                    println!("  {line}");
                 }
                 println!("...");
             }
@@ -73,10 +74,7 @@ impl VictoriaMetricsClient {
                     .text()
                     .await
                     .unwrap_or_else(|_| "Unknown error".to_string());
-                println!(
-                    "Error response from Victoria Metrics: {} - {}",
-                    status, message
-                );
+                println!("Error response from Victoria Metrics: {status} - {message}");
                 return Err(FtdcError::Server { status, message });
             }
 
@@ -85,7 +83,7 @@ impl VictoriaMetricsClient {
                 println!("Response details:");
                 println!("Status: {}", response.status());
                 let response_text = response.text().await?;
-                println!("Body: {}", response_text);
+                println!("Body: {response_text}");
             } else {
                 // Still need to read the response body to avoid keeping the connection open
                 let _ = response.text().await?;
@@ -97,7 +95,7 @@ impl VictoriaMetricsClient {
 
     /// Clean up all metrics
     ///
-    /// This function deletes all metrics with source=mongodb_ftdc.
+    /// This function deletes all metrics with `source=mongodb_ftdc`.
     pub async fn cleanup_old_metrics(&self, verbose: bool) -> VictoriaMetricsResult<()> {
         if verbose {
             println!("Cleaning up metrics for the current file...");
@@ -106,11 +104,11 @@ impl VictoriaMetricsClient {
         // Only delete metrics for the current file_path if available
         if let Some(file_path) = &self.metadata.file_path {
             let delete_url = format!("{}/api/v1/admin/tsdb/delete_series", self.base_url);
-            let query = format!("{{source=\"mongodb_ftdc\",file_path=\"{}\"}}", file_path);
+            let query = format!("{{source=\"mongodb_ftdc\",file_path=\"{file_path}\"}}");
 
             if verbose {
-                println!("Sending delete request to: {}", delete_url);
-                println!("With params: match[]={}", query);
+                println!("Sending delete request to: {delete_url}");
+                println!("With params: match[]={query}");
             }
 
             // Delete metrics for the specific file path
@@ -127,18 +125,17 @@ impl VictoriaMetricsClient {
                     .text()
                     .await
                     .unwrap_or_else(|_| "Unknown error".to_string());
-                println!("Error cleaning up metrics: {} - {}", status, message);
+                println!("Error cleaning up metrics: {status} - {message}");
                 return Err(FtdcError::Server { status, message });
             }
 
             let response_text = response.text().await?;
             if verbose {
                 println!(
-                    "Successfully cleaned up metrics for file '{}'. Response: {}",
-                    file_path, response_text
+                    "Successfully cleaned up metrics for file '{file_path}'. Response: {response_text}"
                 );
             } else {
-                println!("Successfully cleaned up metrics for file '{}'", file_path);
+                println!("Successfully cleaned up metrics for file '{file_path}'");
             }
         } else {
             // If no file path is available, print a warning
