@@ -44,14 +44,6 @@ pub enum FtdcError {
 
 pub type Result<T> = std::result::Result<T, FtdcError>;
 
-/// Represents a single FTDC metric value
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MetricValue {
-    pub name: String,
-    pub value: f64,
-    pub timestamp: SystemTime,
-}
-
 /// Represents a single FTDC document containing multiple metrics, in time series format
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FtdcDocumentTS {
