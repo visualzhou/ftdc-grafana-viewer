@@ -65,8 +65,6 @@ pub trait MetricsDocHandler {
 /// Reader for FTDC files that supports async streaming
 pub struct FtdcReader {
     reader: BufReader<File>,
-    file_path: Option<String>,
-    folder_path: Option<String>,
 }
 
 impl FtdcReader {
@@ -75,17 +73,7 @@ impl FtdcReader {
         let file = File::open(path).await?;
         let reader = BufReader::with_capacity(BUFFER_SIZE, file);
 
-        Ok(Self {
-            reader,
-            file_path: None,
-            folder_path: None,
-        })
-    }
-
-    /// Set the file and folder paths
-    pub fn set_paths(&mut self, file_path: String, folder_path: String) {
-        self.file_path = Some(file_path);
-        self.folder_path = Some(folder_path);
+        Ok(Self { reader })
     }
 
     /// Reads the next BSON document from the file
