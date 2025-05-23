@@ -1,7 +1,6 @@
 use crate::prometheus::ImportMetadata;
 use crate::FtdcError;
 use reqwest::Client;
-use std::fmt;
 
 pub type VictoriaMetricsResult<T> = Result<T, FtdcError>;
 
@@ -82,20 +81,5 @@ impl VictoriaMetricsClient {
         }
 
         Ok(())
-    }
-}
-
-// Add trait implementation for MetricType to convert to string
-impl fmt::Display for crate::MetricType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            crate::MetricType::Double => write!(f, "Double"),
-            crate::MetricType::Int32 => write!(f, "Int32"),
-            crate::MetricType::Int64 => write!(f, "Int64"),
-            crate::MetricType::Boolean => write!(f, "Boolean"),
-            crate::MetricType::DateTime => write!(f, "DateTime"),
-            crate::MetricType::Timestamp => write!(f, "Timestamp"),
-            crate::MetricType::Decimal128 => write!(f, "Decimal128"),
-        }
     }
 }

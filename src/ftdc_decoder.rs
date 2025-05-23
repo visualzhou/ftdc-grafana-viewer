@@ -1,5 +1,5 @@
 use crate::varint::VarintReader;
-use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries, MetricType, MetricValue};
+use crate::{FtdcDocumentTS, FtdcError, FtdcTimeSeries, MetricValue};
 use bson::raw::{RawBsonRef, RawDocument, RawDocumentBuf};
 use bson::{Bson, Document};
 use std::io::Read;
@@ -14,7 +14,7 @@ pub struct Chunk {
     pub n_deltas: u32,
     pub deltas: Vec<u8>,
     // Decoded
-    pub keys: Vec<(String, MetricType, Bson)>,
+    pub keys: Vec<(String, Bson)>,
     pub timestamp: SystemTime,
     // Each metric (key) is a vector.
     // Each sample (delta) is a sub-vector of n_deltas + 1, including the reference doc.
@@ -156,7 +156,7 @@ impl ChunkParser {
         &self,
         doc: &RawDocument,
         prefix: &str,
-        keys: &mut Vec<(String, MetricType, Bson)>,
+        keys: &mut Vec<(String, Bson)>,
     ) -> Result<()> {
         for element_result in doc {
             let (key, value) = element_result
@@ -193,53 +193,43 @@ impl ChunkParser {
         &self,
         value: &RawBsonRef,
         path: &str,
-        keys: &mut Vec<(String, MetricType, Bson)>,
+        keys: &mut Vec<(String, Bson)>,
     ) -> Result<()> {
         match value {
             RawBsonRef::String(_) | RawBsonRef::ObjectId(_) => Ok(()),
             // For numeric types, add the key to the list
             RawBsonRef::Double(_) => {
-                keys.push((path.to_string(), MetricType::Double, Self::to_bson(value)?));
+                keys.push((path.to_string(), Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Int32(_) => {
-                keys.push((path.to_string(), MetricType::Int32, Self::to_bson(value)?));
+                keys.push((path.to_string(), Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Int64(_) => {
-                keys.push((path.to_string(), MetricType::Int64, Self::to_bson(value)?));
+                keys.push((path.to_string(), Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Decimal128(_) => {
-                keys.push((
-                    path.to_string(),
-                    MetricType::Decimal128,
-                    Self::to_bson(value)?,
-                ));
+                keys.push((path.to_string(), Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::Boolean(_) => {
-                keys.push((path.to_string(), MetricType::Boolean, Self::to_bson(value)?));
+                keys.push((path.to_string(), Self::to_bson(value)?));
                 Ok(())
             }
             RawBsonRef::DateTime(_) => {
-                keys.push((
-                    path.to_string(),
-                    MetricType::DateTime,
-                    Self::to_bson(value)?,
-                ));
+                keys.push((path.to_string(), Self::to_bson(value)?));
                 Ok(())
             }
             // Timestamp counts as two fields
             RawBsonRef::Timestamp(_) => {
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "t"),
-                    MetricType::Timestamp,
                     Self::to_bson(value)?,
                 )); // time component
                 keys.push((
                     format!("{}{}{}", path, Self::PATH_SEP, "i"),
-                    MetricType::Timestamp,
                     Self::to_bson(value)?,
                 )); // increment component
                 Ok(())
@@ -274,15 +264,14 @@ impl ChunkParser {
 
         for key in &chunk.keys {
             let mut current_timestamp = chunk.timestamp;
-            let mut prev_value = Self::bson_to_i64(&key.2);
+            let mut prev_value = Self::bson_to_i64(&key.1);
 
             // First, insert the first sample from the reference doc
-            // 'key' is tuple of (string name, metric type, bson value)
+            // 'key' is tuple of (string name, bson value)
             let metric_value = MetricValue {
                 name: key.0.clone(),
                 timestamp: current_timestamp,
                 value: prev_value as f64,
-                metric_type: key.1.clone(),
             };
             final_values.push(metric_value);
 
@@ -318,7 +307,6 @@ impl ChunkParser {
                     name: key.0.clone(),
                     timestamp: current_timestamp,
                     value: value.unwrap_or_default() as f64,
-                    metric_type: key.1.clone(),
                 };
                 final_values.push(metric_value);
                 prev_value = value.unwrap_or_default();
@@ -339,7 +327,7 @@ impl ChunkParser {
 
         for (i, key) in chunk.keys.iter().enumerate() {
             // Convert value to i64 using our helper function (handles all types including DateTime)
-            let mut current_value = Self::bson_to_i64(&key.2);
+            let mut current_value = Self::bson_to_i64(&key.1);
 
             let mut values: Vec<i64> = Vec::new();
             // The initial value is the reference value.
