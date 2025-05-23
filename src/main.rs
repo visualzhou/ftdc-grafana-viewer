@@ -168,7 +168,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let client = VictoriaMetricsClient::new(opt.vm_url, metadata.clone());
+    let client = VictoriaMetricsClient::new(&opt.vm_url, metadata.clone());
 
     if opt.check {
         // Run in check mode without sending metrics
