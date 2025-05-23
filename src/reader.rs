@@ -26,8 +26,7 @@ impl TryFrom<i32> for FtdcDocType {
             1 => Ok(FtdcDocType::Metric),
             2 => Ok(FtdcDocType::MetadataDelta),
             _ => Err(FtdcError::Format(format!(
-                "Invalid FTDC document type: {}",
-                value
+                "Invalid FTDC document type: {value}"
             ))),
         }
     }
@@ -131,9 +130,8 @@ impl FtdcReader {
     where
         H: MetricsDocHandler<TransformedType = T>,
     {
-        let doc = match self.read_bson_document().await? {
-            Some(doc) => doc,
-            None => return Ok(None),
+        let Some(doc) = self.read_bson_document().await? else {
+            return Ok(None);
         };
 
         // Extract document type and _id
