@@ -1,5 +1,3 @@
-use bson::doc;
-use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 use thiserror::Error;
 
@@ -23,9 +21,6 @@ pub enum FtdcError {
     #[error("BSON error: {0}")]
     Bson(#[from] bson::de::Error),
 
-    #[error("BSON serialization error: {0}")]
-    BsonSer(#[from] bson::ser::Error),
-
     #[error("Format error: {0}")]
     Format(String),
 
@@ -45,14 +40,14 @@ pub enum FtdcError {
 pub type Result<T> = std::result::Result<T, FtdcError>;
 
 /// Represents a single FTDC document containing multiple metrics, in time series format
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct FtdcDocumentTS {
     pub metrics: Vec<FtdcTimeSeries>,
     pub timestamps: Vec<SystemTime>,
 }
 
 /// Represents a single FTDC time series
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct FtdcTimeSeries {
     pub name: String,
     pub values: Vec<i64>,
