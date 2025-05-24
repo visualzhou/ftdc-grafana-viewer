@@ -51,25 +51,27 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           set -eux
-
-          # add the foreign arch
           sudo dpkg --add-architecture arm64
 
-          # Rewrite every *.list and *.sources file in /etc/apt
+          # patch every source file – no duplicates, no arm64 leak
           sudo find /etc/apt \( -name '*.list' -o -name '*.sources' \) -type f -print0 |
-            sudo xargs -0 sed -i \
-              -e '/^deb / s/^deb /deb [arch=amd64] /' \
-              -e '/^Architectures:/ s/.*/Architectures: amd64/'
+            sudo xargs -0 sed -Ei \
+              -e '/^deb /{s/\[.*\]/[arch=amd64]/;t;s/^deb /deb [arch=amd64] /}' \
+              -e '/^Architectures:/s/.*/Architectures: amd64/'
 
-          # (optional) blow away any cached arm64 indices leftover from a failed run
-          sudo rm -rf /var/lib/apt/lists/*
+          # Drop Microsoft repos since the above command broke them
+          # and they are not needed for the build
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+
+          sudo rm -rf /var/lib/apt/lists/*        # purge stale indices
 
           # add the ports mirror for arm64
+          REL=$(lsb_release -cs)
           sudo tee /etc/apt/sources.list.d/ports-arm64.list <<'EOF'
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-backports main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL-backports main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL-security main restricted universe multiverse
           EOF
 
           sudo apt-get update
