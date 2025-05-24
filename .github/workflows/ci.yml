@@ -28,10 +28,10 @@ jobs:
       matrix:
         include:
           - name: Linux (x86_64)
-            os: ubuntu-latest
+            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
           - name: Linux (ARM64)
-            os: ubuntu-latest
+            os: ubuntu-24.04
             target: aarch64-unknown-linux-gnu
           - name: macOS (Apple Silicon)
             os: macos-14
@@ -47,9 +47,6 @@ jobs:
       # Skip cache when running locally with act to avoid caching issues
       - uses: Swatinem/rust-cache@v2
         if: ${{ !env.ACT }}
-      - name: Setup multiarch for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
       - name: Add arm64 repos and update
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
@@ -58,8 +55,14 @@ jobs:
           # add the foreign arch
           sudo dpkg --add-architecture arm64
 
-          # restrict existing mirrors to amd64
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+          # Rewrite every *.list and *.sources file in /etc/apt
+          sudo find /etc/apt \( -name '*.list' -o -name '*.sources' \) -type f -print0 |
+            sudo xargs -0 sed -i \
+              -e '/^deb / s/^deb /deb [arch=amd64] /' \
+              -e '/^Architectures:/ s/.*/Architectures: amd64/'
+
+          # (optional) blow away any cached arm64 indices leftover from a failed run
+          sudo rm -rf /var/lib/apt/lists/*
 
           # add the ports mirror for arm64
           sudo tee /etc/apt/sources.list.d/ports-arm64.list <<'EOF'
@@ -70,10 +73,10 @@ jobs:
           EOF
 
           sudo apt-get update
-      - name: Install OpenSSL for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get install -y pkg-config gcc-aarch64-linux-gnu libssl-dev:arm64
+          sudo apt-get install --yes --no-install-recommends \
+              crossbuild-essential-arm64 \  # meta-package
+              pkg-config \
+              libssl-dev:arm64
       - name: Set OpenSSL env vars for ARM64
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
