@@ -67,7 +67,7 @@ jobs:
 
           # add the ports mirror for arm64
           REL=$(lsb_release -cs)
-          sudo tee /etc/apt/sources.list.d/ports-arm64.list <<'EOF'
+          sudo tee /etc/apt/sources.list.d/ports-arm64.list <<EOF
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL main restricted universe multiverse
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL-updates main restricted universe multiverse
           deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $REL-backports main restricted universe multiverse
