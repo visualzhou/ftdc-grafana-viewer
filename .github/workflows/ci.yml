@@ -28,10 +28,10 @@ jobs:
       matrix:
         include:
           - name: Linux (x86_64)
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
           - name: Linux (ARM64)
-            os: ubuntu-latest
+            os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
           - name: macOS (Apple Silicon)
             os: macos-14
