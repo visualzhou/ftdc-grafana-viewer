@@ -52,6 +52,8 @@ jobs:
         run: |
           set -eux
           sudo dpkg --add-architecture arm64
+          # remove the mirrorlist that still advertises arm64 on security.ubuntu.com
+          sudo rm -f /etc/apt/apt-mirrors.txt
 
           # patch every source file – no duplicates, no arm64 leak
           sudo find /etc/apt \( -name '*.list' -o -name '*.sources' \) -type f -print0 |
