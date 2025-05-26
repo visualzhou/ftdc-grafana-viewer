@@ -30,10 +30,9 @@ jobs:
           - name: Linux (x86_64)
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          # TODO: Enable ARM64 build once OpenSSL issue is resolved.
-          # - name: Linux (ARM64)
-          #   os: ubuntu-latest
-          #   target: aarch64-unknown-linux-gnu
+          - name: Linux (ARM64)
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
           - name: macOS (Apple Silicon)
             os: macos-14
             target: aarch64-apple-darwin
@@ -48,19 +47,6 @@ jobs:
       # Skip cache when running locally with act to avoid caching issues
       - uses: Swatinem/rust-cache@v2
         if: ${{ !env.ACT }}
-      - name: Install OpenSSL for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config gcc-aarch64-linux-gnu libssl-dev:arm64
-      - name: Set OpenSSL env vars for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          echo "OPENSSL_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=/usr/include" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
       - name: Test
