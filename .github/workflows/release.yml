@@ -79,18 +79,18 @@ jobs:
       - uses: actions/download-artifact@v4
 
       - name: Generate sha256 checksums
+        shell: bash
         run: |
           shopt -s globstar nullglob
-          : > SHA256SUMS.txt
-          for file in **/ftdc-importer-*; do
-            if [[ -f "$file" ]]; then
-              sha256sum "$file" >> SHA256SUMS.txt
-            fi
+          for file in **/ftdc-importer-*.tar.gz **/ftdc-importer-*.zip; do
+            sha256sum "$file" > "$file.sha256"
           done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            **/ftdc-importer-*
-            SHA256SUMS.txt
+            **/ftdc-importer-*.tar.gz
+            **/ftdc-importer-*.zip
+            **/ftdc-importer-*.tar.gz.sha256
+            **/ftdc-importer-*.zip.sha256
