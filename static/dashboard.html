@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTDC Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/uplot@1.6.31/dist/uPlot.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0e11;--bg-card:#161b22;--bg-hover:#1c2333;--border:#30363d;--text:#d0d4dc;--text-dim:#8b949e;--accent:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+
+/* Top bar */
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
+.topbar h1{font-size:1.1rem;font-weight:600;color:#fff;white-space:nowrap}
+.topbar .info{font-size:.85rem;color:var(--text-dim);flex:1}
+.topbar .info span{margin-right:1rem}
+.btn{padding:.4rem .8rem;background:var(--bg-hover);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.85rem;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:#238636;border-color:#238636;color:#fff}
+.btn-primary:hover{background:#2ea043}
+
+/* Sidebar */
+.layout{display:flex;min-height:calc(100vh - 49px)}
+.sidebar{width:260px;background:var(--bg-card);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+.sidebar h2{font-size:.8rem;text-transform:uppercase;color:var(--text-dim);padding:.75rem 1rem .5rem;letter-spacing:.05em}
+.sidebar .group-item{padding:.5rem 1rem;cursor:pointer;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;transition:background .1s}
+.sidebar .group-item:hover{background:var(--bg-hover)}
+.sidebar .group-item.active{background:var(--bg-hover);color:var(--accent)}
+.sidebar .group-item .count{font-size:.75rem;color:var(--text-dim);background:var(--bg);padding:1px 6px;border-radius:10px}
+
+/* Main content */
+.main{flex:1;overflow-y:auto;padding:1rem}
+.panels{display:grid;grid-template-columns:1fr;gap:1rem}
+@media(min-width:1400px){.panels{grid-template-columns:1fr 1fr}}
+
+/* Panel */
+.panel{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.panel-header{padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.panel-header h3{font-size:.9rem;font-weight:500;color:#fff}
+.panel-header .toggle{color:var(--text-dim);font-size:.7rem;transition:transform .2s}
+.panel-header .toggle.collapsed{transform:rotate(-90deg)}
+.panel-body{padding:0 .5rem .5rem;min-height:250px;position:relative}
+.panel-body.collapsed{display:none}
+.panel-loading{display:flex;align-items:center;justify-content:center;height:200px;color:var(--text-dim);font-size:.9rem}
+
+/* Chart overrides for dark theme */
+.uplot{width:100%!important}
+.uplot .u-legend{font-size:.75rem;padding:4px 8px}
+.uplot .u-legend th{font-weight:500}
+.uplot .u-legend .u-marker{width:10px;height:3px}
+
+/* Loading */
+.loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;font-size:1.1rem;color:var(--text-dim)}
+.loading-screen .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:.75rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--green);color:var(--green);padding:.6rem 1.5rem;border-radius:8px;font-size:.9rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
+.toast.show{opacity:1}
+
+/* Responsive sidebar */
+@media(max-width:900px){.sidebar{width:200px}.sidebar .group-item{padding:.4rem .75rem;font-size:.85rem}}
+@media(max-width:600px){.sidebar{display:none}.main{padding:.5rem}}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  Loading dashboard...
+</div>
+
+<div id="app" style="display:none">
+  <div class="topbar">
+    <h1>FTDC Dashboard</h1>
+    <div class="info" id="info"></div>
+    <button class="btn" onclick="copyShareLink()">Share Link</button>
+    <a href="/" class="btn btn-primary">Upload New</a>
+  </div>
+  <div class="layout">
+    <div class="sidebar">
+      <h2>Metric Groups</h2>
+      <div id="groupList"></div>
+    </div>
+    <div class="main">
+      <div class="panels" id="panels"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Link copied to clipboard!</div>
+
+<script src="https://unpkg.com/uplot@1.6.31/dist/uPlot.iife.min.js"></script>
+<script>
+const SESSION_ID = window.location.pathname.split('/').pop();
+const COLORS = [
+  '#58a6ff','#3fb950','#d29922','#f85149','#bc8cff','#39d2c0',
+  '#ff7b72','#79c0ff','#7ee787','#e3b341','#ffa198','#d2a8ff',
+  '#56d364','#f0883e','#8b949e','#a5d6ff','#7ee787','#ffd33d',
+];
+
+// Priority groups shown expanded by default
+const PRIORITY_GROUPS = ['CPU','Operations','Connections','Memory','Network','WiredTiger','Replication','Server Memory','Global Lock'];
+
+let sessionMeta = null;
+let chartInstances = {};
+let activeGroups = new Set();
+
+async function init() {
+  try {
+    const res = await fetch(`/api/sessions/${SESSION_ID}`);
+    if (!res.ok) throw new Error('Session not found');
+    sessionMeta = await res.json();
+  } catch(e) {
+    document.getElementById('loadingScreen').innerHTML = `<div style="text-align:center"><h2 style="color:var(--red)">Dashboard Not Found</h2><p style="margin-top:1rem;color:var(--text-dim)">This session may have expired.</p><a href="/" class="btn btn-primary" style="margin-top:1rem;display:inline-block">Upload New Data</a></div>`;
+    return;
+  }
+
+  // Show app
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('app').style.display = '';
+
+  // Info bar
+  const timeRange = sessionMeta.time_range;
+  const start = new Date(timeRange[0]);
+  const end = new Date(timeRange[1]);
+  const duration = ((timeRange[1] - timeRange[0]) / 1000 / 60).toFixed(0);
+  document.getElementById('info').innerHTML =
+    `<span>${sessionMeta.metric_count} metrics</span>` +
+    `<span>${sessionMeta.sample_count} samples</span>` +
+    `<span>${duration} min (${start.toLocaleString()} \u2013 ${end.toLocaleTimeString()})</span>`;
+
+  // Build sidebar and panels
+  renderGroups();
+}
+
+function renderGroups() {
+  const groupList = document.getElementById('groupList');
+  const panels = document.getElementById('panels');
+
+  sessionMeta.groups.forEach(group => {
+    // Sidebar item
+    const item = document.createElement('div');
+    item.className = 'group-item';
+    item.innerHTML = `<span>${group.name}</span><span class="count">${group.metrics.length}</span>`;
+    item.onclick = () => scrollToPanel(group.name);
+    groupList.appendChild(item);
+
+    // Panel
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.id = `panel-${CSS.escape(group.name)}`;
+
+    const expanded = PRIORITY_GROUPS.includes(group.name);
+
+    panel.innerHTML = `
+      <div class="panel-header" onclick="togglePanel('${CSS.escape(group.name)}')">
+        <h3>${group.name} <span style="color:var(--text-dim);font-weight:400;font-size:.8rem">(${group.metrics.length})</span></h3>
+        <span class="toggle ${expanded ? '' : 'collapsed'}">&#9660;</span>
+      </div>
+      <div class="panel-body ${expanded ? '' : 'collapsed'}" id="body-${CSS.escape(group.name)}">
+        <div class="panel-loading">Loading...</div>
+      </div>
+    `;
+    panels.appendChild(panel);
+
+    if (expanded) {
+      loadGroupMetrics(group.name);
+    }
+  });
+}
+
+function togglePanel(groupName) {
+  const body = document.getElementById(`body-${groupName}`);
+  const toggle = body.previousElementSibling.querySelector('.toggle');
+
+  if (body.classList.contains('collapsed')) {
+    body.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+    if (!chartInstances[groupName]) {
+      loadGroupMetrics(groupName);
+    }
+  } else {
+    body.classList.add('collapsed');
+    toggle.classList.add('collapsed');
+  }
+}
+
+function scrollToPanel(groupName) {
+  const panel = document.getElementById(`panel-${CSS.escape(groupName)}`);
+  if (panel) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Expand if collapsed
+    const body = document.getElementById(`body-${CSS.escape(groupName)}`);
+    if (body.classList.contains('collapsed')) {
+      togglePanel(CSS.escape(groupName));
+    }
+  }
+}
+
+async function loadGroupMetrics(groupName) {
+  const body = document.getElementById(`body-${groupName}`);
+  if (!body) return;
+
+  try {
+    const res = await fetch(`/api/sessions/${SESSION_ID}/metrics?group=${encodeURIComponent(groupName)}`);
+    if (!res.ok) throw new Error('Failed to load metrics');
+    const data = await res.json();
+
+    body.innerHTML = '';
+
+    if (!data.metrics || data.metrics.length === 0) {
+      body.innerHTML = '<div class="panel-loading">No data</div>';
+      return;
+    }
+
+    renderChart(body, groupName, data);
+  } catch(e) {
+    body.innerHTML = `<div class="panel-loading" style="color:var(--red)">${e.message}</div>`;
+  }
+}
+
+function renderChart(container, groupName, data) {
+  const timestamps = data.timestamps.map(t => t / 1000); // uPlot wants seconds
+  const metrics = data.metrics;
+
+  // Build uPlot data array: [timestamps, series1, series2, ...]
+  const plotData = [timestamps];
+  const series = [{}]; // first entry is for x-axis
+
+  // Find common prefix to strip for cleaner labels
+  const names = metrics.map(m => m.name);
+  const prefix = findCommonPrefix(names);
+
+  metrics.forEach((m, i) => {
+    plotData.push(m.values.map(v => v === null ? null : v));
+    const label = prefix ? m.name.substring(prefix.length) : m.name;
+    series.push({
+      label: label,
+      stroke: COLORS[i % COLORS.length],
+      width: 1.5,
+      points: { show: false },
+    });
+  });
+
+  // If too many series, only show first 20 and note it
+  const MAX_SERIES = 30;
+  let trimmed = false;
+  if (metrics.length > MAX_SERIES) {
+    plotData.length = MAX_SERIES + 1;
+    series.length = MAX_SERIES + 1;
+    trimmed = true;
+  }
+
+  const width = container.clientWidth - 16;
+  const height = Math.max(250, Math.min(350, window.innerHeight * 0.3));
+
+  const opts = {
+    width,
+    height,
+    cursor: {
+      sync: { key: 'ftdc' },
+      drag: { x: true, y: false, setScale: true },
+    },
+    scales: {
+      x: { time: true },
+    },
+    axes: [
+      {
+        stroke: '#8b949e',
+        grid: { stroke: '#21262d', width: 1 },
+        ticks: { stroke: '#21262d' },
+      },
+      {
+        stroke: '#8b949e',
+        grid: { stroke: '#21262d', width: 1 },
+        ticks: { stroke: '#21262d' },
+        size: 70,
+      },
+    ],
+    series,
+    legend: {
+      show: metrics.length <= 15,
+    },
+    hooks: {
+      setSelect: [
+        (u) => {
+          // Double-click to reset zoom
+        }
+      ],
+    },
+  };
+
+  const plot = new uPlot(opts, plotData, container);
+  chartInstances[groupName] = plot;
+
+  if (trimmed) {
+    const note = document.createElement('div');
+    note.style.cssText = 'text-align:center;color:var(--text-dim);font-size:.8rem;padding:.25rem';
+    note.textContent = `Showing ${MAX_SERIES} of ${metrics.length} metrics`;
+    container.appendChild(note);
+  }
+
+  // Handle resize
+  const resizeObserver = new ResizeObserver(() => {
+    const newWidth = container.clientWidth - 16;
+    if (Math.abs(newWidth - plot.width) > 20) {
+      plot.setSize({ width: newWidth, height });
+    }
+  });
+  resizeObserver.observe(container);
+}
+
+function findCommonPrefix(strings) {
+  if (strings.length <= 1) return '';
+  let prefix = strings[0];
+  for (let i = 1; i < strings.length; i++) {
+    while (!strings[i].startsWith(prefix)) {
+      prefix = prefix.substring(0, prefix.lastIndexOf('_') + 1);
+      if (!prefix) return '';
+    }
+  }
+  // Only strip if prefix ends with _ (proper boundary)
+  if (prefix.endsWith('_')) return prefix;
+  const lastUnderscore = prefix.lastIndexOf('_');
+  return lastUnderscore > 0 ? prefix.substring(0, lastUnderscore + 1) : '';
+}
+
+function copyShareLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+// Sync cursors across all charts
+uPlot.sync('ftdc');
+
+init();
+</script>
+</body>
+</html>

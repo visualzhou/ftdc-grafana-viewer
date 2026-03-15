@@ -4,8 +4,10 @@ use thiserror::Error;
 pub mod ftdc_decoder;
 pub mod prometheus;
 pub mod reader;
+pub mod session;
 mod varint;
 pub mod victoria_metrics;
+pub mod web;
 
 pub use ftdc_decoder::{Chunk, ChunkParser};
 pub use prometheus::{ImportMetadata, PrometheusRemoteWriteClient};

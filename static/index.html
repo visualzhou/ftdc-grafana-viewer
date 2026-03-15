@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTDC Viewer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0b0e11;color:#d0d4dc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.container{max-width:600px;width:100%;padding:2rem}
+h1{font-size:2rem;font-weight:600;margin-bottom:.5rem;color:#fff}
+.subtitle{color:#8b949e;margin-bottom:2rem;font-size:1rem}
+.drop-zone{border:2px dashed #30363d;border-radius:12px;padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .2s;background:#161b22}
+.drop-zone:hover,.drop-zone.dragover{border-color:#58a6ff;background:#1c2333}
+.drop-zone svg{width:48px;height:48px;color:#58a6ff;margin-bottom:1rem}
+.drop-zone p{color:#8b949e;margin-bottom:.5rem}
+.drop-zone .hint{font-size:.85rem;color:#6e7681}
+input[type="file"]{display:none}
+.btn{display:inline-block;padding:.75rem 1.5rem;background:#238636;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background .2s;margin-top:1rem}
+.btn:hover{background:#2ea043}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.progress-wrap{margin-top:1.5rem;display:none}
+.progress-bar{height:6px;background:#21262d;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:#58a6ff;width:0%;transition:width .3s}
+.status{margin-top:.75rem;font-size:.9rem;color:#8b949e}
+.error{color:#f85149;margin-top:1rem;display:none;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>FTDC Dashboard Viewer</h1>
+  <p class="subtitle">Upload MongoDB FTDC diagnostic data to visualize metrics</p>
+
+  <div class="drop-zone" id="dropZone">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <p>Drag & drop your FTDC zip file here</p>
+    <p class="hint">or click to browse &middot; .zip or raw FTDC files supported</p>
+    <input type="file" id="fileInput" accept=".zip,.ftdc,.bson,*/*">
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="status" id="status">Uploading...</div>
+  </div>
+
+  <div class="error" id="error"></div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const status = document.getElementById('status');
+const errorEl = document.getElementById('error');
+
+dropZone.addEventListener('click', () => fileInput.click());
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) uploadFile(fileInput.files[0]);
+});
+
+async function uploadFile(file) {
+  errorEl.style.display = 'none';
+  progressWrap.style.display = 'block';
+  progressFill.style.width = '10%';
+  status.textContent = `Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)...`;
+
+  const form = new FormData();
+  form.append('file', file);
+
+  try {
+    progressFill.style.width = '40%';
+    status.textContent = 'Processing FTDC data...';
+
+    const res = await fetch('/api/upload', { method: 'POST', body: form });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Upload failed');
+    }
+
+    progressFill.style.width = '100%';
+    status.textContent = 'Redirecting to dashboard...';
+
+    const data = await res.json();
+    window.location.href = data.redirect_url;
+  } catch (e) {
+    progressWrap.style.display = 'none';
+    errorEl.textContent = e.message;
+    errorEl.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

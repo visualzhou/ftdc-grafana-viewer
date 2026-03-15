@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use ftdc_importer::{
     prometheus::PrometheusRemoteWriteClient, reader::FtdcReader,
-    victoria_metrics::VictoriaMetricsClient, ImportMetadata,
+    victoria_metrics::VictoriaMetricsClient, web, ImportMetadata,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -11,12 +11,15 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "ftdc-importer",
-    about = "Import FTDC files into Victoria Metrics"
+    about = "Import FTDC files into Victoria Metrics or view them in a web dashboard"
 )]
 struct Opt {
-    /// Input FTDC file path
+    #[structopt(subcommand)]
+    cmd: Option<Command>,
+
+    /// Input FTDC file path (for direct import mode)
     #[structopt(parse(from_os_str))]
-    input: PathBuf,
+    input: Option<PathBuf>,
 
     /// Victoria Metrics URL (e.g., <http://localhost:8428>)
     #[structopt(long, default_value = "http://localhost:8428")]
@@ -37,6 +40,16 @@ struct Opt {
     /// Extra label to add to all metrics (format: name=value)
     #[structopt(long, number_of_values = 1, multiple = true)]
     extra_label: Vec<String>,
+}
+
+#[derive(Debug, StructOpt)]
+enum Command {
+    /// Start the web dashboard server
+    Serve {
+        /// Port to listen on
+        #[structopt(short, long, default_value = "3000")]
+        port: u16,
+    },
 }
 
 /// Run the check mode to analyze FTDC file contents without sending to Victoria Metrics
@@ -135,14 +148,21 @@ async fn run_import_mode_prometheus(
 async fn main() -> Result<()> {
     let opt = Opt::from_args();
 
+    // Handle subcommands
+    if let Some(Command::Serve { port }) = opt.cmd {
+        return web::start_server(port).await;
+    }
+
+    let input = opt.input.context("Input file path is required for import mode. Use 'serve' subcommand for web dashboard.")?;
+
     if opt.verbose {
-        println!("Importing FTDC file: {:?}", opt.input);
+        println!("Importing FTDC file: {:?}", input);
         println!("Victoria Metrics URL: {}", opt.vm_url);
     }
 
     let start = Instant::now();
 
-    let mut reader = FtdcReader::new(&opt.input)
+    let mut reader = FtdcReader::new(&input)
         .await
         .context("Failed to create FTDC reader")?;
 
